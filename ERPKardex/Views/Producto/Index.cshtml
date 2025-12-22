@@ -26,16 +26,10 @@
                             <th class="text-center">COD SUBGRUPO</th>
                             <th class="text-center">SUBGRUPO</th>
                             <th class="text-center">DESCRIPCIÓN</th>
-                            <th class="text-center">CONCENTRACIÓN</th>
-                            <th class="text-center">FQ</th>
-                            <th class="text-center">LOTE</th>
                             <th class="text-center">FECHA FABRICACIÓN</th>
                             <th class="text-center">FECHA VENCIMIENTO</th>
-                            <th class="text-center">PELIGROSIDAD</th>
-                            <th class="text-center">MARCA</th>
-                            <th class="text-center">MODELO</th>
-                            <th class="text-center">SERIE</th>
                             <th class="text-center">ES ACTIVO</th>
+                            <th class="text-center">ESTADO</th>
                             <th class="text-center">ACCIÓN</th>
                         </tr>
                     </thead>
@@ -47,7 +41,7 @@
     </div>
 </div>
 <script>
-    var dtEmpresas;
+    var dtProductos;
 
     $(document).ready(function () {
         // $('body').addClass('sidebar-collapse');
@@ -63,7 +57,7 @@
             scroller: false,
             deferRender: true,
             scrollY: windowHeight,
-            scrollX: false,
+            scrollX: true,
             fixedHeader: true,
             ordering: true,
             destroy: true,
@@ -113,12 +107,12 @@
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
         });
 
-        fct_IniciarTablaEmpresas('#tbl_Empresas');
+        fct_IniciarTablaProductos('#tbl_Productos');
     });
 
-    function fct_IniciarTablaEmpresas(IdTabla) {
+    function fct_IniciarTablaProductos(IdTabla) {
         // Inicializar DataTables con botones
-        dtEmpresas = $(IdTabla).DataTable({
+        dtProductos = $(IdTabla).DataTable({
             buttons: [
                 {
                     extend: 'copy',
@@ -131,7 +125,7 @@
                     text: '<i class="bi bi-file-earmark-excel"></i>',
                     titleAttr: 'Exportar a Excel',
                     className: 'btn btn-success',
-                    filename: 'Empresas ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Productos ' + moment().format('DD-MM-YYYY HH_mm'),
                     footer: true,
                     exportOptions:
                     {
@@ -144,7 +138,7 @@
                     text: '<i class="bi bi-file-earmark-pdf"></i>',
                     titleAttr: 'Exportar a PDF',
                     className: 'btn btn-danger',
-                    filename: 'Empresas ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Productos ' + moment().format('DD-MM-YYYY HH_mm'),
                     exportOptions:
                     {
                         stripHtml: true,
@@ -176,12 +170,12 @@
                     className: 'btn bg-success m-1',
                     titleAttr: 'Nuevo',
                     action: function (e, dt, node, config) {
-                        fct_EmpresaNuevo();
+                        fct_ProductoNuevo();
                     },
                 },
             ],
             ajax: {
-                url: "/Empresa/GetEmpresaData",
+                url: "/Producto/GetProductosData",
                 type: "GET",
                 datatype: "json",
                 data: function (d) {
@@ -200,10 +194,21 @@
                 },
             },
             columns: [
-                { data: "id", name: "id" },
-                { data: "ruc", name: "ruc" },
-                { data: "nombre", name: "nombre" },
-                { data: "descripcion", name: "descripcion" },
+                { data: "codigo", name: "codigo" },
+                { data: "codGrupo", name: "codGrupo", visible: false },
+                { data: "descripcionGrupo", name: "descripcionGrupo" },
+                { data: "codSubgrupo", name: "codSubgrupo", visible: false },
+                { data: "descripcionSubgrupo", name: "descripcionSubgrupo" },
+                { data: "descripcionProducto", name: "descripcionProducto" },
+                { data: "fechaFabricacion", name: "fechaFabricacion", visible: false },
+                { data: "fechaVencimiento", name: "fechaVencimiento", visible: false },
+                { 
+                    data: "esActivoFijo", 
+                    name: "esActivoFijo",
+                    render: function (data, type, row) {
+                        return data ? 'SÍ' : 'NO';
+                    },
+                },
                 {
                     data: "estado",
                     name: "estado",
@@ -242,11 +247,11 @@
                     className: "text-center align-middle",
                 },
                 {
-                    targets: [1, 2, 3, 4],
+                    targets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
                     className: 'align-middle',
                 },
                 {
-                    targets: [5],
+                    targets: [10],
                     orderable: false,
                 },
             ],
@@ -267,8 +272,8 @@
         });
     }
 
-    function fct_EmpresaNuevo() {
-        window.location.href = '/Empresa/Registrar';
+    function fct_ProductoNuevo() {
+        window.location.href = '/Producto/Registrar';
     }
 
     function fct_EmpresaEditar(Id) {

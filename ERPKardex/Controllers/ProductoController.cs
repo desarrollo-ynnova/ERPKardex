@@ -73,6 +73,19 @@ namespace ERPKardex.Controllers
         }
         #endregion
         #region APIs
+        // GET PRODUCTOS
+        public JsonResult GetProductosData()
+        {
+            try
+            {
+                var productosData = _context.Productos.ToList();
+                return Json(new { data = productosData, message = "Productos retornados exitosamente.", status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+            }
+        }
         // GET EMPRESAS
         public JsonResult GetEmpresaData()
         {

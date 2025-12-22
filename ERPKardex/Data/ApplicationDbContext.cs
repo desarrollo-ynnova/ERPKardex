@@ -9,8 +9,6 @@ namespace ERPKardex.Data
             : base(options)
         {
         }
-
-        // Tablas Maestras
         public DbSet<Empresa> Empresas { get; set; }
         public DbSet<Grupo> Grupos { get; set; }
         public DbSet<Subgrupo> Subgrupos { get; set; }
@@ -21,11 +19,14 @@ namespace ERPKardex.Data
         public DbSet<IngredienteActivo> IngredientesActivos { get; set; }
         public DbSet<Marca> Marcas { get; set; }
         public DbSet<Modelo> Modelos { get; set; }
-
-        // Tabla Principal
         public DbSet<Producto> Productos { get; set; }
-
-        // Tabla de Detalle
         public DbSet<DetalleIngredienteActivo> DetallesIngredientesActivos { get; set; }
+        public DbSet<Sucursal> Sucursales { get; set; }
+        public DbSet<Almacen> Almacenes { get; set; }
+        public DbSet<Motivo> Motivos { get; set; }
+        public DbSet<TipoDocumento> TipoDocumentos { get; set; }
+        public DbSet<Moneda> Monedas { get; set; }
+        public DbSet<IngresoSalidaAlm> IngresoSalidaAlms { get; set; }
+        public DbSet<DIngresoSalidaAlm> DIngresoSalidaAlms { get; set; }
     }
 }
