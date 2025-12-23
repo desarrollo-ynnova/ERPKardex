@@ -1,7 +1,11 @@
 ﻿@{
     ViewData["Title"] = "Registro de Ingreso/Salida de Almacén";
 }
-
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-11">
@@ -23,14 +27,13 @@
                         <div class="col-md-4 mb-3"><label>Almacén</label><select id="cbx_Almacen" class="form-control select2-busqueda"><option value="">-- SELECCIONE SUCURSAL --</option></select></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4 mb-3"><label>Fecha Movimiento</label><input type="date" id="dtp_FechaMov" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")"></div>
-                        <div class="col-md-4 mb-3"><label>Motivo</label><select id="cbx_Motivo" class="form-control select2-busqueda"></select></div>
-                        <div class="col-md-4 mb-3"><label>Número Movimiento</label><input disabled type="text" id="txt_NumeroMov" class="form-control" placeholder="Autogenerado"></div>
+                        <div class="col-md-4 mb-3"><label>Fecha Movimiento</label><input type="date" id="dtp_FechaMov" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly></div>
+                        <div class="col-md-8 mb-3"><label>Motivo</label><select id="cbx_Motivo" class="form-control select2-busqueda"></select></div>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow mb-4 border-left-info">
+            <div class="card shadow mb-4 border-left-info" id="div_DocRef">
                 <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia</h5></div>
                 <div class="card-body">
                     <div class="row">
@@ -49,9 +52,10 @@
                 <div class="card-header bg-success text-white"><h5 class="mb-0">Búsqueda y Detalle de Productos</h5></div>
                 <div class="card-body bg-light">
                     <div class="row">
-                        <div class="col-md-6 mb-3"><label>Producto Final</label><select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select></div>
+                        <div class="col-md-4 mb-3"><label>Producto Final</label><select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select></div>
+                        <div class="col-md-3 mb-3"><label>Stock Actual</label><input type="number" id="txt_StockActual" class="form-control" step="0.01" value="0.00" readonly></div>
                         <div class="col-md-2 mb-3"><label>U.M.</label><input type="text" id="txt_DetUnidad" class="form-control" readonly></div>
-                        <div class="col-md-4 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control" step="0.01" value="0.00"></div>
+                        <div class="col-md-3 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control" step="0.01" value="0.00"></div>
                     </div>
 
                     <div class="row align-items-end">
@@ -138,7 +142,7 @@
                 let esIngreso = (tipo === "1");
                 let filtrados = MOTIVOS_FULL.filter(x => x.tipoMovimiento === esIngreso);
                 filtrados.forEach(m => {
-                    h += `<option data-tipo-movimiento="${m.tipoMovimiento}" value="${m.codigo}">${m.codigo} - ${m.descripcion}</option>`;
+                    h += `<option data-tipo-movimiento="${m.tipoMovimiento}" value="${m.id}">${m.codigo} - ${m.descripcion}</option>`;
                 });
             }
             $('#cbx_Motivo').html(h).trigger('change');
@@ -146,7 +150,7 @@
             // Alternar Visibilidad
             if (tipo === "0") {
                 // --- MODO SALIDA ---
-                $('#div_InputPrecio').addClass('d-none');
+                $('#div_InputPrecio, #div_DocRef').addClass('d-none');
                 $('#div_InputSalida_CC, #div_InputSalida_Act').removeClass('d-none');
 
                 // Tabla
@@ -155,7 +159,7 @@
 
             } else {
                 // --- MODO ENTRADA ---
-                $('#div_InputPrecio').removeClass('d-none');
+                $('#div_InputPrecio, #div_DocRef').removeClass('d-none');
                 $('#div_InputSalida_CC, #div_InputSalida_Act').addClass('d-none');
 
                 // Tabla
@@ -181,6 +185,14 @@
         $('#cbx_ProductoBusqueda').on('change', function () {
             let p = PRODUCTOS_TEMP.find(x => x.codigo == $(this).val());
             $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
+
+            ShowSpinner();
+            $.getJSON('/IngresoSalidaAlm/GetStockProductoAlmacen', { almacenId: $('#cbx_Almacen').val(), codProducto: $('#cbx_ProductoBusqueda').val() }, function (response) {
+                if (response.status) {
+                    $('#txt_StockActual').val(response.data);
+                }
+                HideSpinner();
+            });
         });
 
         // --- AGREGAR DETALLE (Con cálculo de IGV) ---
@@ -239,9 +251,9 @@
             if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío");
 
             let cab = {
-                Fecha: $("#dtp_FechaMov").val(), Numero: $("#txt_NumeroMov").val(),
+                Fecha: $("#dtp_FechaMov").val(), TipoMovimiento: MOTIVOS_FULL.find(x => x.id == $("#cbx_Motivo").val())?.tipoMovimiento,
                 SucursalId: parseInt($("#cbx_Sucursal").val()), AlmacenId: parseInt($("#cbx_Almacen").val()),
-                CodMotivo: $("#cbx_Motivo").val(), FechaDocumento: $("#dtp_FechaDoc").val(),
+                MotivoId: $("#cbx_Motivo").val(), FechaDocumento: $("#dtp_FechaDoc").val(),
                 TipoDocumentoId: $("#cbx_TipoDoc").val(), SerieDocumento: $("#txt_SerieDoc").val(),
                 NumeroDocumento: $("#txt_NumeroDoc").val(), MonedaId: parseInt($("#cbx_MonedaCab").val()),
                 EstadoId: 1, EmpresaId: empresaId
@@ -336,5 +348,13 @@
         $("#txt_DetCantidad").val("0.00");
         $("#txt_DetPrecio").val("0.000000");
         $("#cbx_CentroCosto, #cbx_Actividad").val("").trigger('change');
+    }
+
+    function ShowSpinner() {
+        $('#efec-cargando').removeClass('d-none');
+    }
+
+    function HideSpinner() {
+        $('#efec-cargando').addClass('d-none');
     }
 </script>

@@ -1,5 +1,139 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Kardex Valorizado";
+    var primerDiaAnio = new DateTime(DateTime.Now.Year, 1, 1).ToString("yyyy-MM-dd");
+    var ultimoDiaAnio = new DateTime(DateTime.Now.Year, 12, 31).ToString("yyyy-MM-dd");
 }
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="bi bi-calendar3"></i> Filtros de Reporte Kardex</h5></div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3"><label>Desde</label><input type="date" id="f_Inicio" class="form-control" value="@primerDiaAnio"></div>
+                <div class="col-md-3 mb-3"><label>Hasta</label><input type="date" id="f_Fin" class="form-control" value="@ultimoDiaAnio"></div>
+                <div class="col-md-3 mb-3"><label>Sucursal</label><select id="cbx_Sucursal" class="form-control select2-busqueda"></select></div>
+                <div class="col-md-3 mb-3"><label>Almacén</label><select id="cbx_Almacen" class="form-control select2-busqueda"><option value="">-- SELECCIONE --</option></select></div>
+                <div class="col-md-4 mb-3">
+                    <label>Método Valorización</label>
+                    <select id="cbx_Metodo" class="form-control">
+                        <option value="PROM">PROMEDIO PONDERADO</option>
+                        <option value="PEPS">PEPS (FIFO)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3"><label>Producto</label><select id="cbx_Producto" class="form-control select2-busqueda"></select></div>
+                <div class="col-md-4 text-right">
+                    <button id="btn_Generar" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Generar Reporte</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tbl_Kardex" class="table table-bordered table-sm text-center font-weight-normal" style="font-size: 0.85rem;">
+                    <thead class="bg-light">
+                        <tr>
+                            <th colspan="4" class="border-bottom-0">DOCUMENTO DE TRASLADO</th>
+                            <th rowspan="2" class="align-middle">MOTIVO</th>
+                            <th colspan="3" class="bg-success text-white">ENTRADAS</th>
+                            <th colspan="3" class="bg-danger text-white">SALIDAS</th>
+                            <th colspan="3" class="bg-info text-white">SALDO FINAL</th>
+                        </tr>
+                        <tr>
+                            <th>FECHA</th>
+                            <th>TIPO</th>
+                            <th>SERIE</th>
+                            <th>NÚMERO</th>
+                            <th>CANT.</th>
+                            <th>C. UNIT.</th>
+                            <th>C. TOTAL</th>
+                            <th>CANT.</th>
+                            <th>C. UNIT.</th>
+                            <th>C. TOTAL</th>
+                            <th>CANT.</th>
+                            <th>C. UNIT.</th>
+                            <th>C. TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="14" class="py-4">Seleccione filtros y genere el reporte</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%' });
+
+        fct_FillCombo('/IngresoSalidaAlm/GetSucursalesByEmpresa?empresaId=1', '#cbx_Sucursal', 'codigo', 'nombre', '-- SUCURSAL --');
+        fct_FillCombo('/IngresoSalidaAlm/GetProductos', '#cbx_Producto', 'codigo', 'descripcionProducto', '-- PRODUCTO --', 'codigo');
+
+        $('#cbx_Sucursal').on('change', function () {
+            fct_FillCombo(`/IngresoSalidaAlm/GetAlmacenesBySucursal?codSucursal=${$(this).val()}&empresaId=1`, '#cbx_Almacen', 'id', 'nombre', '-- ALMACÉN --');
+        });
+
+        $('#btn_Generar').click(function () {
+            let data = {
+                fechaInicio: $('#f_Inicio').val(),
+                fechaFin: $('#f_Fin').val(),
+                almacenId: $('#cbx_Almacen').val(),
+                codProducto: $('#cbx_Producto').val(),
+                metodo: $('#cbx_Metodo').val()
+            };
+
+            if (!data.almacenId || !data.codProducto) return toastr.warning("Seleccione Almacén y Producto");
+
+            ShowSpinner();
+            $('#tbl_Kardex tbody').html('<tr><td colspan="14" class="text-center p-4"><i class="fas fa-sync fa-spin"></i> Calculando saldos históricos y valorización...</td></tr>');
+
+            $.getJSON('/IngresoSalidaAlm/GenerarKardexValorizado', data, function (res) {
+                if (res.status) {
+                    let h = "";
+                    res.data.forEach(d => {
+                        // Estilo para el Saldo Anterior
+                        let rowClass = d.isHeader ? 'table-warning font-weight-bold' : '';
+
+                        h += `<tr class="${rowClass}">
+                            <td>${d.fecha}</td>
+                            <td>${d.tipoDoc}</td>
+                            <td>${d.doc.split('-')[0]}</td>
+                            <td>${d.doc.split('-')[1]}</td>
+                            <td class="text-left">${d.motivo}</td>
+                            <td class="bg-light">${d.eCant}</td><td>${d.eCosto}</td><td>${d.eTotal}</td>
+                            <td class="bg-light">${d.sCant}</td><td>${d.sCosto}</td><td>${d.sTotal}</td>
+                            <td class="table-info font-weight-bold">${d.finalCant}</td><td>${d.finalCosto}</td><td>${d.finalTotal}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_Kardex tbody').html(h || '<tr><td colspan="14">No se encontraron movimientos para los criterios seleccionados</td></tr>');
+                } else {
+                    toastr.error(res.message);
+                }
+                HideSpinner();
+            });
+        });
+    });
+
+    function fct_FillCombo(url, id, val, txt, ph, extra) {
+        $.getJSON(url, function (res) {
+            let h = `<option value="">${ph}</option>`;
+            if (res.status) res.data.forEach(i => {
+                let display = extra ? `${i[extra]} - ${i[txt]}` : i[txt];
+                h += `<option value="${i[val]}">${display}</option>`;
+            });
+            $(id).html(h).trigger('change');
+        });
+    }
+
+    function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+    function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
+</script>

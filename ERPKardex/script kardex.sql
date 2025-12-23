@@ -1,6 +1,7 @@
 ﻿-- USE DB
 use erp_kardex;
 
+drop table if exists stock_almacen;
 drop table if exists empresa;
 drop table if exists sucursal;
 drop table if exists almacen;
@@ -62,7 +63,8 @@ create table moneda (
 );
 
 create table motivo (
-	codigo varchar(255) PRIMARY KEY,
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	codigo varchar(255),
 	tipo_movimiento BIT, -- 1: INGRESO, 0: SALIDA
 	descripcion VARCHAR(255),
 	estado BIT
@@ -99,7 +101,8 @@ create table ingresosalidaalm (
 	numero varchar(255),
 	sucursal_id INT,
 	almacen_id INT,
-	cod_motivo varchar(255),
+	tipo_movimiento BIT,
+	motivo_id INT,
 	fecha_documento DATE,
 	tipo_documento_id int,
 	serie_documento varchar(255),
@@ -206,7 +209,6 @@ create table producto (
 	modelo_id INT,
 	serie varchar(255),
 	es_activo_fijo BIT,
-	cantidad decimal(12,2),
 	estado BIT, -- 1: activo 0: inactivo
 	empresa_id INT
 );
@@ -221,6 +223,15 @@ create table detalle_ingrediente_activo (
 	cod_producto varchar(255),
 	ingrediente_activo_id int,
 	porcentaje decimal(12,2)
+);
+
+CREATE TABLE stock_almacen (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    almacen_id INT NOT NULL,
+    cod_producto VARCHAR(255) NOT NULL,
+    stock_actual DECIMAL(12,2) DEFAULT 0,
+    ultima_actualizacion DATETIME DEFAULT GETDATE(),
+    CONSTRAINT UQ_Stock_Almacen UNIQUE (almacen_id, cod_producto)
 );
 
 -- inserts de 'unidad_medida'
@@ -313,35 +324,35 @@ INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S
 
 -- inserts de 'sucursal'
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCIPAL - CHICLAYO', 1, 1);
-INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 1);
-INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'PRINCIPAL - CHICLAYO', 1, 2);
-INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 2);
+--INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 1);
+--INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'PRINCIPAL - CHICLAYO', 1, 2);
+--INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 2);
 
 -- inserts de 'almacen'
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'002',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'002',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'002',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'002',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'001',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'002',2);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'001',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'001',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'001',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'001',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'002',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'002',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'002',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'002',1);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'001',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'002',2);
+--INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'002',2);
 
 -- inserts de 'tipo_documento'
 INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('01','Factura',1);

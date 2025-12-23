@@ -185,22 +185,18 @@
                     </div>
 
                     <div class="row mt-3">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <div class="custom-control custom-switch">
                                 <input type="checkbox" class="custom-control-input" id="chk_EsActivoFijo">
                                 <label class="custom-control-label" for="chk_EsActivoFijo">¿Es Activo Fijo?</label>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label for="cbx_Estado">Estado del Producto</label>
                             <select id="cbx_Estado" class="form-control">
                                 <option value="1" selected>ACTIVO</option>
                                 <option value="0">INACTIVO</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="txt_Cantidad">Cantidad</label>
-                            <input type="number" id="txt_Cantidad" class="form-control" placeholder="Cantidad">
                         </div>
                     </div>
                 </div>
@@ -349,7 +345,6 @@
                     CodUnidadMedida: $('#cbx_UnidadMedida').val(),
                     CodFormulacionQuimica: $("#cbx_Formulacion").val(),
                     Lote: $("#txt_Lote").val().trim(),
-                    Cantidad: $('#txt_Cantidad').val(),
                     FechaFabricacion: $("#dtp_FechaFabricacion").val(),
                     FechaVencimiento: $("#dtp_FechaVencimiento").val(),
                     CodPeligrosidad: $("#cbx_Peligrosidad").val(),

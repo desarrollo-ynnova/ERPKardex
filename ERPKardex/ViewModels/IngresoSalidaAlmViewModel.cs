@@ -5,6 +5,7 @@
         public int Id { get; set; }
         public DateTime? Fecha { get; set; }
         public string? Numero { get; set; }
+        public int? MotivoId { get; set; }
         public string? CodMotivo { get; set; }
         public bool? TipoMovimiento { get; set; }
         public string? Motivo { get; set; }

@@ -7,7 +7,8 @@ namespace ERPKardex.Models
     public class Motivo
     {
         [Key]
-        public string Codigo { get; set; } = null!;
+        public int Id { get; set; }
+        public string? Codigo { get; set; }
         [Column("tipo_movimiento")]
         public bool? TipoMovimiento { get; set; }
         public string? Descripcion { get; set; }
