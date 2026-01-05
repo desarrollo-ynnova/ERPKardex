@@ -183,7 +183,7 @@
                         <!-- Add icons to the links using the .nav-icon class
                         with font-awesome or any other icon font library -->
                         <li class="nav-item @(new[] { "Producto" }.Contains(controllerName) ? "menu-open" : "")">
-                            <a href="#" class="nav-link">
+                            <a href="#" class="nav-link @(controllerName == "Producto" ? "active" : "")">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                 <p>
                                     Productos
@@ -208,7 +208,7 @@
                             </ul>
                         </li>
                         <li class="nav-item @(new[] { "IngresoSalidaAlm" }.Contains(controllerName) ? "menu-open" : "")">
-                            <a href="#" class="nav-link">
+                            <a href="#" class="nav-link @(controllerName == "IngresoSalidaAlm" ? "active" : "")">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                 <p>
                                     Ingresos/Salidas de almacén
