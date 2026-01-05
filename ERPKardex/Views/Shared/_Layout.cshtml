@@ -131,7 +131,7 @@
             <img class="animation__shake" src="/Static/img/yatrax-preloader.png" alt="YatraxLogo" height="120" width="200">
         </div> -->
         <!-- Navbar -->
-@*         <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="maestra_header">
+         <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="maestra_header">
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button" id="btn_sidebar">
@@ -153,10 +153,10 @@
                     </form>
                 </li>
             </ul>
-        </nav> *@
+        </nav> 
 
         <!-- Sidebar -->
-@*         <aside class="main-sidebar sidebar-dark-primary elevation-4">
+         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
             <a href="" class="brand-link">
                 <img src="/uploads/logo/Ynnovatech.jpg" alt="Ynnova" class="brand-image img-circle elevation-3" style="opacity: .8">
@@ -182,23 +182,67 @@
                         data-accordion="false">
                         <!-- Add icons to the links using the .nav-icon class
                         with font-awesome or any other icon font library -->
+                        <li class="nav-item @(new[] { "Producto" }.Contains(controllerName) ? "menu-open" : "")">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                <p>
+                                    Productos
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/Producto/Index"
+                                       class="nav-link @((controllerName == "Producto" && new[] { "Index" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Listado de productos</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/Producto/Registrar"
+                                       class="nav-link @((controllerName == "Producto" && new[] { "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Registrar producto</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item @(new[] { "IngresoSalidaAlm" }.Contains(controllerName) ? "menu-open" : "")">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                <p>
+                                    Ingresos/Salidas de almacén
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="/IngresoSalidaAlm/Index"
+                                       class="nav-link @((controllerName == "IngresoSalidaAlm" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Listado de ingresos/salidas</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/IngresoSalidaAlm/ReporteKardex"
+                                       class="nav-link @((controllerName == "IngresoSalidaAlm" && new[] { "ReporteKardex" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Reporte Kardex</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
                 </nav>
                 <!-- /.sidebar-menu -->
             </div>
             <!-- /.sidebar -->
-        </aside> *@
+        </aside> 
 
         <!-- Contenido principal -->
         <div class="content-wrapper">
             @RenderBody()
         </div>
-        @* <footer class="main-footer" id="maestra_footer">
-            <div class="float-right d-none d-sm-block">
-                <b>Versión</b> 1.0
-            </div>
-            <strong>Copyright © 2025 <a href="#">Ynnovatech Comprobantes</a>.</strong>
-        </footer> *@
     </div>
 
     <div id="dynamic-modal" class="modal fade" style="display: none;">

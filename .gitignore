@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignorar TODOS los archivos de configuración (incluyendo el de producción y desarrollo)
+appsettings*.json

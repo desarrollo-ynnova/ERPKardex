@@ -10,6 +10,7 @@ namespace ERPKardex.Data
         {
         }
         public DbSet<Empresa> Empresas { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Grupo> Grupos { get; set; }
         public DbSet<Subgrupo> Subgrupos { get; set; }
         public DbSet<Cuenta> Cuentas { get; set; }

@@ -24,6 +24,17 @@ drop table if exists detalle_ingrediente_activo;
 drop table if exists marca;
 drop table if exists modelo;
 drop table if exists estado;
+drop table if exists usuario;
+
+CREATE TABLE usuario (
+    id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    dni CHAR(8) NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    telefono VARCHAR(20),
+    password VARCHAR(255) NOT NULL,
+    estado BIT NOT NULL DEFAULT 1
+);
 
 create table estado (
 	id INT IDENTITY(1,1) PRIMARY KEY,
@@ -473,3 +484,5 @@ INSERT INTO actividad (codigo, nombre, estado) VALUES
 ('005', 'ETIQUETADO', 1),
 ('006', 'DESPACHO', 1),
 ('007', 'GESTIÓN OPERATIVA', 1);
+
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado) VALUES ('75090896', 'Alexis Torres Cabrejos', 'gfake040305@gmail.com', '999796517', 'password123', 1);
