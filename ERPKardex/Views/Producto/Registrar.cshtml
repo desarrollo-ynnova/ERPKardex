@@ -353,11 +353,11 @@
                     Serie: $("#txt_Serie").val().trim(),
                     EsActivoFijo: $("#chk_EsActivoFijo").is(":checked"),
                     Estado: $("#cbx_Estado").val() === "1",
-                    EmpresaId: 1 ? 1 : null // Empresa 1 por ahora, tiempo de desarrollo
+                    // EmpresaId: 1 ? 1 : null // Empresa 1 por ahora, tiempo de desarrollo
                 };
 
                 // 2. Validaciones mínimas
-                if (!producto.EmpresaId || !producto.DescripcionProducto) {
+                if (!producto.DescripcionProducto) {
                     toastr.warning("La descripción es obligatoria", "SISTEMA");
                     return;
                 }

@@ -1,5 +1,5 @@
 ﻿-- USE DB
-use erp_kardex;
+use erp_kardex_dev;
 
 drop table if exists stock_almacen;
 drop table if exists empresa;
@@ -25,7 +25,17 @@ drop table if exists marca;
 drop table if exists modelo;
 drop table if exists estado;
 drop table if exists usuario;
+drop table if exists tipo_usuario;
+drop table if exists empresa_usuario;
+drop table if exists cliente;
 
+CREATE TABLE tipo_usuario (
+    id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(255),
+    estado BIT DEFAULT 1
+);
+
+-- Tabla de Usuarios (Globales, sin empresa_id aquí)
 CREATE TABLE usuario (
     id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
     dni CHAR(8) NOT NULL,
@@ -34,6 +44,15 @@ CREATE TABLE usuario (
     telefono VARCHAR(20),
     password VARCHAR(255) NOT NULL,
     estado BIT NOT NULL DEFAULT 1
+);
+
+-- Tabla Intermedia (Relación N a N Manual)
+CREATE TABLE empresa_usuario (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    empresa_id INT NOT NULL,      -- Relación lógica con tabla empresa
+    usuario_id INT NOT NULL,      -- Relación lógica con tabla usuario
+    tipo_usuario_id INT NOT NULL, -- Relación lógica con tabla tipo_usuario
+    estado BIT DEFAULT 1
 );
 
 create table estado (
@@ -62,6 +81,7 @@ create table almacen (
 	codigo VARCHAR(255),
 	nombre varchar(255),
 	estado BIT,
+	sucursal_id INT,
 	cod_sucursal varchar(255),
 	empresa_id int
 );
@@ -88,7 +108,7 @@ create table centro_costo (
     empresa_id INT,
     padre_id INT,
     es_imputable BIT DEFAULT 1,
-    estado BIT DEFAULT 1,
+	estado BIT DEFAULT 1,
     fecha_registro DATETIME DEFAULT GETDATE(),
 );
 
@@ -97,6 +117,7 @@ create table actividad (
 	codigo varchar(255),
 	nombre varchar(255),
 	estado BIT,
+	empresa_id INT,
 );
 
 create table tipo_documento (
@@ -104,6 +125,15 @@ create table tipo_documento (
 	codigo varchar(255),
 	descripcion varchar(max),
 	estado BIT
+);
+
+CREATE TABLE cliente (
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	nombre varchar(255),
+	ruc varchar(255),
+	razon_social varchar(255),
+	estado BIT,
+	empresa_id INT,
 );
 
 create table ingresosalidaalm (
@@ -121,13 +151,16 @@ create table ingresosalidaalm (
 	moneda_id int,
 	estado_id int,
 	usuario_id INT,
-	fecha_registro DATETIME DEFAULT GETDATE()
+	fecha_registro DATETIME DEFAULT GETDATE(),
+	empresa_id INT,
+	cliente_id INT,
 );
 
 create table dingresosalidaalm (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	ingresosalidaalm_id INT,
 	item varchar(255),
+	producto_id INT,
 	cod_producto varchar(255),
 	descripcion_producto varchar(255),
 	cod_unidad_medida varchar(255),
@@ -145,19 +178,23 @@ create table dingresosalidaalm (
 	centro_costo_id int,
 	actividad_id int,
 	usuario_id INT,
-	fecha_registro DATETIME DEFAULT GETDATE()
+	fecha_registro DATETIME DEFAULT GETDATE(),
+	empresa_id INT,
 );
 
 create table cuenta (
-	codigo varchar(255) PRIMARY KEY,
-	descripcion varchar(200)
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	codigo varchar(255),
+	descripcion varchar(200),
+	empresa_id INT,
 );
 
 create table grupo (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	codigo varchar(255),
 	descripcion varchar(200),
-	cuenta_id varchar(255)
+	cuenta_id varchar(255),
+	empresa_id INT
 );
 
 create table subgrupo (
@@ -167,12 +204,13 @@ create table subgrupo (
 	grupo_id INT,
 	cod_grupo varchar(255),
 	descripcion_grupo varchar(255),
-	observacion varchar(255)
+	observacion varchar(255),
+	empresa_id INT
 );
 
 create table unidad_medida (
 	codigo varchar(255) PRIMARY KEY,
-	descripcion varchar(200)
+	descripcion varchar(200),
 );
 
 create table formulacion_quimica (
@@ -194,18 +232,21 @@ create table peligrosidad (
 create table marca (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	nombre varchar(255),
-	estado BIT
+	estado BIT,
+	empresa_id INT
 );
 
 create table modelo (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	nombre varchar(255),
 	estado BIT,
-	marca_id INT
+	marca_id INT,
+	empresa_id INT
 );
 
 create table producto (
-	codigo varchar(255) PRIMARY KEY,
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	codigo varchar(255),
 	grupo_id INT,
 	cod_grupo varchar(255),
 	descripcion_grupo varchar(255),
@@ -231,7 +272,8 @@ create table producto (
 
 create table ingrediente_activo (
 	id INT IDENTITY(1,1) PRIMARY KEY,
-	descripcion varchar(255)
+	descripcion varchar(255),
+	empresa_id INT
 );
 
 create table detalle_ingrediente_activo (
@@ -244,10 +286,11 @@ create table detalle_ingrediente_activo (
 CREATE TABLE stock_almacen (
     id INT IDENTITY(1,1) PRIMARY KEY,
     almacen_id INT NOT NULL,
-    cod_producto VARCHAR(255) NOT NULL,
+    producto_id INT NOT NULL,
     stock_actual DECIMAL(12,2) DEFAULT 0,
+	empresa_id INT,
     ultima_actualizacion DATETIME DEFAULT GETDATE(),
-    CONSTRAINT UQ_Stock_Almacen UNIQUE (almacen_id, cod_producto)
+    CONSTRAINT UQ_Stock_Almacen UNIQUE (almacen_id, producto_id, empresa_id)
 );
 
 -- inserts de 'unidad_medida'
@@ -336,7 +379,7 @@ INSERT INTO formulacion_quimica (codigo, nombre, descripcion, ejemplo) VALUES ('
 
 -- inserts de 'empresa'
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20607778338', 'CONTROL SCIENCE DEL PERU S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S.A.C.', 1);
+INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQSA', 1);
 
 -- inserts de 'sucursal'
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCIPAL - POMALCA', 1, 1);
@@ -345,8 +388,8 @@ INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCI
 --INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 2);
 
 -- inserts de 'almacen'
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'001',1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','TERCEROS',1,'001',1);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1,1);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) VALUES ('02','TERCEROS',1,'001', 1,1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'001',1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'001',1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'001',1);
@@ -476,13 +519,31 @@ INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, es
 --('VTAS-EXP', 'EXPORTACIONES', 1, 4, 1, 1);
 
 -- inserts de 'actividad'
-INSERT INTO actividad (codigo, nombre, estado) VALUES 
-('001', 'RECEPCIÓN Y ALMACENAMIENTO', 1),
-('002', 'PASAJE Y DOSIFICACIÓN', 1),
-('003', 'MEZCLADO', 1),
-('004', 'ENVASADO', 1),
-('005', 'ETIQUETADO', 1),
-('006', 'DESPACHO', 1),
-('007', 'GESTIÓN OPERATIVA', 1);
+INSERT INTO actividad (codigo, nombre, estado, empresa_id) VALUES 
+('001', 'RECEPCIÓN Y ALMACENAMIENTO', 1, 1),
+('002', 'PASAJE Y DOSIFICACIÓN', 1, 1),
+('003', 'MEZCLADO', 1, 1),
+('004', 'ENVASADO', 1, 1),
+('005', 'ETIQUETADO', 1, 1),
+('006', 'DESPACHO', 1, 1),
+('007', 'GESTIÓN OPERATIVA', 1, 1);
 
-INSERT INTO usuario (dni, nombre, email, telefono, password, estado) VALUES ('75090896', 'Alexis Torres Cabrejos', 'gfake040305@gmail.com', '999796517', 'password123', 1);
+PRINT '>> Insertando Roles...';
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DEL SISTEMA', 1); -- ID 1
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DE EMPRESA', 1);  -- ID 2
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('OPERADOR DE ALMACEN', 1);       -- ID 3
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('CONTADOR', 1);                   -- ID 4
+
+PRINT '>> Insertando Usuario Alexis...';
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado) 
+VALUES ('75090896', 'Alexis Torres Cabrejos', 'gfake040305@gmail.com', '999796517', 'password123', 1);
+
+PRINT '>> Asignando Alexis a la Empresa 1...';
+-- Obtenemos el ID del usuario recién creado para no fallar
+DECLARE @NewUsuarioID INT = SCOPE_IDENTITY();
+
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (1, @NewUsuarioID, 2, 1); -- Empresa 1, Rol 2 (Admin Empresa)
+
+PRINT '>> Proceso de tablas de usuario finalizado.';
+GO

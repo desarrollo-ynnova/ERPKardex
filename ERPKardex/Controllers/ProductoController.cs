@@ -2,6 +2,7 @@
 using ERPKardex.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Security.Claims;
 
 namespace ERPKardex.Controllers
 {
@@ -477,6 +478,7 @@ namespace ERPKardex.Controllers
                     producto.CodSubgrupo = _context.Subgrupos.Where(g => g.Id == producto.SubgrupoId).Select(g => g.Codigo).FirstOrDefault();
                     producto.DescripcionGrupo = producto.DescripcionGrupo?.Split('-')[1].Trim();
                     producto.DescripcionSubgrupo = producto.DescripcionSubgrupo?.Split('-')[1].Trim();
+                    producto.EmpresaId = int.Parse(User.FindFirstValue("EmpresaId"));
 
                     // 1. Generación Automática del Código
                     // El prefijo es: CodGrupo + CodSubgrupo

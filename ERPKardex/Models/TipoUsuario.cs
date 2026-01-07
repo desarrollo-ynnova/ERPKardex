@@ -2,14 +2,11 @@
 
 namespace ERPKardex.Models
 {
-    [Table("Actividad")]
-    public class Actividad
+    [Table("tipo_usuario")]
+    public class TipoUsuario
     {
         public int Id { get; set; }
-        public string? Codigo { get; set; }
         public string? Nombre { get; set; }
         public bool? Estado { get; set; }
-        [Column("empresa_id")]
-        public string? EmpresaId { get; set; }
     }
 }

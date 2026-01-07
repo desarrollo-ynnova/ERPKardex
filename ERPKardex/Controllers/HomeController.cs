@@ -53,6 +53,7 @@ namespace ERPKardex.Controllers
                                    u.Id,
                                    u.Dni,
                                    u.Nombre,
+                                   u.EmpresaId,
                                }).FirstOrDefault();
 
                 if (usuario == null)
@@ -65,6 +66,7 @@ namespace ERPKardex.Controllers
                     {
                         new Claim(ClaimTypes.Name, usuario.Nombre),
                         new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                        new Claim("EmpresaId", usuario.EmpresaId.GetValueOrDefault().ToString()),
                         new Claim("DNI", usuario.Dni),
                     };
 

@@ -1,16 +1,25 @@
-﻿PRINT 'Iniciando Migracion Masiva Completa...'
+﻿USE erp_kardex_dev;
+GO
+
+PRINT 'Iniciando Migracion Masiva Optimizada (Multiempresa)...'
+
+DECLARE @EmpresaID INT = 1; -- CONTROL SCIENCE
+DECLARE @AlmacenPrincipalID INT;
+SELECT @AlmacenPrincipalID = id FROM almacen WHERE codigo = '01' AND empresa_id = @EmpresaID;
 
 -- =============================================
 -- 1. CARGA DE METADATA (GRUPOS, SUBGRUPOS, MARCAS)
 -- =============================================
--- GRUPOS
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2102') INSERT INTO grupo (codigo, descripcion, cuenta_id) VALUES ('2102', 'PRODUCTO TERMINADO', '21');
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2404') INSERT INTO grupo (codigo, descripcion, cuenta_id) VALUES ('2404', 'ENVASES Y EMBALAJES', '24');
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2405') INSERT INTO grupo (codigo, descripcion, cuenta_id) VALUES ('2405', 'SUMINISTROS DIVERSOS', '24');
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '3306') INSERT INTO grupo (codigo, descripcion, cuenta_id) VALUES ('3306', 'ACTIVOS', '33');
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2101') INSERT INTO grupo (codigo, descripcion, cuenta_id) VALUES ('2101', 'MERCADERÍA', '21');
+PRINT '>> Cargando Metadata...'
 
--- SUBGRUPOS (Generados dinámicamente)
+-- GRUPOS
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2102' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2102', 'PRODUCTO TERMINADO', '21', @EmpresaID);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2404' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2404', 'ENVASES Y EMBALAJES', '24', @EmpresaID);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2405' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2405', 'SUMINISTROS DIVERSOS', '24', @EmpresaID);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '3306' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('3306', 'ACTIVOS', '33', @EmpresaID);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2101' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2101', 'MERCADERÍA', '21', @EmpresaID);
+
+-- SUBGRUPOS
 DECLARE @Subgrupos TABLE (cod_full VARCHAR(50), cod_g VARCHAR(50), descr VARCHAR(255));
 INSERT INTO @Subgrupos VALUES 
 ('2102001', '2102', 'HERBICIDAS'), ('2102008', '2102', 'BIOINSUMOS'), ('2102009', '2102', 'COADYUVANTES FORMULADOS'), 
@@ -23,12 +32,12 @@ INSERT INTO @Subgrupos VALUES
 ('3306005', '3306', 'MUEBLES Y ENSERES'), ('2101002', '2101', 'FERTILIZANTES'), ('2101004', '2101', 'COADYUVANTES'), 
 ('2101003', '2101', 'BIOESTIMULANTES'), ('2101001', '2101', 'AGROQUÍMICOS');
 
-INSERT INTO subgrupo (codigo, descripcion, grupo_id, cod_grupo, descripcion_grupo)
-SELECT s.cod_full, s.descr, g.id, g.codigo, g.descripcion
-FROM @Subgrupos s JOIN grupo g ON g.codigo = s.cod_g
-WHERE NOT EXISTS (SELECT 1 FROM subgrupo WHERE codigo = s.cod_full);
+INSERT INTO subgrupo (codigo, descripcion, grupo_id, cod_grupo, descripcion_grupo, empresa_id)
+SELECT s.cod_full, s.descr, g.id, g.codigo, g.descripcion, @EmpresaID
+FROM @Subgrupos s JOIN grupo g ON g.codigo = s.cod_g AND g.empresa_id = @EmpresaID
+WHERE NOT EXISTS (SELECT 1 FROM subgrupo WHERE codigo = s.cod_full AND empresa_id = @EmpresaID);
 
--- INGREDIENTES ACTIVOS FALTANTES
+-- INGREDIENTES ACTIVOS
 DECLARE @Ingredientes TABLE (nom VARCHAR(255));
 INSERT INTO @Ingredientes VALUES 
 ('Glyfosato'), ('Citoquininas, Giberelinas y Auxinas'), ('Extracto Citrico'), ('Ácido Glutamico'), 
@@ -36,12 +45,15 @@ INSERT INTO @Ingredientes VALUES
 ('Hierro Quelatado'), ('Ácidos Fumicos Ácidos Humicos'), ('ÓXIDO DE MAGNESIO'), ('ZINC'), ('COBRE'), 
 ('POTASIO'), ('EDTA'), ('GLUTAMATO'), ('CARBOHIDRATOS'), ('LEVADURA'), ('SODIO'), ('CALCIO'), ('UREA');
 
-INSERT INTO ingrediente_activo (descripcion)
-SELECT nom FROM @Ingredientes WHERE NOT EXISTS (SELECT 1 FROM ingrediente_activo WHERE descripcion = nom);
+INSERT INTO ingrediente_activo (descripcion, empresa_id)
+SELECT nom, @EmpresaID FROM @Ingredientes 
+WHERE NOT EXISTS (SELECT 1 FROM ingrediente_activo WHERE descripcion = nom AND empresa_id = @EmpresaID);
 
--- OTROS MAESTROS
+-- MAESTROS GLOBALES (Sin empresa_id según tu create table anterior, pero si lo cambiaste, avísame)
+-- Asumo Formulacion Quimica es global
 IF NOT EXISTS (SELECT * FROM formulacion_quimica WHERE codigo = 'SL') INSERT INTO formulacion_quimica VALUES ('SL', 'SL', 'SL', '');
 IF NOT EXISTS (SELECT * FROM formulacion_quimica WHERE codigo = 'SP') INSERT INTO formulacion_quimica VALUES ('SP', 'SP', 'SP', '');
+
 
 -- =============================================
 -- 2. CARGA MASIVA DE PRODUCTOS (TABLA TEMPORAL)
@@ -53,7 +65,7 @@ CREATE TABLE #TempLoad (
     um VARCHAR(50), marca VARCHAR(255), modelo VARCHAR(255), serie VARCHAR(255), activo BIT, qty DECIMAL(12,2), ingrediente VARCHAR(255)
 );
 
--- CARGA DE 249 PRODUCTOS (Optimizada para SQL Server)
+-- CARGA DE 249 PRODUCTOS
 INSERT INTO #TempLoad VALUES
 ('2101001001', '2101', '2101001', '24 EPIBRASINOLIDE - FUNGICIDA', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'KGM', NULL, NULL, NULL, 0, 0.295, NULL),
 ('2101001002', '2101', '2101001', 'SULFATO DE COBRE PENTAHIDRATADO', NULL, 98.2, NULL, 'GOSS', '2025-09-20', '2027-09-20', 'OMS-III', 'KGM', NULL, NULL, NULL, 0, 1225.0, 'COBRE'),
@@ -115,7 +127,7 @@ INSERT INTO #TempLoad VALUES
 ('2102010002', '2102', '2102010', 'IRONQUEL', 'IRONQUEL 8.8 % SP - 25 KGM', 8.8, 'SP', 'SC3671', '2025-03-01', '2027-03-01', 'OMS-U', 'NIU', NULL, NULL, NULL, 0, 20.0, 'Hierro Quelatado'),
 ('2102010003', '2102', '2102010', 'LEONARDITA 56 % SL - 1000 LTR', 'LEONARDITA 56 % SL - 1000 LTR', 56, 'SL', 'TBD1000200925', '2025-09-20', '2027-09-20', 'OMS-U', 'NIU', NULL, NULL, NULL, 0, 9.0, 'Ácidos Fumicos Ácidos Humicos'),
 ('2102010004', '2102', '2102010', 'LEONARDITA 56 % SL - 20 LTR', 'LEONARDITA 56 % SL - 20 LTR', 56, 'SL', 'TBD1000200925', '2025-09-20', '2027-09-20', 'OMS-U', 'NIU', NULL, NULL, NULL, 0, 50.0, 'Ácidos Fumicos Ácidos Humicos'),
-('2102010005', '2102', '2102010', 'LEONARDITA 56 % SP - 25 KG', 'LEONARDITA 56 % SL - 25 KG', 56, 'SP', 'TBDG2515092025', '2025-09-20', '2027-09-20', 'OMS-U', 'NIU', NULL, NULL, NULL, 0, 1499.0, 'Ácidos Fumicos Ácidos Humicos'),
+('2102010005', '2102', '2102010', 'LEONARDITA 56 % SP - 25 KG', 'LEONARDITA 56 % SP - 25 KG', 56, 'SP', 'TBDG2515092025', '2025-09-20', '2027-09-20', 'OMS-U', 'NIU', NULL, NULL, NULL, 0, 1499.0, 'Ácidos Fumicos Ácidos Humicos'),
 ('2404001001', '2404', '2404001', 'BALDE 10 L TRANSPARENTE', 'BALDE 10 L TRANSPARENTE', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', NULL, NULL, NULL, 0, 4.0, NULL),
 ('2404001002', '2404', '2404001', 'BALDE 20 L TRANSPARENTE', 'BALDE 20 L TRANSPARENTE', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', NULL, NULL, NULL, 0, 51.0, NULL),
 ('2404001003', '2404', '2404001', 'BALDE 3.5 L TRANSPARENTE', 'BALDE 3.5 L TRANSPARENTE', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', NULL, NULL, NULL, 0, 6.0, NULL),
@@ -280,8 +292,8 @@ INSERT INTO #TempLoad VALUES
 ('3306002001', '3306', '3306002', 'AGITADOR MAGNÉTICO', 'AGITADOR MAGNÉTICO', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'INTLLAB', NULL, NULL, 1, 1.0, NULL),
 ('3306002002', '3306', '3306002', 'AGITADOR MAGNÉTICO', 'AGITADOR MAGNÉTICO', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'DLAB', 'MS-H280-PRO', NULL, 1, 1.0, NULL),
 ('3306002003', '3306', '3306002', 'BALANZA 150 KG', 'BALANZA 150 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'PRICE SCALE', NULL, NULL, 1, 2.0, NULL),
-('3306002004', '3306', '3306002', 'BALANZA 30 KG', 'BALANZA 30 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', '"PATRICK''S"', NULL, NULL, 1, 1.0, NULL),
-('3306002005', '3306', '3306002', 'BALANZA 300 KG', 'BALANZA 300 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', '"PATRICK''S"', NULL, NULL, 1, 1.0, NULL),
+('3306002004', '3306', '3306002', 'BALANZA 30 KG', 'BALANZA 30 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'PATRICK''S', NULL, NULL, 1, 1.0, NULL),
+('3306002005', '3306', '3306002', 'BALANZA 300 KG', 'BALANZA 300 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'PATRICK''S', NULL, NULL, 1, 1.0, NULL),
 ('3306002006', '3306', '3306002', 'BALANZA 40 KG', 'BALANZA 40 KG', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'ELECTRONIC PRICE', NULL, NULL, 1, 1.0, NULL),
 ('3306002007', '3306', '3306002', 'BALANZA 400 KG CON RUEDAS', 'BALANZA 400 KG CON RUEDAS', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'RAY SCALE', NULL, NULL, 1, 1.0, NULL),
 ('3306002008', '3306', '3306002', 'BALANZA ANALÍTICA (220 GR A 1GR)', 'BALANZA ANALÍTICA', NULL, NULL, NULL, NULL, NULL, NULL, 'NIU', 'SARTORIUS', 'ENTRIS', NULL, 1, 1.0, NULL),
@@ -309,14 +321,18 @@ INSERT INTO #TempLoad VALUES
 -- 3. DISTRIBUCIÓN DE DATOS A TABLAS REALES
 -- =============================================
 
--- A. Insertar Marcas y Modelos Nuevos detectados en la carga
-INSERT INTO marca (nombre, estado) 
-SELECT DISTINCT marca, 1 FROM #TempLoad WHERE marca IS NOT NULL AND NOT EXISTS (SELECT 1 FROM marca WHERE nombre = marca);
+-- A. Insertar Marcas y Modelos Nuevos
+PRINT '>> Insertando Marcas y Modelos...'
+INSERT INTO marca (nombre, estado, empresa_id) 
+SELECT DISTINCT marca, 1, @EmpresaID FROM #TempLoad WHERE marca IS NOT NULL AND NOT EXISTS (SELECT 1 FROM marca WHERE nombre = marca AND empresa_id = @EmpresaID);
 
-INSERT INTO modelo (nombre, estado, marca_id)
-SELECT DISTINCT modelo, 1, NULL FROM #TempLoad WHERE modelo IS NOT NULL AND NOT EXISTS (SELECT 1 FROM modelo WHERE nombre = modelo);
+INSERT INTO modelo (nombre, estado, marca_id, empresa_id)
+SELECT DISTINCT t.modelo, 1, NULL, @EmpresaID 
+FROM #TempLoad t 
+WHERE t.modelo IS NOT NULL AND NOT EXISTS (SELECT 1 FROM modelo WHERE nombre = t.modelo AND empresa_id = @EmpresaID);
 
--- B. Insertar PRODUCTOS
+-- B. Insertar PRODUCTOS (Ahora con empresa_id)
+PRINT '>> Insertando Productos...'
 INSERT INTO producto (
     codigo, grupo_id, cod_grupo, descripcion_grupo, subgrupo_id, cod_subgrupo, descripcion_subgrupo, 
     descripcion_producto, descripcion_comercial, concentracion, cod_formulacion_quimica, lote, 
@@ -329,26 +345,34 @@ SELECT
     t.desc_prod, t.desc_com, t.conc,
     t.form, t.lote, t.f_fab, t.f_ven,
     t.peligro, t.um, m.id, mo.id,
-    t.serie, t.activo, 1, 1
+    t.serie, t.activo, 1, @EmpresaID
 FROM #TempLoad t
-LEFT JOIN grupo g ON g.codigo = t.g_code
-LEFT JOIN subgrupo s ON s.codigo = t.s_code
-LEFT JOIN marca m ON m.nombre = t.marca
-LEFT JOIN modelo mo ON mo.nombre = t.modelo
-WHERE NOT EXISTS (SELECT 1 FROM producto p WHERE p.codigo = t.p_code);
+LEFT JOIN grupo g ON g.codigo = t.g_code AND g.empresa_id = @EmpresaID
+LEFT JOIN subgrupo s ON s.codigo = t.s_code AND s.empresa_id = @EmpresaID
+LEFT JOIN marca m ON m.nombre = t.marca AND m.empresa_id = @EmpresaID
+LEFT JOIN modelo mo ON mo.nombre = t.modelo AND mo.empresa_id = @EmpresaID
+WHERE NOT EXISTS (SELECT 1 FROM producto p WHERE p.codigo = t.p_code AND p.empresa_id = @EmpresaID);
 
 -- C. Insertar STOCK INICIAL (Almacén 01)
-INSERT INTO stock_almacen (almacen_id, cod_producto, stock_actual)
+-- IMPORTANTE: Ahora mapeamos el código del Excel al ID numérico del producto recién insertado
+PRINT '>> Insertando Stock Inicial...'
+INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, empresa_id)
 SELECT 
-    (SELECT TOP 1 id FROM almacen WHERE codigo = '01'), t.p_code, t.qty
+    @AlmacenPrincipalID, 
+    p.id, 
+    t.qty,
+    @EmpresaID
 FROM #TempLoad t
-WHERE NOT EXISTS (SELECT 1 FROM stock_almacen sa WHERE sa.cod_producto = t.p_code AND sa.almacen_id = (SELECT TOP 1 id FROM almacen WHERE codigo = '01'));
+INNER JOIN producto p ON p.codigo = t.p_code AND p.empresa_id = @EmpresaID
+WHERE NOT EXISTS (SELECT 1 FROM stock_almacen sa WHERE sa.producto_id = p.id AND sa.almacen_id = @AlmacenPrincipalID AND sa.empresa_id = @EmpresaID)
+AND p.codigo NOT IN ('2102010003', '2102010005', '2102010004');
 
 -- D. Insertar DETALLE INGREDIENTES
+PRINT '>> Insertando Detalles de Ingredientes...'
 INSERT INTO detalle_ingrediente_activo (cod_producto, ingrediente_activo_id, porcentaje)
 SELECT t.p_code, i.id, ISNULL(t.conc, 0)
 FROM #TempLoad t
-JOIN ingrediente_activo i ON i.descripcion = t.ingrediente
+JOIN ingrediente_activo i ON i.descripcion = t.ingrediente AND i.empresa_id = @EmpresaID
 WHERE t.ingrediente IS NOT NULL
 AND NOT EXISTS (SELECT 1 FROM detalle_ingrediente_activo d WHERE d.cod_producto = t.p_code);
 
@@ -356,40 +380,61 @@ DROP TABLE #TempLoad;
 
 GO
 
+-- =============================================
+-- 4. INGRESO MASIVO - SALDO INICIAL (ALMACEN 01)
+-- =============================================
+PRINT '>> Generando Ingreso Masivo (Saldo Inicial)...'
+
 DECLARE @IdIngreso INT;
 DECLARE @Fecha DATE = GETDATE();
+DECLARE @EmpresaID INT = 1;
+DECLARE @AlmacenPrincipalID INT;
+DECLARE @MotivoSaldoInicialID INT;
 
--- 1. INSERTAR LA CABECERA (Un solo registro que agrupa todo)
+-- Recuperamos IDs dinámicamente para evitar errores de FK
+SELECT @AlmacenPrincipalID = id FROM almacen WHERE codigo = '01' AND empresa_id = @EmpresaID;
+
+-- CORRECCIÓN AQUÍ: Buscamos el ID real del motivo cuyo código es '16' (Saldo Inicial)
+SELECT TOP 1 @MotivoSaldoInicialID = id FROM motivo WHERE codigo = '16' AND tipo_movimiento = 1; 
+
+-- Validación de seguridad por si no se corrieron los inserts de motivos
+IF @MotivoSaldoInicialID IS NULL 
+BEGIN
+    PRINT 'ERROR: No se encontró el motivo codigo 16. Se usará NULL o default.';
+    -- Opcional: SET @MotivoSaldoInicialID = 7; 
+END
+
 INSERT INTO ingresosalidaalm (
     fecha, 
     numero, 
     sucursal_id, 
     almacen_id, 
-    tipo_movimiento, -- 1: Entrada
-    motivo_id,       -- 7: Según tu indicación (Nota: Verifica si es 7 o 16 "Saldo Inicial")
-    moneda_id,       -- 1: Soles
-    estado_id,       -- 1: Aprobado
-    usuario_id       -- NULL
+    tipo_movimiento, 
+    motivo_id,       -- AQUI YA VA EL ID CORRECTO (Ej. 7), NO EL CÓDIGO '16'
+    moneda_id,        
+    estado_id,        
+    usuario_id,
+    empresa_id       
 ) 
 VALUES (
     @Fecha, 
-    '0000000001',   -- Número generado manualmente para el saldo inicial
-    1,               -- Sucursal 1
-    1,               -- Almacén 1
-    1,               -- Tipo Movimiento: Entrada
-    7,               -- Motivo ID (Lo puse fijo como pediste)
-    1,               -- Moneda Soles
-    1,               -- Estado Activo
-    NULL
+    '0000000001',    
+    1,                
+    @AlmacenPrincipalID,                
+    1,                
+    @MotivoSaldoInicialID, -- Usamos la variable capturada
+    1,                
+    1,                
+    NULL,
+    @EmpresaID
 );
 
--- Capturamos el ID que se acaba de crear
 SET @IdIngreso = SCOPE_IDENTITY();
 
--- 2. INSERTAR LOS DETALLES (Masivamente desde stock_almacen)
 INSERT INTO dingresosalidaalm (
     ingresosalidaalm_id,
     item,
+    producto_id,
     cod_producto,
     descripcion_producto,
     cod_unidad_medida,
@@ -400,25 +445,903 @@ INSERT INTO dingresosalidaalm (
     total,
     moneda_id,
     tipo_cambio,
-    fecha_registro
+    fecha_registro,
+    empresa_id
 )
 SELECT 
-    @IdIngreso,                         -- El ID de la cabecera creada arriba
-    ROW_NUMBER() OVER(ORDER BY sa.id),  -- Genera el item 1, 2, 3... automáticamente
-    sa.cod_producto,
-    p.descripcion_producto,             -- Obtenido de la tabla producto
-    p.cod_unidad_medida,                -- Obtenido de la tabla producto
-    sa.stock_actual,                    -- La cantidad viene del stock cargado
-    0,                                  -- Precio 0
-    0,                                  -- IGV 0
-    0,                                  -- Subtotal 0
-    0,                                  -- Total 0
-    1,                                  -- Moneda ID
-    1,                                  -- Tipo cambio
-    GETDATE()
+    @IdIngreso,                          
+    ROW_NUMBER() OVER(ORDER BY sa.id),  
+    sa.producto_id,
+    p.codigo,
+    p.descripcion_producto,              
+    p.cod_unidad_medida,                 
+    sa.stock_actual,                     
+    0, 0, 0, 0, 1, 1, 
+    GETDATE(),
+    @EmpresaID
 FROM stock_almacen sa
-INNER JOIN producto p ON sa.cod_producto = p.codigo
-WHERE sa.almacen_id = 1 AND sa.cod_producto NOT IN ('2102010003', '2102010004', '2102010005'); -- Aseguramos que solo migramos lo del almacén 1
+INNER JOIN producto p ON sa.producto_id = p.id
+WHERE sa.almacen_id = @AlmacenPrincipalID AND sa.empresa_id = @EmpresaID
+-- Excluir los productos que vendrán en el histórico para no duplicar si es que se cargaron por error en excel (opcional)
+AND p.codigo NOT IN ('2102010003', '2102010005', '2102010004'); 
 
 PRINT 'Movimiento de Saldo Inicial generado correctamente con ID: ' + CAST(@IdIngreso AS VARCHAR);
-PRINT 'Migracion Completada Exitosamente.'
+
+GO
+
+PRINT '>> Verificando/Creando Cliente COMEXDI...'
+
+DECLARE @EmpresaID INT = 1; -- Control Science
+DECLARE @ClienteComexdiID INT;
+
+-- Insertamos el cliente solo si no existe
+IF NOT EXISTS (SELECT 1 FROM cliente WHERE nombre = 'COMEXDI' AND empresa_id = @EmpresaID)
+BEGIN
+    INSERT INTO cliente (nombre, ruc, razon_social, estado, empresa_id)
+    VALUES ('COMEXDI', NULL, NULL, 1, @EmpresaID); -- RUC y Razón Social en NULL como indicaste
+END
+
+-- Recuperamos el ID (Sea el 1 o cualquiera que le asigne el Identity)
+SELECT @ClienteComexdiID = id FROM cliente WHERE nombre = 'COMEXDI' AND empresa_id = @EmpresaID;
+
+-- =============================================
+-- 5. MIGRACIÓN HISTÓRICA (ALMACÉN TERCEROS) - CORREGIDO CON CLIENTE_ID
+-- =============================================
+PRINT '>> Migrando movimientos históricos de Almacén Terceros...'
+
+DECLARE @AlmacenTercerosID INT;
+SELECT @AlmacenTercerosID = id FROM almacen WHERE codigo = '02' AND empresa_id = @EmpresaID;
+
+-- A. MOVIMIENTO 1
+DECLARE @IdMovimiento1 INT;
+
+INSERT INTO ingresosalidaalm (
+    fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
+    fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
+    moneda_id, estado_id, usuario_id, fecha_registro, 
+    empresa_id, 
+    cliente_id -- <--- CAMBIO AQUÍ
+) 
+VALUES (
+    '2025-12-23', '0000000002', 1, @AlmacenTercerosID, 1, 7, 
+    '2025-12-06', 9, 'T001', '00001', 
+    NULL, 1, NULL, '2025-12-23 18:58:45', 
+    @EmpresaID, 
+    @ClienteComexdiID -- <--- USA EL ID DE COMEXDI
+);
+
+SET @IdMovimiento1 = SCOPE_IDENTITY();
+
+-- Detalles Movimiento 1
+INSERT INTO dingresosalidaalm (ingresosalidaalm_id, item, producto_id, cod_producto, descripcion_producto, cod_unidad_medida, cantidad, tipo_documento_id, fecha_documento, serie_documento, numero_documento, moneda_id, tipo_cambio, precio, igv, subtotal, total, fecha_registro, empresa_id)
+SELECT @IdMovimiento1, '001', p.id, p.codigo, '2102010003 - LEONARDITA 56 % SL - 1000 LTR', 'NIU', 9.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010003' AND p.empresa_id = @EmpresaID
+UNION ALL 
+SELECT @IdMovimiento1, '002', p.id, p.codigo, '2102010005 - LEONARDITA 56 % SP - 25 KG', 'NIU', 499.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID
+UNION ALL 
+SELECT @IdMovimiento1, '003', p.id, p.codigo, '2102010004 - LEONARDITA 56 % SL - 20 LTR', 'NIU', 50.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010004' AND p.empresa_id = @EmpresaID;
+
+
+-- B. MOVIMIENTO 2
+DECLARE @IdMovimiento2 INT;
+
+INSERT INTO ingresosalidaalm (
+    fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
+    fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
+    moneda_id, estado_id, usuario_id, fecha_registro, 
+    empresa_id, 
+    cliente_id -- <--- CAMBIO AQUÍ
+) 
+VALUES (
+    '2025-12-23', '0000000003', 1, @AlmacenTercerosID, 1, 7, 
+    '2025-12-06', 9, 'T001', '00002', 
+    NULL, 1, NULL, '2025-12-23 18:59:21', 
+    @EmpresaID, 
+    @ClienteComexdiID -- <--- USA EL ID DE COMEXDI
+);
+
+SET @IdMovimiento2 = SCOPE_IDENTITY();
+
+-- Detalles Movimiento 2
+INSERT INTO dingresosalidaalm (ingresosalidaalm_id, item, producto_id, cod_producto, descripcion_producto, cod_unidad_medida, cantidad, tipo_documento_id, fecha_documento, serie_documento, numero_documento, moneda_id, tipo_cambio, precio, igv, subtotal, total, fecha_registro, empresa_id)
+SELECT @IdMovimiento2, '001', p.id, p.codigo, '2102010005 - LEONARDITA 56 % SP - 25 KG', 'NIU', 1000.00, 9, '2025-12-06', 'T001', '00002', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:59:21', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID;
+
+-- Actualización Stock Terceros (Esto se mantiene igual)
+INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, ultima_actualizacion, empresa_id)
+SELECT @AlmacenTercerosID, p.id, 9.00, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010003' AND p.empresa_id = @EmpresaID;
+
+INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, ultima_actualizacion, empresa_id)
+SELECT @AlmacenTercerosID, p.id, 1499.00, '2025-12-23 18:59:21', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID;
+
+INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, ultima_actualizacion, empresa_id)
+SELECT @AlmacenTercerosID, p.id, 50.00, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010004' AND p.empresa_id = @EmpresaID;
+
+PRINT 'Migracion Histórica Completada Exitosamente.'
+GO
+
+USE erp_kardex_dev;
+GO
+
+PRINT '>> Iniciando carga de Cuentas para MAQSA (Empresa ID = 2)...'
+
+DECLARE @EmpresaMaqsaID INT = 2; -- ID de MAQSA
+
+-- 1. Inserts de Cuenta
+-- Validamos que no existan para no duplicar si corres el script dos veces
+IF NOT EXISTS (SELECT 1 FROM cuenta WHERE codigo = '21' AND empresa_id = @EmpresaMaqsaID)
+    INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('21', 'MERCADERÍAS', @EmpresaMaqsaID);
+
+IF NOT EXISTS (SELECT 1 FROM cuenta WHERE codigo = '24' AND empresa_id = @EmpresaMaqsaID)
+    INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('24', 'MATERIALES SUMINISTROS Y REPUESTOS', @EmpresaMaqsaID);
+
+IF NOT EXISTS (SELECT 1 FROM cuenta WHERE codigo = '33' AND empresa_id = @EmpresaMaqsaID)
+    INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('33', 'ACTIVOS', @EmpresaMaqsaID);
+
+IF NOT EXISTS (SELECT 1 FROM cuenta WHERE codigo = '63' AND empresa_id = @EmpresaMaqsaID)
+    INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('63', 'SERVICIOS', @EmpresaMaqsaID);
+
+PRINT '>> Carga de cuentas para MAQSA completada.';
+GO
+
+USE erp_kardex_dev;
+GO
+
+PRINT '>> Iniciando carga de Grupos y Subgrupos para MAQSA (Empresa ID = 2)...'
+
+DECLARE @EmpresaID INT = 2; -- MAQSA
+
+-- =============================================
+-- 1. INSERTAR GRUPOS
+-- =============================================
+PRINT '>> Insertando Grupos...'
+
+-- 2101 MERCADERÍAS (Cuenta 21)
+IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2101' AND empresa_id = @EmpresaID)
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2101', 'MERCADERÍAS', '21', @EmpresaID);
+
+-- 2401 REPUESTOS (Cuenta 24)
+IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2401' AND empresa_id = @EmpresaID)
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2401', 'REPUESTOS', '24', @EmpresaID);
+
+-- 2404 ENVASES Y EMBALAJES (Cuenta 24)
+IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2404' AND empresa_id = @EmpresaID)
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2404', 'ENVASES Y EMBALAJES', '24', @EmpresaID);
+
+
+-- =============================================
+-- 2. INSERTAR SUBGRUPOS
+-- =============================================
+PRINT '>> Insertando Subgrupos...'
+
+-- Tabla temporal para cargar los datos brutos
+DECLARE @TempSubgrupos TABLE (
+    cod_sub VARCHAR(50), 
+    desc_sub VARCHAR(255), 
+    cod_gru VARCHAR(50)
+);
+
+-- Carga de datos brutos
+INSERT INTO @TempSubgrupos (cod_sub, desc_sub, cod_gru) VALUES 
+('2101005', 'ACCESORIOS DE RIEGO', '2101'),
+('2101006', 'ACCESORIOS INDUSTRIALES', '2101'),
+('2101007', 'EQUIPOS DE PROTECCIÓN PERSONAL', '2101'),
+('2101008', 'GASFITERÍA Y SANEAMIENTO', '2101'),
+('2101009', 'HERRAMIENTAS MANUALES', '2101'),
+('2101010', 'MAQUINARIA LIGERA', '2101'),
+('2101011', 'SISTEMAS DE RIEGO AGRÍCOLA', '2101'),
+('2101012', 'TORNILLERÍA Y FERRETERÍA MENOR', '2101'),
+('2101013', 'OTRAS MERCADERÍAS', '2101'),
+('2401001', 'REPUESTOS ELÉCTRICOS', '2401'),
+('2401002', 'REPUESTOS HIDRÁULICOS', '2401'),
+('2401003', 'REPUESTOS MECÁNICOS', '2401'),
+('2401004', 'REPUESTOS PARA RIEGO', '2401'),
+('2404001', 'ENVASES PLÁSTICOS', '2404');
+
+-- Insertamos cruzando con la tabla GRUPO para obtener el ID correcto (FK)
+INSERT INTO subgrupo (
+    codigo, 
+    descripcion, 
+    grupo_id, 
+    cod_grupo, 
+    descripcion_grupo, 
+    empresa_id
+)
+SELECT 
+    t.cod_sub,
+    t.desc_sub,
+    g.id,           -- Recuperamos el ID autogenerado del grupo
+    t.cod_gru,
+    g.descripcion,
+    @EmpresaID
+FROM @TempSubgrupos t
+INNER JOIN grupo g ON g.codigo = t.cod_gru AND g.empresa_id = @EmpresaID
+WHERE NOT EXISTS (SELECT 1 FROM subgrupo s WHERE s.codigo = t.cod_sub AND s.empresa_id = @EmpresaID);
+
+PRINT '>> Carga de Maestros MAQSA completada exitosamente.'
+GO
+
+USE erp_kardex_dev;
+GO
+
+PRINT '>> Creando Infraestructura para MAQSA (Empresa 2)...';
+
+DECLARE @EmpresaID INT = 2; -- MAQSA
+
+-- 1. CREAR SUCURSAL 'PRINCIPAL'
+IF NOT EXISTS (SELECT 1 FROM sucursal WHERE codigo = '001' AND empresa_id = @EmpresaID)
+BEGIN
+    INSERT INTO sucursal (codigo, nombre, estado, empresa_id) 
+    VALUES ('001', 'PRINCIPAL', 1, @EmpresaID);
+    PRINT 'Sucursal PRINCIPAL creada.';
+END
+
+-- 2. CREAR ALMACÉN 'PRINCIPAL'
+DECLARE @SucursalID INT;
+SELECT @SucursalID = id FROM sucursal WHERE codigo = '001' AND empresa_id = @EmpresaID;
+
+IF NOT EXISTS (SELECT 1 FROM almacen WHERE codigo = '01' AND empresa_id = @EmpresaID)
+BEGIN
+    INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) 
+    VALUES ('01', 'PRINCIPAL', 1, '001', @SucursalID, @EmpresaID);
+    PRINT 'Almacén PRINCIPAL creado.';
+END
+ELSE
+BEGIN
+    PRINT 'Almacén PRINCIPAL ya existía.';
+END
+
+GO
+
+USE erp_kardex_dev;
+GO
+
+PRINT '>> INICIANDO CARGA MASIVA - MAQSA (EMPRESA 2)...'
+
+-- ==========================================
+-- 1. CONFIGURACIÓN INICIAL
+-- ==========================================
+DECLARE @EmpresaID INT = 2; -- MAQSA
+DECLARE @SucursalID INT;
+DECLARE @AlmacenID INT;
+DECLARE @MotivoID INT;
+DECLARE @ClienteID INT;
+DECLARE @Fecha DATE = GETDATE();
+
+-- Recuperar IDs de infraestructura MAQSA (Creados en el paso anterior)
+SELECT @SucursalID = id FROM sucursal WHERE codigo = '001' AND empresa_id = @EmpresaID;
+SELECT @AlmacenID = id FROM almacen WHERE codigo = '01' AND empresa_id = @EmpresaID;
+
+-- Recuperar Motivo Saldo Inicial (Codigo 16)
+SELECT TOP 1 @MotivoID = id FROM motivo WHERE codigo = '16' AND tipo_movimiento = 1; 
+
+-- ==========================================
+-- 2. TABLA TEMPORAL DE IMPORTACIÓN
+-- ==========================================
+DECLARE @ImportData TABLE (
+    id INT IDENTITY(1,1),
+    cod_grupo VARCHAR(50),
+    cod_subgrupo VARCHAR(50),
+    desc_producto VARCHAR(255),
+    desc_comercial VARCHAR(255),
+    nombre_marca VARCHAR(255),
+    nombre_modelo VARCHAR(255),
+    serie VARCHAR(255),
+    nombre_unidad VARCHAR(50),
+    lote VARCHAR(50),
+    cantidad DECIMAL(12,2),
+    
+    -- Campos calculados
+    grupo_id INT,
+    subgrupo_id INT,
+    marca_id INT,
+    modelo_id INT,
+    cod_unidad_final VARCHAR(20),
+    codigo_generado VARCHAR(50),
+    producto_id INT
+);
+
+-- ==========================================
+-- 3. INSERTAR DATOS CRUDOS (Aquí van tus 464 productos)
+-- ==========================================
+PRINT '>> Cargando datos a memoria...'
+INSERT INTO @ImportData (cod_grupo, cod_subgrupo, desc_producto, desc_comercial, nombre_marca, nombre_modelo, serie, nombre_unidad, lote, cantidad)
+VALUES
+('2401','2401002','PIE DE APOYO','PIE DE APOYO PARA MAQUINARIA AGRÍCOLA','AMA','N/A','-','UNIDAD','-',0),
+('2401','2401002','MOTOR HIDRÁULICO DANFOSS WR320','MOTOR HIDRÁULICO DANFOSS WR320','AMA','WR320','-','UNIDAD','-',6),
+('2401','2401002','MOTOR HIDRÁULICO DANFOSS WP50','MOTOR HIDRÁULICO DANFOSS WP50','AMA','WP50','-','UNIDAD','-',10),
+('2101','2101006','ENGANCHE GIRATORIO','ENGANCHE GIRATORIO AGRÍCOLA','AMA','N/A','-','UNIDAD','-',0),
+('2401','2401002','CILINDRO HIDRÁULICO 50X30X300','CILINDRO HIDRÁULICO PINTADO NEGRO CON OREJAS','AMA','50x30x300','-','UNIDAD','-',18),
+('2401','2401002','CILINDRO 50X30X400 FONDO FORADO','CILINDRO HIDRÁULICO CON FONDO FORADO','AMA','50x30x400','-','UNIDAD','-',10),
+('2401','2401002','CILINDRO DOBLE EFECTO 50X30X200','CILINDRO HIDRÁULICO DOBLE EFECTO','AMA','50x30x200','-','UNIDAD','-',6),
+('2401','2401002','CILINDRO 80X40X200','CILINDRO HIDRÁULICO PINTADO NEGRO','AMA','80x40x200','-','UNIDAD','-',0),
+('2401','2401002','DISTRIBUIDOR 3/8 5 PALANCAS 45L','DISTRIBUIDOR HIDRÁULICO DOBLE EFECTO','AMA','3/8 5P','-','UNIDAD','-',3),
+('2401','2401002','DISTRIBUIDOR REFLUID 3/8 3 PALANCAS','DISTRIBUIDOR REFLUID DOBLE EFECTO','AMA','3/8 3P','-','UNIDAD','-',0),
+('2401','2401002','DISTRIBUIDOR REFLUID 3/8 2 PALANCAS','DISTRIBUIDOR REFLUID DOBLE EFECTO','AMA','3/8 2P','-','UNIDAD','-',3),
+('2401','2401002','DISTRIBUIDOR REFLUID 1/2 3 PALANCAS','DISTRIBUIDOR REFLUID 80 LTS','AMA','1/2 3P','-','UNIDAD','-',3),
+('2401','2401003','CARDAN CAT 6 1.2 MT','CARDAN AGRÍCOLA CRUCETA 30.2X92','AMA','CAT 6','-','UNIDAD','-',0),
+('2401','2401003','CARDAN HOMOCINÉTICO CAT 6 1.4 MT','TRANSMISIÓN CARDAN HOMOCINÉTICO','AMA','CAT 6','-','UNIDAD','-',2),
+('2401','2401003','CARDAN CONVENCIONAL CAT 7 1.2 MT','CARDAN CONVENCIONAL AGRÍCOLA','AMA','CAT 7','-','UNIDAD','-',0),
+('2401','2401003','CARDAN CONVENCIONAL CAT 7 1.5 MT','CARDAN CONVENCIONAL AGRÍCOLA','AMA','CAT 7','-','UNIDAD','-',0),
+('2401','2401003','CRUCETA CAT 7 30.2X106.5','CRUCETA CARDAN CAT 7','AMA','CAT 7','-','UNIDAD','-',10),
+('2401','2401003','HORQUILLA ENGANCHE RÁPIDO CAT 7','HORQUILLA DE ENGANCHE RÁPIDO','AMA','CAT 7','-','UNIDAD','-',6),
+('2401','2401003','SEMIEJE 60X60 6 PERNOS','SEMIEJE PARA 2000 KG','AMA','60x60','-','UNIDAD','-',0),
+('2401','2401002','MINIVÁLVULA 1/4','MINIVÁLVULA HIDRÁULICA CON MANGO','AMA','-','-','UNIDAD','-',330),
+('2101','2101006','PROTECTOR DE TOMA DE FUERZA','PROTECTOR DE TOMA DE FUERZA AGRÍCOLA','AMA','N/A','-','UNIDAD','-',19),
+('2101','2101006','PROTECTOR DE TOMA DE FUERZA','PROTECTOR DE TOMA DE FUERZA AGRÍCOLA','AMA','N/A','-','UNIDAD','-',32),
+('2401','2401003','CRUCETA CAT 6 30.2X92','CRUCETA CARDAN CONVENCIONAL','AMA','CAT 6','-','UNIDAD','-',4),
+('2401','2401003','CRUCETA CAT 6 HOMOCINÉTICA','CRUCETA CARDAN HOMOCINÉTICA','AMA','CAT 6','-','UNIDAD','-',5),
+('2101','2101010','BOMBA AR503CR (1639)GCI','BOMBA AGRÍCOLA DE PISTONES AR503CR','ANNOVI','AR503CR','-','UNIDAD','-',3),
+('2101','2101010','BOMBA BHS 200 AP C/C+PC+VSR DESMOPAN BRONCE','BOMBA BHS 200 AP COMPLETA','ANNOVI','BHS200','-','UNIDAD','-',1),
+('2101','2101010','BOMBA AR 1604 PLUS AP C/C+PC+VSR SGC (33524)','BOMBA AR1604 PLUS COMPLETA','ANNOVI','AR1604 PLUS','33524','UNIDAD','-',4),
+('2101','2101010','BOMBA BHA 200 AP C/C+PC+VSR SGC','BOMBA BHA 200 AP COMPLETA','ANNOVI','BHA200','-','UNIDAD','-',3),
+('2101','2101010','BOMBA BHS 150 AP C/C+PC+VSR SGC','BOMBA BHS 150 AP COMPLETA','ANNOVI','BHS150','-','UNIDAD','-',4),
+('2401','2401002','CABEZAL DERECHO - TESTA BHA 200','CABEZAL DERECHO BOMBA BHA 200','ANNOVI','BHA200','-','UNIDAD','-',2),
+('2401','2401002','CABEZAL IZQUIERDO - TESTA BHA 200','CABEZAL IZQUIERDO BOMBA BHA 200','ANNOVI','BHA200','-','UNIDAD','-',2),
+('2401','2401002','CÁMARA DE AIRE COMPLETA AR 330','CÁMARA DE AIRE COMPLETA AR330','ANNOVI','AR330','-','UNIDAD','-',1),
+('2401','2401002','CIGÜEÑAL BOMBA BHS 130-150','CIGÜEÑAL DE BOMBA BHS','ANNOVI','BHS130-150','-','UNIDAD','-',1),
+('2401','2401002','CONDUCTO DE ASPIRACIÓN BHA 200','CONDUCTO DE ASPIRACIÓN','ANNOVI','BHA200','-','UNIDAD','-',2),
+('2401','2401002','CONDUCTO DE ASPIRACIÓN BHS 130-150','CONDUCTO DE ASPIRACIÓN','ANNOVI','BHS130-150','-','UNIDAD','-',5),
+('2401','2401002','CONDUCTO Y TAPA DE VÁLVULA AR 330','CONDUCTO Y TAPA DE VÁLVULA','ANNOVI','AR330','-','UNIDAD','-',4),
+('2401','2401002','CULATA AR 1604 - 1203 (UNIDAD 1)','CULATA DE BOMBA','ANNOVI','AR1604','-','UNIDAD','-',2),
+('2401','2401002','CULATA AR 1604 - 1203 (UNIDAD 2)','CULATA DE BOMBA','ANNOVI','AR1604','-','UNIDAD','-',3),
+('2401','2401002','DEPÓSITO DE ACEITE AR 330','DEPÓSITO DE ACEITE','ANNOVI','AR330','-','UNIDAD','-',3),
+('2401','2401002','DEPÓSITO DE ACEITE BHS 150','DEPÓSITO DE ACEITE','ANNOVI','BHS150','-','UNIDAD','-',2),
+('2401','2401002','GRUPPO COMANDO BMH 50 OTTONE','GRUPO COMANDO LATÓN','ANNOVI','BMH50','-','UNIDAD','-',5),
+('2401','2401002','GRUPPO COMANDO BMS 50 OTTONE','GRUPO COMANDO LATÓN','ANNOVI','BMS50','-','UNIDAD','-',8),
+('2401','2401002','GRUPPO COMANDO BY MATIC 50','GRUPO COMANDO AUTOMÁTICO','ANNOVI','BYMATIC50','-','UNIDAD','-',15),
+('2401','2401002','KIT MEMBRANA BLUEFLEX AR1203','KIT MEMBRANA BLUEFLEX','ANNOVI','AR1203','-','KIT','-',10),
+('2401','2401002','KIT MEMBRANA BLUEFLEX AR1604','KIT MEMBRANA BLUEFLEX','ANNOVI','AR1604','-','KIT','-',15),
+('2401','2401002','KIT MEMBRANA BLUEFLEX BHS150','KIT MEMBRANA BLUEFLEX','ANNOVI','BHS150','-','KIT','-',30),
+('2401','2401002','KIT MEMBRANA NBR AR1203','KIT MEMBRANA NBR','ANNOVI','AR1203','-','KIT','-',8),
+('2401','2401002','KIT MEMBRANA NBR AR1604','KIT MEMBRANA NBR','ANNOVI','AR1604','-','KIT','-',10),
+('2401','2401002','KIT MEMBRANA NBR BHS150','KIT MEMBRANA NBR','ANNOVI','BHS150','-','KIT','-',16),
+('2401','2401002','KIT ORING AR1203','KIT O-RING','ANNOVI','AR1203','-','KIT','-',12),
+('2401','2401002','KIT ORING AR1604','KIT O-RING','ANNOVI','AR1604','-','KIT','-',15),
+('2401','2401002','KIT ORING BHS150','KIT O-RING','ANNOVI','BHS150','-','KIT','-',25),
+('2401','2401002','KIT VÁLVULA AR1203','KIT VÁLVULAS','ANNOVI','AR1203','-','KIT','-',12),
+('2401','2401002','KIT VÁLVULA AR1604','KIT VÁLVULAS','ANNOVI','AR1604','-','KIT','-',25),
+('2401','2401002','KIT VÁLVULA BHS150','KIT VÁLVULAS','ANNOVI','BHS150','-','KIT','-',8),
+('2401','2401002','KIT PROTECTOR CARDÁN HOMOCINÉTICO','PROTECTOR CARDÁN','ANNOVI','N/A','-','KIT','-',85),
+('2401','2401002','MEMBRANA ACUMULADOR AIRE BHS150 BLUEFLEX','MEMBRANA ACUMULADOR','ANNOVI','BHS150','-','UNIDAD','-',10),
+('2401','2401002','MEMBRANA ACUMULADOR AIRE BHS150 NBR','MEMBRANA ACUMULADOR','ANNOVI','BHS150','-','UNIDAD','-',45),
+('2401','2401002','MEMBRANA AR 330','MEMBRANA BOMBA','ANNOVI','AR330','-','UNIDAD','-',16),
+('2401','2401002','MEMBRANA DE AIRE AR 330','MEMBRANA DE AIRE','ANNOVI','AR330','-','UNIDAD','-',3),
+('2401','2401002','ORING VÁLVULA AR 330','O-RING VÁLVULA','ANNOVI','AR330','-','UNIDAD','-',32),
+('2401','2401002','ORING BASE DEPÓSITO 26,65X2,62','O-RING BASE DEPÓSITO','ANNOVI','N/A','-','UNIDAD','-',50),
+('2401','2401002','ORING TAPA ACEITE BHS150 72,69X2,62','O-RING TAPA ACEITE','ANNOVI','BHS150','-','UNIDAD','-',31),
+('2401','2401002','TAPA AR1604 CÓD. 2680040','TAPA BOMBA','ANNOVI','AR1604','-','UNIDAD','-',10),
+('2401','2401002','TAPA DE ACEITE AR 330','TAPA DE ACEITE','ANNOVI','AR330','-','UNIDAD','-',2),
+('2401','2401002','TAPA BOMBA BHS130-150 (1 UNIDAD)','TAPA DE BOMBA','ANNOVI','BHS130-150','-','UNIDAD','-',2),
+('2401','2401002','TAPA BOMBA BHS130-150 (2 UNIDADES)','TAPA DE BOMBA','ANNOVI','BHS130-150','-','UNIDAD','-',2),
+('2401','2401002','TAPA DEPÓSITO DE ACEITE BHS150','TAPA DEPÓSITO ACEITE','ANNOVI','BHS150','-','UNIDAD','-',11),
+('2401','2401002','TAPA DE VÁLVULAS AR1604-1203','TAPA DE VÁLVULAS','ANNOVI','AR1604','-','UNIDAD','-',20),
+('2401','2401002','VÁLVULA CÁMARA DE AIRE BHS150','VÁLVULA CÁMARA DE AIRE','ANNOVI','BHS150','-','UNIDAD','-',25),
+('2401','2401002','VÁLVULA DE SEGURIDAD BHS150','VÁLVULA DE SEGURIDAD','ANNOVI','BHS150','-','UNIDAD','-',30),
+('2401','2401002','VÁLVULAS AR 330','VÁLVULAS BOMBA AR330','ANNOVI','AR330','-','UNIDAD','-',32),
+('2101','2101010','AGITADOR HIDRAULICO ORIENTABLE INSPEC. B/CERAM 2MM','AGITADOR HIDRÁULICO ORIENTABLE INSPECCIÓN BOQUILLA CERÁMICA 2MM','ARAG','N/A','-','UNIDAD','-',30),
+('2401','2401004','CARTUCHO AZUL 80 X 170 MM 50 MESH MOD. 314','CARTUCHO FILTRANTE AZUL 80X170MM 50 MESH','ARAG','MOD.314','-','UNIDAD','-',16),
+('2401','2401004','CARTUCHO AZUL 108 X 200 MM 50 MESH MOD. 316','CARTUCHO FILTRANTE AZUL 108X200MM 50 MESH','ARAG','MOD.316','-','UNIDAD','-',24),
+('2401','2401004','CARTUCHO AZUL 38 X 89 MM 50 MESH MOD. 322-2','CARTUCHO FILTRANTE AZUL 38X89MM 50 MESH','ARAG','MOD.322-2','-','UNIDAD','-',30),
+('2401','2401004','CARTUCHO AZUL 50 X 150 MM 50 MESH HORQUILLA CERRADA','CARTUCHO FILTRANTE AZUL 50X150MM 50 MESH ACOPLE HORQUILLA','ARAG','N/A','-','UNIDAD','-',30),
+('2401','2401004','CONECTOR SIMPLE CURVO TUERCA G1/2 D10','CONECTOR SIMPLE CURVO CON TUERCA G1/2 PARA MANGUERA 10MM','ARAG','N/A','-','UNIDAD','-',10),
+('2401','2401004','CONECTOR SIMPLE CURVO TUERCA G1/2 D13','CONECTOR SIMPLE CURVO CON TUERCA G1/2 PARA MANGUERA 13MM','ARAG','N/A','-','UNIDAD','-',246),
+('2401','2401004','CONECTOR SIMPLE RECTO TUERCA G1/2 D10','CONECTOR SIMPLE RECTO CON TUERCA G1/2 PARA MANGUERA 10MM','ARAG','N/A','-','UNIDAD','-',20),
+('2401','2401004','CONECTOR SIMPLE RECTO TUERCA G1/2 D13','CONECTOR SIMPLE RECTO CON TUERCA G1/2 PARA MANGUERA 13MM','ARAG','N/A','-','UNIDAD','-',194),
+('2401','2401004','CONEXIÓN EN V TUERCA G1/2','CONEXIÓN EN V CON TUERCA ROSCA G1/2','ARAG','N/A','-','UNIDAD','-',30),
+('2401','2401004','CONEXIÓN EN Y TRES MACHOS G1/2','CONEXIÓN EN Y TRES MACHOS ROSCA G1/2','ARAG','N/A','-','UNIDAD','-',20),
+('2401','2401004','FILTRO ASPIRACION 314 1.1/2 CON VALVULA','FILTRO DE ASPIRACIÓN 1.1/2" CON VÁLVULA','ARAG','MOD.314','-','UNIDAD','-',3),
+('2401','2401004','FILTRO ASPIRACION 314 1.1/4 CON VALVULA','FILTRO DE ASPIRACIÓN 1.1/4" CON VÁLVULA','ARAG','MOD.314','-','UNIDAD','-',10),
+('2401','2401004','FILTRO ASPIRACION 316 1.1/2','FILTRO DE ASPIRACIÓN 1.1/2"','ARAG','MOD.316','-','UNIDAD','-',25),
+('2401','2401004','FILTRO ASPIRACION 316 1.1/2 CON VALVULA','FILTRO DE ASPIRACIÓN 1.1/2" CON VÁLVULA','ARAG','MOD.316','-','UNIDAD','-',35),
+('2401','2401004','FILTRO ASPIRACION 316 2"','FILTRO DE ASPIRACIÓN 2"','ARAG','MOD.316','-','UNIDAD','-',20),
+('2401','2401004','FILTRO ASPIRACION 316 2" CON VALVULA','FILTRO DE ASPIRACIÓN 2" CON VÁLVULA','ARAG','MOD.316','-','UNIDAD','-',6),
+('2401','2401004','FILTRO ASPIRACION 317 2" CON VALVULA','FILTRO DE ASPIRACIÓN 2" CON VÁLVULA','ARAG','MOD.317','-','UNIDAD','-',4),
+('2401','2401004','FILTRO LINEA 322-2 1/2 14 BAR','FILTRO DE LÍNEA 1/2" 14 BAR','ARAG','MOD.322-2','-','UNIDAD','-',30),
+('2401','2401004','FILTRO LINEA 322-2 1/2 30 BAR','FILTRO DE LÍNEA 1/2" 30 BAR','ARAG','MOD.322-2','-','UNIDAD','-',8),
+('2401','2401004','FILTRO LINEA 3452 HORQUILLA G1/2 50 BAR','FILTRO DE LÍNEA HORQUILLA CERRADA 50 BAR','ARAG','MOD.3452','-','UNIDAD','-',20),
+('2401','2401004','FILTRO CANASTILLA D300X288X245','FILTRO TIPO CANASTILLA D300X288X245','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401004','FILTRO CANASTILLA TAPA D400X380X275','FILTRO TIPO CANASTILLA PARA TAPA D400X380X275','ARAG','N/A','-','UNIDAD','-',24),
+('2401','2401004','KIT INDICADOR NIVEL CISTERNA','KIT INDICADOR DE NIVEL DE CISTERNA CON TUBO','ARAG','N/A','-','UNIDAD','-',5),
+('2401','2401004','MANGUERA NIVEL AGUA 16X21.5','MANGUERA PARA NIVEL DE AGUA 16X21.5','ARAG','N/A','-','ML','-',300),
+('2401','2401001','MANOMETRO 0-60 BAR G1/4','MANÓMETRO 0–60 BAR ROSCA G1/4 HORIZONTAL','ARAG','N/A','-','UNIDAD','-',16),
+('2401','2401002','ORING G 10091','ORING G 10091','ARAG','N/A','-','UNIDAD','-',140),
+('2401','2401002','ORING G 10071','ORING G 10071','ARAG','N/A','-','UNIDAD','-',100),
+('2401','2401002','ORING G 10061','ORING G 10061','ARAG','N/A','-','UNIDAD','-',298),
+('2401','2401002','ORING G 10051','ORING G 10051','ARAG','N/A','-','UNIDAD','-',150),
+('2401','2401002','ORING G 40012','ORING G 40012','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','ORING G 40013','ORING G 40013','ARAG','N/A','-','UNIDAD','-',100),
+('2401','2401002','ORING G 10092','ORING G 10092','ARAG','N/A','-','UNIDAD','-',20),
+('2401','2401002','ORING G 10073','ORING G 10073','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401002','ORING G 10062','ORING G 10062','ARAG','N/A','-','UNIDAD','-',100),
+('2401','2401002','ORING G 10073','ORING G 10073','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401002','ORING G 10052','ORING G 10052','ARAG','N/A','-','UNIDAD','-',50),
+('2101','2101005','PISTOLA DE ALTA PRESION HYDRA PLUS','PISTOLA DE ALTA PRESIÓN PARA APLICACIÓN AGRÍCOLA','ARAG','HYDRA PLUS','-','UNIDAD','-',35),
+('2101','2101005','PISTOLA DE ALTA PRESION TIPO MITRA','PISTOLA DE ALTA PRESIÓN TIPO MITRA','ARAG','TIPO MITRA','-','UNIDAD','-',80),
+('2101','2101005','PORTABOQUILLA BRONCE ANTIGOTEO 1/4 M','PORTABOQUILLA DE BRONCE CON ANTIGOTEO ROSCA 1/4" MACHO','ARAG','N/A','-','UNIDAD','-',350),
+('2101','2101005','PORTABOQUILLA FINAL ANTIGOTEO MANGUERA 10MM','PORTABOQUILLA FINAL CON ANTIGOTEO PARA MANGUERA 10 MM','ARAG','N/A','-','UNIDAD','-',60),
+('2101','2101005','PORTABOQUILLA FINAL ANTIGOTEO MANGUERA 13MM','PORTABOQUILLA FINAL CON ANTIGOTEO PARA MANGUERA 13 MM','ARAG','N/A','-','UNIDAD','-',220),
+('2101','2101005','PORTABOQUILLA INTERMEDIA ANTIGOTEO MANGUERA 10MM','PORTABOQUILLA INTERMEDIA CON ANTIGOTEO PARA MANGUERA 10 MM','ARAG','N/A','-','UNIDAD','-',80),
+('2101','2101005','PORTABOQUILLA INTERMEDIA ANTIGOTEO MANGUERA 13MM','PORTABOQUILLA INTERMEDIA CON ANTIGOTEO PARA MANGUERA 13 MM','ARAG','N/A','-','UNIDAD','-',200),
+('2401','2401002','RACOR CURVO 45 ASIENTO PLANO D20 3/4','RACOR CURVO 45° ASIENTO PLANO D20 PARA TUERCA 3/4"','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401002','RACOR CURVO 45 D32 1.1/4','RACOR CURVO 45° D32 PARA TUERCA 1.1/4"','ARAG','N/A','-','UNIDAD','-',40),
+('2401','2401002','RACOR CURVO 45 D40 1.1/2','RACOR CURVO 45° D40 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',40),
+('2401','2401002','RACOR CURVO 45 D50 2','RACOR CURVO 45° D50 PARA TUERCA 2"','ARAG','N/A','-','UNIDAD','-',29),
+('2401','2401002','RACOR CURVO 90 D25 1.1/2','RACOR CURVO 90° D25 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR CURVO 90 D25 1.1/4','RACOR CURVO 90° D25 PARA TUERCA 1.1/4"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR CURVO 90 D30 1.1/2','RACOR CURVO 90° D30 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR CURVO 90 D32 1.1/4','RACOR CURVO 90° D32 PARA TUERCA 1.1/4"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR CURVO 90 D38 1.1/2','RACOR CURVO 90° D38 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',75),
+('2401','2401002','RACOR CURVO 90 D50 2','RACOR CURVO 90° D50 PARA TUERCA 2"','ARAG','N/A','-','UNIDAD','-',30),
+('2401','2401002','RACOR CURVO 90 D75 3','RACOR CURVO 90° D75 PARA TUERCA 3"','ARAG','N/A','-','UNIDAD','-',20),
+('2401','2401002','RACOR DESAGUE 1.1/2','RACOR DE DESAGÜE 1.1/2"','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401002','RACOR DESAGUE 1.1/4','RACOR DE DESAGÜE 1.1/4"','ARAG','N/A','-','UNIDAD','-',25),
+('2401','2401002','RACOR DESAGUE 2','RACOR DE DESAGÜE 2"','ARAG','N/A','-','UNIDAD','-',20),
+('2401','2401002','RACOR RECTO D25 1.1/2','RACOR RECTO D25 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR RECTO D32 1.1/2','RACOR RECTO D32 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','RACOR RECTO D38 1.1/2','RACOR RECTO D38 PARA TUERCA 1.1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','ROSCA MACHO NYLON 3/4','ROSCA MACHO DE NYLON 3/4"','ARAG','N/A','-','UNIDAD','-',20),
+('2101','2101011','TAPA ABATIBLE CISTERNA 180 C/BLOQUEO','TAPA ABATIBLE 180° PARA CISTERNA CON BLOQUEO Y VÁLVULA FLOTANTE','ARAG','N/A','-','UNIDAD','-',37),
+('2401','2401002','TUERCA 1.1/2','TUERCA ROSCADA 1.1/2"','ARAG','N/A','-','UNIDAD','-',80),
+('2401','2401002','TUERCA 1.1/4','TUERCA ROSCADA 1.1/4"','ARAG','N/A','-','UNIDAD','-',50),
+('2401','2401002','TUERCA 1/2','TUERCA ROSCADA 1/2"','ARAG','N/A','-','UNIDAD','-',100),
+('2401','2401002','TUERCA 2','TUERCA ROSCADA 2"','ARAG','N/A','-','UNIDAD','-',48),
+('2401','2401002','TUERCA PLANA 1.1/2','TUERCA PLANA 1.1/2"','ARAG','N/A','-','UNIDAD','-',100),
+('2401','2401002','TUERCA PLANA 1.1/4','TUERCA PLANA 1.1/4"','ARAG','N/A','-','UNIDAD','-',75),
+('2401','2401002','TUERCA PLANA 1/2','TUERCA PLANA 1/2"','ARAG','N/A','-','UNIDAD','-',50),
+('2101','2101011','VALVULA BOLA 2V 1.1/2 CON TIRANTES','VÁLVULA BOLA 2 VÍAS 1.1/2" CON TIRANTES Y ROSCA','ARAG','2V','-','UNIDAD','-',20),
+('2101','2101011','VALVULA BOLA 2V 2 CON TIRANTES','VÁLVULA BOLA 2 VÍAS 2" CON TIRANTES Y ROSCA','ARAG','2V','-','UNIDAD','-',15),
+('2101','2101011','VALVULA BOLA 3V 1.1/2 CONEXIÓN INFERIOR','VÁLVULA BOLA 3 VÍAS 1.1/2" CON CONEXIÓN INFERIOR ROSCADA','ARAG','3V','-','UNIDAD','-',14),
+('2101','2101011','VALVULA BOLA 3V 2 CONEXIÓN INFERIOR','VÁLVULA BOLA 3 VÍAS 2" CON CONEXIÓN INFERIOR ROSCADA','ARAG','3V','-','UNIDAD','-',12),
+('2101','2101011','VALVULA DESCARGA ANTICONTAMINACION 2','VÁLVULA DE DESCARGA ANTICONTAMINACIÓN 2"','ARAG','N/A','-','UNIDAD','-',30),
+('2101','2101011','VALVULA SEGURIDAD G1/2 50BAR','VÁLVULA DE SEGURIDAD G1/2" 50 BAR 200 LT PARA MANGUERA 3/4"','ARAG','N/A','-','UNIDAD','-',25),
+('2101','2101011','VALVULA ESFERICA G1/2 G1/2 MM','VÁLVULA ESFÉRICA G1/2" – G1/2" MACHO-MACHO','ARAG','N/A','-','UNIDAD','-',465),
+('2401','2401004','KIT REPUESTO REGULADOR PRESION M170 OT','KIT DE REPUESTO PARA REGULADOR DE PRESIÓN M170 OT 50 BAR 200 L/MIN','BRAGLIA','M170 OT','-','UNIDAD','-',22),
+('2101','2101005','LANZA SCARABEO PARA CHANCHITO','LANZA DE APLICACIÓN SCARABEO PARA EQUIPO CHANCHITO','BRAGLIA','SCARABEO','-','UNIDAD','-',15),
+('2101','2101013','PAPEL HIDROSENSIBLE SYNGENTA','PAPEL HIDROSENSIBLE PARA EVALUACIÓN DE COBERTURA DE ASPERSIÓN','BRAGLIA','N/A','-','UNIDAD','-',0),
+('2101','2101005','PORTABOQUILLA M73 11/16 CON ANTIGOTEO','PORTABOQUILLA M73 11/16" CON ANTIGOTEO ROSCA 1/4" BSPM','BRAGLIA','M73','-','UNIDAD','-',78),
+('2101','2101005','PORTABOQUILLA M73 11/16 SIN ANTIGOTEO','PORTABOQUILLA M73 11/16" SIN ANTIGOTEO ROSCA 1/4" BSPM','BRAGLIA','M73','-','UNIDAD','-',0),
+('2101','2101011','REGULADOR PRESION M170 OT 50 BAR','REGULADOR DE PRESIÓN M170 OT 50 BAR 200 L/MIN','BRAGLIA','M170 OT','-','UNIDAD','-',0),
+('2401','2401004','TUERCA PORTABOQUILLA G3/8 BSPF','TUERCA PARA PORTABOQUILLA ROSCA G3/8" BSP FEMENINA','BRAGLIA','N/A','-','UNIDAD','-',342),
+('2401','2401004','VALVULA CHECK ANTIGOTEO M83 G1/4','VÁLVULA CHECK ANTIGOTEO M83 G1/4F – G1/4F','BRAGLIA','M83','-','UNIDAD','-',200),
+('2101','2101010','BOMBA MEMBRANA APS 145 50 BAR','BOMBA DE MEMBRANA COMET APS 145 50 BAR 149 L/MIN M-M','COMET','APS 145','-','UNIDAD','-',3),
+('2101','2101010','BOMBA MEMBRANA IDS 1501 50 BAR','BOMBA DE MEMBRANA COMET IDS 1501 50 BAR 185 L/MIN M-M','COMET','IDS 1501','-','UNIDAD','-',0),
+('2101','2101010','BOMBA MEMBRANA IDS 2200 50 BAR','BOMBA DE MEMBRANA COMET IDS 2200 50 BAR 208 L/MIN M-M','COMET','IDS 2200','-','UNIDAD','-',1),
+('2401','2401004','DISCO DE MEMBRANA APS 145','DISCO DE MEMBRANA PARA BOMBA COMET APS 145','COMET','APS 145','-','UNIDAD','-',50),
+('2401','2401004','KIT COMPENSADOR VOLUMETRICO APS 145','KIT COMPENSADOR VOLUMÉTRICO PARA BOMBA APS 145','COMET','APS 145','-','UNIDAD','-',9),
+('2401','2401004','KIT COMPENSADOR VOLUMETRICO IDS 1501','KIT COMPENSADOR VOLUMÉTRICO PARA BOMBA IDS 1501','COMET','IDS 1501','-','UNIDAD','-',5),
+('2401','2401004','MEMBRANA ACUMULADOR PRESION APS 145','MEMBRANA DE ACUMULADOR DE PRESIÓN PARA APS 145','COMET','APS 145','-','UNIDAD','-',59),
+('2401','2401004','MEMBRANA ACUMULADOR PRESION IDS 1501','MEMBRANA DE ACUMULADOR DE PRESIÓN PARA IDS 1501','COMET','IDS 1501','-','UNIDAD','-',74),
+('2401','2401004','MEMBRANA PISTON DESMOPAN APS 145','MEMBRANA DE PISTÓN DESMOPAN PARA APS 145','COMET','APS 145','-','UNIDAD','-',226),
+('2401','2401004','MEMBRANA DESMOPAN IDS 1501','MEMBRANA DESMOPAN PARA BOMBA IDS 1501','COMET','IDS 1501','-','UNIDAD','-',178),
+('2401','2401004','ORING 2.62 X 158.42','ORING 2.62 X 158.42 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',96),
+('2401','2401004','ORING 2.62 X 22.22','ORING 2.62 X 22.22 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',80),
+('2401','2401004','ORING 3 X 118','ORING 3 X 118 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',96),
+('2401','2401004','ORING 3 X 165','ORING 3 X 165 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',96),
+('2401','2401004','ORING 3.53 X 117.1','ORING 3.53 X 117.1 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',96),
+('2401','2401004','ORING 3.53 X 196.4','ORING 3.53 X 196.4 PARA SISTEMAS COMET','COMET','N/A','-','UNIDAD','-',96),
+('2401','2401004','ORING DE VALVULA APS 145','ORING DE VÁLVULA PARA BOMBA APS 145','COMET','APS 145','-','UNIDAD','-',268),
+('2401','2401004','ORING DE VALVULA IDS 1501','ORING DE VÁLVULA PARA BOMBA IDS 1501','COMET','IDS 1501','-','UNIDAD','-',268),
+('2401','2401004','ORING DE VALVULA IDS 1501','ORING DE VÁLVULA PARA BOMBA IDS 1501 (SEGUNDO ÍTEM)','COMET','IDS 1501','-','UNIDAD','-',268),
+('2401','2401003','RODAMIENTO Ø40X80X30.2','RODAMIENTO MECÁNICO Ø40X80X30.2 PARA BOMBAS COMET','COMET','N/A','-','UNIDAD','-',1),
+('2401','2401003','RODAMIENTO Ø55X120X29','RODAMIENTO MECÁNICO Ø55X120X29 PARA BOMBAS COMET','COMET','N/A','-','UNIDAD','-',1),
+('2401','2401004','VALVULA DE AIRE ACUMULADOR APS 145','VÁLVULA DE AIRE PARA ACUMULADOR DE PRESIÓN APS 145','COMET','APS 145','-','UNIDAD','-',50),
+('2401','2401004','VALVULA ASPIRACION COMPLETA APS 145','VÁLVULA DE ASPIRACIÓN COMPLETA SIN ORING PARA APS 145','COMET','APS 145','-','UNIDAD','-',330),
+('2401','2401004','VALVULA ASPIRACION COMPLETA IDS 1501','VÁLVULA DE ASPIRACIÓN COMPLETA SIN ORING PARA IDS 1501','COMET','IDS 1501','-','UNIDAD','-',207),
+('2401','2401003','CF/V1/40 EJE','EJE CF/V1/40 PARA SISTEMAS FIENI','FIENI','CF/V1/40','-','UNIDAD','-',4),
+('2401','2401003','SEGER E 40 RIF.100','ANILLO SEGER E 40 RIF.100 PARA ENSAMBLES FIENI','FIENI','E40','-','UNIDAD','-',16),
+('2401','2401003','ANILLO 50 X 40 X 2','ANILLO METÁLICO 50 X 40 X 2 PARA SISTEMAS FIENI','FIENI','50X40X2','-','UNIDAD','-',16),
+('2401','2401003','CF/V1/42 EJE','EJE CF/V1/42 PARA TRANSMISIÓN FIENI','FIENI','CF/V1/42','-','UNIDAD','-',6),
+('2401','2401003','CF/V1/50 ENGRANAJEO','ENGRANAJE CF/V1/50 PARA CAJA FIENI','FIENI','CF/V1/50','-','UNIDAD','-',4),
+('2401','2401003','CF/V1/51 ENGRANAJEO','ENGRANAJE CF/V1/51 PARA CAJA FIENI','FIENI','CF/V1/51','-','UNIDAD','-',6),
+('2401','2401003','CF/V2/20 EJE','EJE CF/V2/20 PARA SISTEMA V2 FIENI','FIENI','CF/V2/20','-','UNIDAD','-',1),
+('2401','2401003','CORONA CF/V2/30','CORONA DENTADA CF/V2/30 PARA TRANSMISIÓN FIENI','FIENI','CF/V2/30','-','UNIDAD','-',2),
+('2401','2401003','EMBRAGUE DE FRICCION 620/720','EMBRAGUE DE FRICCIÓN MODELO 620/720 FIENI','FIENI','620/720','-','UNIDAD','-',22),
+('2401','2401003','KIT CENTRIFUGO D470 V2','KIT CENTRÍFUGO D470 V2 PARA SISTEMAS FIENI','FIENI','D470 V2','-','UNIDAD','-',2),
+('2401','2401003','KIT CENTRIFUGO D520 HP/V2','KIT CENTRÍFUGO D520 HP/V2 PARA SISTEMAS FIENI','FIENI','D520 HP/V2','-','UNIDAD','-',4),
+('2401','2401003','MULTIPLICADOR CF/V1/12 MAGG. C/LEVA','MULTIPLICADOR CF/V1/12 MAGGIORATO CON LEVA','FIENI','CF/V1/12','-','UNIDAD','-',2),
+('2401','2401003','MULTIPLICADOR CF/V2 C/LEVA','MULTIPLICADOR CF/V2 CON LEVA PARA SISTEMAS FIENI','FIENI','CF/V2','-','UNIDAD','-',1),
+('2401','2401003','PERNO CF/V1/60','PERNO CF/V1/60 PARA ENSAMBLE MECÁNICO FIENI','FIENI','CF/V1/60','-','UNIDAD','-',4),
+('2401','2401003','PERNO CF/V2/11','PERNO CF/V2/11 PARA ENSAMBLE MECÁNICO FIENI','FIENI','CF/V2/11','-','UNIDAD','-',3),
+('2401','2401003','REJILLA','REJILLA METÁLICA DE PROTECCIÓN PARA SISTEMAS FIENI','FIENI','N/A','-','UNIDAD','-',5),
+('2401','2401003','ANILLO CF/CAR/500','ANILLO CF/CAR/500 PARA ENSAMBLE MECÁNICO FIENI','FIENI','CF/CAR/500','-','UNIDAD','-',10),
+('2401','2401003','VENTILADOR D470 FULL CUBIERTA C/2 RETENES','VENTILADOR D470 COMPLETO CON CUBIERTA Y 2 RETENES','FIENI','D470','-','UNIDAD','-',2),
+('2401','2401003','VENTILADOR D520 HPMM COMPLETO','VENTILADOR D520 HPMM COMPLETO PARA SISTEMAS FIENI','FIENI','D520 HPMM','-','UNIDAD','-',5),
+('2401','2401004','EMPAQUETADURA M213','EMPAQUETADURA MODELO M213 PARA SISTEMAS DE BOQUILLAS','MAGNOJET','M213','-','UNIDAD','-',0),
+('2401','2401004','EMPAQUETADURA M212','EMPAQUETADURA MODELO M212 PARA SISTEMAS DE BOQUILLAS','MAGNOJET','M212','-','UNIDAD','-',988),
+('2401','2401004','EMPAQUETADURA M217','EMPAQUETADURA MODELO M217 PARA SISTEMAS DE BOQUILLAS','MAGNOJET','M217','-','UNIDAD','-',660),
+('2401','2401004','DUPLICADOR ENGANCHE RÁPIDO DOBLE 11/16 TAPA QUICK','DUPLICADOR DOBLE CON ENGANCHE RÁPIDO 11/16 CON TAPA QUICK','MAGNOJET','-','-','UNIDAD','-',30),
+('2401','2401004','DUPLICADOR DOBLE 11/16 CON ROSCA','DUPLICADOR DOBLE CON ROSCA 11/16 PARA BOQUILLAS','MAGNOJET','-','-','UNIDAD','-',250),
+('2401','2401004','DISCO DE CERÁMICA J4','DISCO CERÁMICO J4 PARA BOQUILLAS MAGNOJET','MAGNOJET','J4','-','UNIDAD','-',300),
+('2401','2401004','DISCO DE CERÁMICA J5','DISCO CERÁMICO J5 PARA BOQUILLAS MAGNOJET','MAGNOJET','J5','-','UNIDAD','-',0),
+('2401','2401004','DISCO DE CERÁMICA J6','DISCO CERÁMICO J6 PARA BOQUILLAS MAGNOJET','MAGNOJET','J6','-','UNIDAD','-',300),
+('2401','2401004','NÚCLEO DE CERÁMICA 2 AGUJEROS','NÚCLEO CERÁMICO DE 2 AGUJEROS PARA BOQUILLAS','MAGNOJET','2H','-','UNIDAD','-',300),
+('2401','2401004','NÚCLEO DE CERÁMICA 3 AGUJEROS','NÚCLEO CERÁMICO DE 3 AGUJEROS PARA BOQUILLAS','MAGNOJET','3H','-','UNIDAD','-',300),
+('2401','2401004','MANÓMETRO DUAL 0–1000 PSI / 0–70 BAR','MANÓMETRO DUAL PARA SISTEMAS DE PULVERIZACIÓN','MAGNOJET','WIKA','-','UNIDAD','-',0),
+('2401','2401004','PORTABOQUILLA MODELO BIJET','PORTABOQUILLA MODELO BIJET PARA PULVERIZACIÓN','MAGNOJET','BIJET','-','UNIDAD','-',50),
+('2401','2401004','TAPA QUICK ENGANCHE RÁPIDO NEGRA','TAPA QUICK PARA ENGANCHE RÁPIDO COLOR NEGRO','MAGNOJET','QUICK','-','UNIDAD','-',400),
+('2401','2401004','TAPA CIEGA ENGANCHE RÁPIDO NEGRA','TAPA CIEGA PARA ENGANCHE RÁPIDO COLOR NEGRO','MAGNOJET','QUICK','-','UNIDAD','-',50),
+('2401','2401004','TUERCA CORTA CIEGA ROSCA 11/16','TUERCA CORTA CIEGA CON ROSCA 11/16 PARA BOQUILLAS','MAGNOJET','-','-','UNIDAD','-',50),
+('2401','2401004','FILTRO DE BOQUILLA MESH 50 RECTO','FILTRO DE BOQUILLA RECTO MALLA 50','MAGNOJET','MESH 50','-','UNIDAD','-',350),
+('2401','2401004','PORTABOQUILLA REGULABLE ENGANCHE RÁPIDO 11/16','PORTABOQUILLA REGULABLE ENGANCHE RÁPIDO SIMPLE','MAGNOJET','-','-','UNIDAD','-',50),
+('2401','2401004','PORTABOQUILLA REGULABLE CON ROSCA 11/16','PORTABOQUILLA REGULABLE CON ROSCA SIMPLE','MAGNOJET','-','-','UNIDAD','-',50),
+('2401','2401004','BOQUILLA CERÁMICA DDC 01 AZUL','BOQUILLA CERÁMICA DDC 01 COLOR AZUL','MAGNOJET','DDC01','-','UNIDAD','-',150),
+('2401','2401004','BOQUILLA CERÁMICA DDC 02 NEGRA','BOQUILLA CERÁMICA DDC 02 COLOR NEGRO','MAGNOJET','DDC02','-','UNIDAD','-',168),
+('2401','2401004','BOQUILLA CERÁMICA DDC 03 NARANJA','BOQUILLA CERÁMICA DDC 03 COLOR NARANJA','MAGNOJET','DDC03','-','UNIDAD','-',229),
+('2401','2401004','BOQUILLA CERÁMICA DDC 04 ROJA','BOQUILLA CERÁMICA DDC 04 COLOR ROJO','MAGNOJET','DDC04','-','UNIDAD','-',287),
+('2401','2401004','BOQUILLA CERÁMICA DDC 05 VERDE','BOQUILLA CERÁMICA DDC 05 COLOR VERDE','MAGNOJET','DDC05','-','UNIDAD','-',150),
+('2401','2401004','BOQUILLA CERÁMICA DDC 06 AMARILLA','BOQUILLA CERÁMICA DDC 06 COLOR AMARILLO','MAGNOJET','DDC06','-','UNIDAD','-',230),
+('2401','2401004','BOQUILLA CERÁMICA DDC 07 GRIS','BOQUILLA CERÁMICA DDC 07 COLOR GRIS','MAGNOJET','DDC07','-','UNIDAD','-',68),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-23','DISCO DIFUSOR CERÁMICO MODELO DDC-23','MAGNOJET','DDC23','-','UNIDAD','-',100),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-25','DISCO DIFUSOR CERÁMICO MODELO DDC-25','MAGNOJET','DDC25','-','UNIDAD','-',250),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-31','DISCO DIFUSOR CERÁMICO MODELO DDC-31','MAGNOJET','DDC31','-','UNIDAD','-',300),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-35','DISCO DIFUSOR CERÁMICO MODELO DDC-35','MAGNOJET','DDC35','-','UNIDAD','-',159),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-45','DISCO DIFUSOR CERÁMICO MODELO DDC-45','MAGNOJET','DDC45','-','UNIDAD','-',300),
+('2401','2401004','DISCO DIFUSOR CERÁMICO DDC-56','DISCO DIFUSOR CERÁMICO MODELO DDC-56','MAGNOJET','DDC56','-','UNIDAD','-',124),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MAG 2 NEGRA','BOQUILLA CERÁMICA CONO HUECO MAG 2 COLOR NEGRO','MAGNOJET','MAG 2','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MAG 3 NARANJA','BOQUILLA CERÁMICA CONO HUECO MAG 3 COLOR NARANJA','MAGNOJET','MAG 3','-','UNIDAD','-',250),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MAG 4 ROJA','BOQUILLA CERÁMICA CONO HUECO MAG 4 COLOR ROJO','MAGNOJET','MAG 4','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MAG 5 VERDE','BOQUILLA CERÁMICA CONO HUECO MAG 5 COLOR VERDE','MAGNOJET','MAG 5','-','UNIDAD','-',250),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MAG 6 AMARILLA','BOQUILLA CERÁMICA CONO HUECO MAG 6 COLOR AMARILLO','MAGNOJET','MAG 6','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 015 NARANJA','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 015 COLOR NARANJA','MAGNOJET','MGA 40-015','-','UNIDAD','-',60),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 015 VERDE','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 015 COLOR VERDE','MAGNOJET','MGA 40-015','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 02 AMARILLA','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 02 COLOR AMARILLO','MAGNOJET','MGA 40-02','-','UNIDAD','-',90),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 025 LILA','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 025 COLOR LILA','MAGNOJET','MGA 40-025','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 03 AZUL','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 03 COLOR AZUL','MAGNOJET','MGA 40-03','-','UNIDAD','-',160),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 40° 04 ROJA','BOQUILLA CERÁMICA CONO HUECO MGA 40° CAUDAL 04 COLOR ROJO','MAGNOJET','MGA 40-04','-','UNIDAD','-',100),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 01 NARANJA','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 01 COLOR NARANJA','MAGNOJET','MGA 60-01','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 015 VERDE','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 015 COLOR VERDE','MAGNOJET','MGA 60-015','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 02 AMARILLA','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 02 COLOR AMARILLO','MAGNOJET','MGA 60-02','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 025 LILA','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 025 COLOR LILA','MAGNOJET','MGA 60-025','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 03 AZUL','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 03 COLOR AZUL','MAGNOJET','MGA 60-03','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 035 MORADA','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 035 COLOR MORADO','MAGNOJET','MGA 60-035','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 60° 04 ROJA','BOQUILLA CERÁMICA CONO HUECO MGA 60° CAUDAL 04 COLOR ROJO','MAGNOJET','MGA 60-04','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 01 NARANJA','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 01 COLOR NARANJA','MAGNOJET','MGA 90-01','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 015 VERDE','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 015 COLOR VERDE','MAGNOJET','MGA 90-015','-','UNIDAD','-',160),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 02 AMARILLA','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 02 COLOR AMARILLO','MAGNOJET','MGA 90-02','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 025 LILA','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 025 COLOR LILA','MAGNOJET','MGA 90-025','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 03 AZUL','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 03 COLOR AZUL','MAGNOJET','MGA 90-03','-','UNIDAD','-',200),
+('2401','2401004','BOQUILLA CERÁMICA CONO HUECO MGA 90° 035 MORADA','BOQUILLA CERÁMICA CONO HUECO MGA 90° CAUDAL 035 COLOR MORADO','MAGNOJET','MGA 90-035','-','UNIDAD','-',200),
+('2101','2101010','BOMBA JP 75','BOMBA DE PULVERIZACIÓN AGRÍCOLA JP 75 MGA','MGA','JP 75','-','UNIDAD','-',2),
+('2101','2101010','BOMBA JP 100','BOMBA DE PULVERIZACIÓN AGRÍCOLA JP 100 MGA','MGA','JP 100','-','UNIDAD','-',3),
+('2101','2101010','BOMBA JP 150','BOMBA DE PULVERIZACIÓN AGRÍCOLA JP 150 MGA','MGA','JP 150','-','UNIDAD','-',1),
+('2101','2101010','BOMBA JP 190','BOMBA DE PULVERIZACIÓN AGRÍCOLA JP 190 MGA','MGA','JP 190','-','UNIDAD','-',1),
+('2401','2401004','CAMISA DE CERÁMICA JP150','CAMISA DE CERÁMICA PARA BOMBA JP150 MGA','MGA','JP150','-','UNIDAD','-',15),
+('2401','2401004','COMANDO VAR-112 2 SALIDAS','COMANDO REGULADOR VAR-112 DE 2 SALIDAS MGA','MGA','VAR-112','-','UNIDAD','-',1),
+('2401','2401004','COMANDO VAR-112 4 SALIDAS','COMANDO REGULADOR VAR-112 DE 4 SALIDAS MGA','MGA','VAR-112','-','UNIDAD','-',1),
+('2401','2401004','ELEMENTO FILTRANTE DUPLO FVS-200','ELEMENTO FILTRANTE DUPLO PARA FILTRO FVS-200 MGA','MGA','FVS-200','-','UNIDAD','-',0),
+('2401','2401004','ELEMENTO FILTRANTE TRIPLO FVS-200','ELEMENTO FILTRANTE TRIPLO PARA FILTRO FVS-200 MGA','MGA','FVS-200','-','UNIDAD','-',0),
+('2401','2401004','FILTRO DE BOQUILLA MESH 50','FILTRO DE BOQUILLA MALLA 50 PARA PULVERIZACIÓN MGA','MGA','MESH 50','-','UNIDAD','-',500),
+('2401','2401004','FILTRO FVS100','FILTRO DE LÍNEA MODELO FVS100 MGA','MGA','FVS100','-','UNIDAD','-',4),
+('2401','2401004','FILTRO FVS200','FILTRO DE LÍNEA MODELO FVS200 MGA','MGA','FVS200','-','UNIDAD','-',2),
+('2401','2401004','KIT DE REPUESTO JP 150','KIT DE REPARACIÓN COMPLETO PARA BOMBA JP150 MGA','MGA','JP150','-','KIT','-',0),
+('2401','2401004','KIT DE REPUESTO JP 190','KIT DE REPARACIÓN COMPLETO PARA BOMBA JP190 MGA','MGA','JP190','-','KIT','-',5),
+('2401','2401004','PORTABOQUILLA FINAL 13 MM ANTIGOTEO','PORTABOQUILLA FINAL 13 MM CON ANTIGOTEO TIPO CÓNDOR MGA','MGA','CONDOR','-','UNIDAD','-',80),
+('2401','2401004','PORTABOQUILLA INTERMEDIA 13 MM ANTIGOTEO','PORTABOQUILLA INTERMEDIA 13 MM CON ANTIGOTEO TIPO CÓNDOR MGA','MGA','CONDOR','-','UNIDAD','-',538),
+('2401','2401004','TAPA DE BOQUILLA PARA BARRA','TAPA DE BOQUILLA PARA BARRA DE PULVERIZACIÓN TIPO CÓNDOR MGA','MGA','CONDOR','-','UNIDAD','-',0),
+('2401','2401004','VÁLVULA COMPLETA JP 150','VÁLVULA COMPLETA PARA BOMBA JP150 MGA','MGA','JP150','-','UNIDAD','-',22),
+('2401','2401004','VÁLVULA COMPLETA JP 75/100','VÁLVULA COMPLETA PARA BOMBAS JP75 Y JP100 MGA','MGA','JP75/100','-','UNIDAD','-',30),
+('2101','2101012','ABRAZADERA CUADRADA 1 1/2"','ABRAZADERA CUADRADA GALVANIZADA 1 1/2"','TECOMED','N/A','-','UNIDAD','-',100),
+('2101','2101012','ABRAZADERA CUADRADA 1 1/4"','ABRAZADERA CUADRADA GALVANIZADA 1 1/4"','TECOMED','N/A','-','UNIDAD','-',50),
+('2101','2101012','ABRAZADERA LATÓN 1/2" G1/4" H','ABRAZADERA DE LATÓN ROSCA G1/4"','TECOMED','N/A','-','UNIDAD','-',120),
+('2101','2101011','AGITADOR HIDRÁULICO INSPECCIONABLE D 2 MM','AGITADOR HIDRÁULICO PARA TANQUE','TECOMED','N/A','-','UNIDAD','-',15),
+('2101','2101005','BOQUILLA BRONCE 2.0 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','2','-','UNIDAD','-',23),
+('2101','2101005','BOQUILLA BRONCE 2.3 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','2.3','-','UNIDAD','-',25),
+('2101','2101005','BOQUILLA BRONCE 2.5 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','2.5','-','UNIDAD','-',50),
+('2101','2101005','BOQUILLA BRONCE 3.0 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','3','-','UNIDAD','-',49),
+('2101','2101005','BOQUILLA BRONCE 3.5 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','3.5','-','UNIDAD','-',50),
+('2101','2101005','BOQUILLA BRONCE 3.8 ALTA PRESIÓN','BOQUILLA DE BRONCE PARA PISTOLA','TECOMED','3.8','-','UNIDAD','-',50),
+('2101','2101011','CARTUCHO FILTRO LÍNEA BRONCE 70 MESH','CARTUCHO FILTRANTE DE BRONCE','TECOMED','70 MESH','-','UNIDAD','-',6),
+('2101','2101011','COLUMNA DESCUBIERTA G3/8" 4 SALIDAS','COLUMNA DISTRIBUIDORA PARA PULVERIZACIÓN','TECOMED','G3/8"','-','UNIDAD','-',10),
+('2101','2101012','EMPALME CURVO MANGUERA 13 MM C/TUERCA','EMPALME CURVO PARA MANGUERA','TECOMED','13 MM','-','UNIDAD','-',200),
+('2101','2101012','EMPALME RECTO MANGUERA 13 MM C/TUERCA','EMPALME RECTO PARA MANGUERA','TECOMED','13 MM','-','UNIDAD','-',250),
+('2101','2101011','FILTRO ASPIRACIÓN 1 1/2" 50 MESH S/V','FILTRO DE ASPIRACIÓN SIN VÁLVULA','TECOMED','1 1/2"','-','UNIDAD','-',19),
+('2101','2101011','FILTRO ASPIRACIÓN 2" 50 MESH S/V','FILTRO DE ASPIRACIÓN SIN VÁLVULA','TECOMED','2"','-','UNIDAD','-',17),
+('2101','2101011','FILTRO DE BOQUILLA 50 MESH','FILTRO PARA BOQUILLA DE PULVERIZACIÓN','TECOMED','50 MESH','-','UNIDAD','-',800),
+('2101','2101011','FILTRO LÍNEA BRONCE 1/2" H','FILTRO DE LÍNEA EN BRONCE','TECOMED','1/2"','-','UNIDAD','-',9),
+('2101','2101008','GRIFO LAVAMANOS 3/4" SALIDA 8.5 MM','GRIFO METÁLICO PARA LAVAMANOS','TECOMED','3/4"','-','UNIDAD','-',50),
+('2101','2101013','JARRA VOLUMÉTRICA','JARRA GRADUADA DE MEDICIÓN','TECOMED','N/A','-','UNIDAD','-',12),
+('2101','2101005','LANZA PULVERIZACIÓN 40 BAR 1.5 MM 1 M','LANZA DE PULVERIZACIÓN CON CAPUCHA','TECOMED','1 M','-','UNIDAD','-',9),
+('2101','2101005','LANZA PULVERIZACIÓN 40 BAR 1.5 MM 60 CM','LANZA DE PULVERIZACIÓN CON CAPUCHA','TECOMED','60 CM','-','UNIDAD','-',12),
+('2101','2101006','MANÓMETRO 0–40 BAR G1/4" HORIZONTAL','MANÓMETRO INDUSTRIAL CONEXIÓN G1/4"','TECOMED','0–40 BAR','-','UNIDAD','-',15),
+('2101','2101006','MANÓMETRO 0–40 BAR G1/4" VERTICAL','MANÓMETRO INDUSTRIAL CONEXIÓN G1/4"','TECOMED','0–40 BAR','-','UNIDAD','-',20),
+('2101','2101006','MANÓMETRO 0–60 BAR G1/4" VERTICAL','MANÓMETRO INDUSTRIAL CONEXIÓN G1/4"','TECOMED','0–60 BAR','-','UNIDAD','-',0),
+('2101','2101005','NEBULIZADOR LIBERO REGULABLE G1/4"','NEBULIZADOR REGULABLE PARA PULVERIZACIÓN','TECOMED','G1/4"','-','UNIDAD','-',0),
+('2101','2101011','PISTOLA DE ROCIADO REGULABLE INOX 2.5 MM','PISTOLA DE ROCIADO DE ACERO INOXIDABLE','TECOMED','907','-','UNIDAD','-',23),
+('2101','2101005','PORTABOQUILLA DOBLE MACHO GIRATORIA G3/8"','PORTABOQUILLA ARTICULADA DOBLE SALIDA','TECOMED','G3/8"','-','UNIDAD','-',430),
+('2101','2101005','PORTABOQUILLA SIMPLE MACHO GIRATORIA G3/8"','PORTABOQUILLA ARTICULADA SIMPLE','TECOMED','G3/8"','-','UNIDAD','-',318),
+('2101','2101005','PORTABOQUILLA CICLONE TURBO 1.5 MM G3/8"','PORTABOQUILLA TURBO DE ALTA EFICIENCIA','TECOMED','1.5 MM','-','UNIDAD','-',35),
+('2101','2101005','PORTABOQUILLA DOBLE BRONCE G1/4" DISCO 18 C/ANTIGOTEO','PORTABOQUILLA DOBLE BRONCE CON ANTIGOTEO','TECOMED','G1/4"','-','UNIDAD','-',205),
+('2101','2101005','PORTABOQUILLA DOBLE BRONCE G1/4" C/ANTIGOTEO','PORTABOQUILLA DOBLE DE BRONCE','TECOMED','G1/4"','-','UNIDAD','-',0),
+('2101','2101005','PORTABOQUILLA DOBLE BRONCE G1/4" 2 DISCO 15','PORTABOQUILLA DOBLE BRONCE CON ANTIGOTEO','TECOMED','G1/4"','-','UNIDAD','-',0),
+('2401','2401004','TAPA DE BRONCE 11/16"','TAPA DE BRONCE PARA PORTABOQUILLA','TECOMED','11/16"','-','UNIDAD','-',200),
+('2101','2101005','PORTABOQUILLA FINAL 13 MM C/ANTIGOTEO','PORTABOQUILLA FINAL PARA BARRA','TECOMED','13 MM','-','UNIDAD','-',142),
+('2101','2101005','PORTABOQUILLA INTERMEDIA 13 MM C/ANTIGOTEO','PORTABOQUILLA INTERMEDIA PARA BARRA','TECOMED','13 MM','-','UNIDAD','-',84),
+('2101','2101006','REGULADOR DE PRESIÓN PILOT 2 VÍAS 40 BAR','REGULADOR DE PRESIÓN ELECTRONEUMÁTICO','TECOMED','40 BAR','-','UNIDAD','-',2),
+('2401','2401004','TAPA QUICK NEGRA C/JUNTA Y ORING','TAPA QUICK PARA PORTABOQUILLA','TECOMED','N/A','-','UNIDAD','-',375),
+('2101','2101008','UNIÓN M-M 1/2"','UNIÓN METÁLICA MACHO-MACHO','TECOMED','1/2"','-','UNIDAD','-',348),
+('2101','2101008','VÁLVULA BOLA 2 VÍAS 1 1/2"','VÁLVULA DE BOLA INDUSTRIAL','TECOMED','1 1/2"','-','UNIDAD','-',10),
+('2101','2101008','VÁLVULA BOLA 3 VÍAS 1 1/2"','VÁLVULA DE BOLA TRES VÍAS','TECOMED','1 1/2"','-','UNIDAD','-',7),
+('2101','2101008','VÁLVULA ESFÉRICA G1/2" – G3/8" M-M DX','VÁLVULA ESFÉRICA CONEXIÓN M-M','TECOMED','DX','-','UNIDAD','-',271),
+('2101','2101008','VÁLVULA ESFÉRICA G1/2" – G3/8" M-M SX','VÁLVULA ESFÉRICA CONEXIÓN M-M','TECOMED','SX','-','UNIDAD','-',285),
+('2101','2101005','LANZA RECTA 13 MM × 90 CM','LANZA RECTA PARA PULVERIZACIÓN AGRÍCOLA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',20),
+('2101','2101005','LANZA CURVA 13 MM × 90 CM','LANZA CURVA PARA PULVERIZACIÓN AGRÍCOLA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',20),
+('2101','2101005','LANZA RECTA 13 MM × 90 CM C/CAPUCHA','LANZA RECTA CON CAPUCHA PROTECTORA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',30),
+('2101','2101005','LANZA CURVA 13 MM × 90 CM C/CAPUCHA','LANZA CURVA CON CAPUCHA PROTECTORA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',30),
+('2101','2101011','PISTOLA ALTA PRESIÓN TIPO HYDRA','PISTOLA DE PULVERIZACIÓN ALTA PRESIÓN','TAIZHOU SUNNY','HYDRA','-','UNIDAD','-',20),
+('2101','2101011','PISTOLA ALTA PRESIÓN TIPO MITRA','PISTOLA DE PULVERIZACIÓN AGRÍCOLA','TAIZHOU SUNNY','MITRA','-','UNIDAD','-',120),
+('2101','2101005','PORTABOQUILLA BRONCE C/ANTIGOTEO G1/4"','PORTABOQUILLA DE BRONCE CON SISTEMA ANTIGOTEO','TAIZHOU SUNNY','G1/4"','-','UNIDAD','-',190),
+('2101','2101005','PORTABOQUILLA BRONCE C/ANTIGOTEO C/CAÑÓN G1/4"','PORTABOQUILLA DE BRONCE CON CAÑÓN Y ANTIGOTEO','TAIZHOU SUNNY','G1/4"','-','UNIDAD','-',0),
+('2101','2101012','ABRAZADERA LATÓN HEMBRA G1/4"','ABRAZADERA DE LATÓN PARA TUBERÍA','TAIZHOU SUNNY','G1/4"','-','UNIDAD','-',200),
+('2101','2101005','PORTABOQUILLA 13 MM INTERMEDIA C/ANTIGOTEO','PORTABOQUILLA INTERMEDIA PARA BARRA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',300),
+('2101','2101005','PORTABOQUILLA 13 MM FINAL C/ANTIGOTEO','PORTABOQUILLA FINAL PARA BARRA','TAIZHOU SUNNY','13 MM','-','UNIDAD','-',150),
+('2101','2101011','FILTRO DE SUCCIÓN C/VÁLVULA 160 L/MIN G1 1/2"','FILTRO DE SUCCIÓN CON VÁLVULA DE RETENCIÓN','TAIZHOU SUNNY','160 L/MIN','-','UNIDAD','-',20),
+('2101','2101011','FILTRO DE SUCCIÓN C/VÁLVULA 220 L/MIN G2"','FILTRO DE SUCCIÓN DE ALTO CAUDAL','TAIZHOU SUNNY','220 L/MIN','-','UNIDAD','-',15),
+('2101','2101011','FILTRO DE SUCCIÓN 70 L/MIN G1/2"','FILTRO DE SUCCIÓN PARA EQUIPOS AGRÍCOLAS','TAIZHOU SUNNY','70 L/MIN','-','UNIDAD','-',10),
+('2404','2404001','CANASTILLA PLÁSTICA 400×380×275 MM','CANASTILLA PLÁSTICA MULTIUSO','TAIZHOU SUNNY','400×380×275','-','UNIDAD','-',30),
+('2404','2404001','CANASTILLA PLÁSTICA 300×288×235 MM','CANASTILLA PLÁSTICA MULTIUSO','TAIZHOU SUNNY','300×288×235','-','UNIDAD','-',12),
+('2401','2401004','BOQUILLA DE CERÁMICA 1.5 MM','BOQUILLA DE CERÁMICA PARA PULVERIZACIÓN','TAIZHOU SUNNY','1.5 MM','-','UNIDAD','-',40),
+('2401','2401004','BOQUILLA DE CERÁMICA 2.5 MM','BOQUILLA DE CERÁMICA PARA PULVERIZACIÓN','TAIZHOU SUNNY','2.5 MM','-','UNIDAD','-',40),
+('2401','2401003','CORREA 3175LA - 4R3V1250','CORREA DE TRANSMISIÓN MECÁNICA MODELO 3175 LA - 4R3V1250','GENÉRICA','3175 La','-','UNIDAD','-',46),
+('2401','2401003','CORREA 3175LA - 5R3V1250','CORREA DE TRANSMISIÓN MECÁNICA MODELO 3175 LA - 5R3V1250','GENÉRICA','3175 La','-','UNIDAD','-',53),
+('2101','2101005','CODO GIRATORIO CILÍNDRICO MACHO 1/4"','CODO GIRATORIO CILÍNDRICO MACHO 1/4" PARA SISTEMAS DE RIEGO Y PULVERIZACIÓN','GENÉRICA','1/4"','-','UNIDAD','-',180),
+('2401','2401004','ABRAZADERA 12–16 MM','ABRAZADERA METÁLICA JACTO 12–16 MM PARA EQUIPOS DE PULVERIZACIÓN','JACTO','812404','-','UNIDAD','-',195),
+('2401','2401004','AGITADOR','AGITADOR INTERNO JACTO PARA TANQUE DE PULVERIZADOR AGRÍCOLA','JACTO','300582','-','UNIDAD','-',20),
+('2401','2401004','AGUJA COMPLETA','AGUJA COMPLETA JACTO PARA BOQUILLA DE PULVERIZACIÓN','JACTO','105239','-','UNIDAD','-',26),
+('2401','2401004','ARANDELA / SEPARADOR DE ÉMBOLO','ARANDELA SEPARADORA DE ÉMBOLO JACTO PARA BOMBA PULVERIZADORA','JACTO','S/C','-','UNIDAD','-',50),
+('2401','2401004','BASE COMPLETA','BASE COMPLETA JACTO PARA CONJUNTO DE BOMBEO','JACTO','229484','-','UNIDAD','-',16),
+('2401','2401004','BOQUILLA JD-12 P COMPLETA','BOQUILLA JD-12 P COMPLETA JACTO PARA PULVERIZACIÓN AGRÍCOLA','JACTO','427062','-','UNIDAD','-',27),
+('2401','2401004','BOQUILLA REGULABLE AZUL N°3','BOQUILLA REGULABLE AZUL N°3 JACTO PARA PULVERIZADOR','JACTO','325787','-','UNIDAD','-',5),
+('2401','2401004','CÁMARA COMPLETA','CÁMARA COMPLETA JACTO PARA SISTEMA DE PRESIÓN','JACTO','635284','-','UNIDAD','-',2),
+('2401','2401004','CILINDRO COMPLETO','CILINDRO COMPLETO JACTO PARA BOMBA DE PULVERIZACIÓN','JACTO','925917','-','UNIDAD','-',26),
+('2401','2401004','CINTA COMPLETA','CINTA COMPLETA JACTO PARA SISTEMA DE PULVERIZACIÓN','JACTO','915926','-','UNIDAD','-',57),
+('2401','2401004','COLADOR','COLADOR JACTO PARA FILTRADO DE LÍQUIDOS','JACTO','647131','-','UNIDAD','-',18),
+('2401','2401004','CUERPO DEL REGISTRO','CUERPO DEL REGISTRO JACTO PARA CONTROL DE FLUJO','JACTO','909283','-','UNIDAD','-',40),
+('2401','2401004','DIAFRAGMA','DIAFRAGMA JACTO PARA BOMBA DE PULVERIZACIÓN','JACTO','560573','-','UNIDAD','-',0),
+('2401','2401004','ÉMBOLO DE PLÁSTICO','ÉMBOLO PLÁSTICO JACTO PARA SISTEMA DE BOMBEO','JACTO','942755','-','UNIDAD','-',100),
+('2401','2401004','EMPAQUETADURA PRENSAESTOPA','EMPAQUETADURA PRENSAESTOPA JACTO PARA SELLADO','JACTO','831230','-','UNIDAD','-',0),
+('2401','2401004','FIJADOR DE ÉMBOLO','FIJADOR DE ÉMBOLO JACTO PARA BOMBA','JACTO','402297','-','UNIDAD','-',6),
+('2401','2401004','VÁLVULA DE CÁMARA','VÁLVULA DE CÁMARA JACTO PARA PULVERIZADOR','JACTO','1192736','-','UNIDAD','-',0),
+('2401','2401004','FILTRO DE BOQUILLA MALLA 50','FILTRO DE BOQUILLA MALLA 50 JACTO','JACTO','439083','-','UNIDAD','-',90),
+('2401','2401004','GRAPA DE LA BASE','GRAPA DE BASE JACTO PARA FIJACIÓN','JACTO','825471','-','UNIDAD','-',0),
+('2401','2401004','JUEGO DE ARANDELAS, TORNILLOS Y TUERCAS','JUEGO DE ARANDELAS, TORNILLOS Y TUERCAS JACTO','JACTO','229476','-','JGO','-',60),
+('2401','2401004','JUEGO DE ARANDELAS Y CONTRACLAVIJAS','JUEGO DE ARANDELAS Y CONTRACLAVIJAS JACTO PARA PULVERIZADOR','JACTO','942102','-','JGO','-',47),
+('2401','2401004','JUEGO DE ARANDELAS Y CONTRACLAVIJAS','JUEGO DE ARANDELAS Y CONTRACLAVIJAS JACTO PARA EQUIPO DE RIEGO','JACTO','1198800','-','JGO','-',0),
+('2401','2401004','JUEGO DE ÉMBOLOS CON ESPACIADOR','JUEGO DE ÉMBOLOS CON ESPACIADOR JACTO PARA BOMBA','JACTO','336479','-','JGO','-',23),
+('2401','2401004','JUNTA CÓNICA','JUNTA CÓNICA JACTO PARA SELLADO DE CONEXIONES','JACTO','909309','-','UNIDAD','-',213),
+('2401','2401004','LANZA 601','LANZA MODELO 601 JACTO PARA PULVERIZACIÓN AGRÍCOLA','JACTO','100131','-','UNIDAD','-',40),
+('2401','2401004','LANZA DE PULVERIZACIÓN COMPLETA','LANZA DE PULVERIZACIÓN COMPLETA JACTO','JACTO','915769','-','UNIDAD','-',0),
+('2401','2401003','MANGO DEL REGISTRO','MANGO DEL REGISTRO JACTO PARA CONTROL DE FLUJO','JACTO','909192','-','UNIDAD','-',20),
+('2401','2401004','MANGUERA 5/16” X 1350 MM','MANGUERA DE ALTA PRESIÓN JACTO 5/16” X 1350 MM','JACTO','530576','-','UNIDAD','-',18),
+('2401','2401003','PALANCA CON MANIJA','PALANCA CON MANIJA JACTO PARA ACCIONAMIENTO','JACTO','615005','-','UNIDAD','-',13),
+('2401','2401003','PALANCA DEL REGISTRO / GATILLO','PALANCA DE REGISTRO / GATILLO JACTO PARA PULVERIZADOR','JACTO','105247','-','UNIDAD','-',0),
+('2101','2101009','PINZA','PINZA JACTO PARA MANTENIMIENTO DE EQUIPOS','JACTO','920470','-','UNIDAD','-',20),
+('2401','2401004','PORTA PRENSAESTOPA','PORTA PRENSAESTOPA JACTO PARA SISTEMA DE SELLADO','JACTO','831222','-','UNIDAD','-',0),
+('2401','2401003','REFUERZO','REFUERZO ESTRUCTURAL JACTO PARA EQUIPO PULVERIZADOR','JACTO','942714','-','UNIDAD','-',13),
+('2401','2401004','REGISTRO COMPLETO','REGISTRO COMPLETO JACTO PARA CONTROL DE FLUJO','JACTO','908889','-','UNIDAD','-',1),
+('2401','2401004','TAPA CON DIAFRAGMA','TAPA CON DIAFRAGMA JACTO PARA CÁMARA DE PRESIÓN','JACTO','120527','-','UNIDAD','-',39),
+('2401','2401004','TAPA DE LA BOQUILLA','TAPA DE BOQUILLA JACTO PARA PULVERIZACIÓN','JACTO','229724','-','UNIDAD','-',40),
+('2401','2401004','TAPA DEL REGISTRO','TAPA DEL REGISTRO JACTO PARA VÁLVULA DE CONTROL','JACTO','996058','-','UNIDAD','-',90),
+('2401','2401004','TUERCA CÓNICA','TUERCA CÓNICA JACTO PARA CONEXIÓN HIDRÁULICA','JACTO','915744','-','UNIDAD','-',69),
+('2401','2401004','UNIÓN CON JUNTA CÓNICA / CODO','UNIÓN TIPO CODO CON JUNTA CÓNICA JACTO','JACTO','635276','-','UNIDAD','-',56),
+('2401','2401003','VARILLA DE ACCIONAMIENTO','VARILLA DE ACCIONAMIENTO JACTO PARA SISTEMA DE CONTROL','JACTO','1197400','-','UNIDAD','-',40),
+('2401','2401004','BOQUILLA AVI 110 ROJA','BOQUILLA AVI 110 COLOR ROJO ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','AVI 110','-','UNIDAD','-',82),
+('2401','2401004','BOQUILLA ATR 80° NARANJA','BOQUILLA ATR 80° COLOR NARANJA ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',98),
+('2401','2401004','BOQUILLA ATR 80° MARRÓN','BOQUILLA ATR 80° COLOR MARRÓN ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',44),
+('2401','2401004','BOQUILLA ATR 80° LILA','BOQUILLA ATR 80° COLOR LILA ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',120),
+('2401','2401004','BOQUILLA ATR 80° ROJA','BOQUILLA ATR 80° COLOR ROJO ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',27),
+('2401','2401004','BOQUILLA ATR 80° AZUL','BOQUILLA ATR 80° COLOR AZUL ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',32),
+('2401','2401004','BOQUILLA ATR 80° VERDE','BOQUILLA ATR 80° COLOR VERDE ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 80°','-','UNIDAD','-',107),
+('2401','2401004','BOQUILLA ATR 60° MARRÓN','BOQUILLA ATR 60° COLOR MARRÓN ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 60°','-','UNIDAD','-',100),
+('2401','2401004','BOQUILLA ATR 60° AMARILLA','BOQUILLA ATR 60° COLOR AMARILLO ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 60°','-','UNIDAD','-',384),
+('2401','2401004','BOQUILLA ATR 60° NARANJA','BOQUILLA ATR 60° COLOR NARANJA ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 60°','-','UNIDAD','-',100),
+('2401','2401004','BOQUILLA ATR 60° VERDE','BOQUILLA ATR 60° COLOR VERDE ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 60°','-','UNIDAD','-',70),
+('2401','2401004','BOQUILLA ATR 60° AZUL','BOQUILLA ATR 60° COLOR AZUL ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATR 60°','-','UNIDAD','-',110),
+('2401','2401004','BOQUILLA ATI 80° NARANJA','BOQUILLA ATI 80° COLOR NARANJA ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATI 80°','-','UNIDAD','-',100),
+('2401','2401004','BOQUILLA ATI 80° VERDE','BOQUILLA ATI 80° COLOR VERDE ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATI 80°','-','UNIDAD','-',100),
+('2401','2401004','BOQUILLA ATF 60° AZUL','BOQUILLA ATF 60° COLOR AZUL ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 60°','-','UNIDAD','-',300),
+('2401','2401004','BOQUILLA ATF 80° AZUL','BOQUILLA ATF 80° COLOR AZUL ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 80°','-','UNIDAD','-',42),
+('2401','2401004','BOQUILLA ATF 80° ROJA','BOQUILLA ATF 80° COLOR ROJO ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 80°','-','UNIDAD','-',86),
+('2401','2401004','BOQUILLA ATF 80° MARRÓN','BOQUILLA ATF 80° COLOR MARRÓN ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 80°','-','UNIDAD','-',154),
+('2401','2401004','BOQUILLA ATF 80° LILA','BOQUILLA ATF 80° COLOR LILA ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 80°','-','UNIDAD','-',98),
+('2401','2401004','BOQUILLA ATF 80° VERDE','BOQUILLA ATF 80° COLOR VERDE ALBUZ PARA PULVERIZACIÓN AGRÍCOLA','ALBUZ','ATF 80°','-','UNIDAD','-',80),
+('2101','2101005','BOQUILLA ATF 80 AMARILLO','BOQUILLA DE PULVERIZACIÓN ATF 80° COLOR AMARILLO ALBUZ','ALBUZ','ATF 80°','STD','UNIDAD','-',3),
+('2101','2101005','BOQUILLA AXI 80 AMARILLO','BOQUILLA DE PULVERIZACIÓN AXI 80° COLOR AMARILLO ALBUZ','ALBUZ','AXI 80°','STD','UNIDAD','-',2),
+('2101','2101005','BOQUILLA AXI 80 VERDE','BOQUILLA DE PULVERIZACIÓN AXI 80° COLOR VERDE ALBUZ','ALBUZ','AXI 80°','STD','UNIDAD','-',2),
+('2101','2101005','DIFUSOR DE CERÁMICA AC25','DIFUSOR DE CERÁMICA AC25 PARA PULVERIZACIÓN ALBUZ','ALBUZ','AC25','STD','UNIDAD','-',200),
+('2101','2101005','DIFUSOR DE CERÁMICA AC35','DIFUSOR DE CERÁMICA AC35 PARA PULVERIZACIÓN ALBUZ','ALBUZ','AC35','STD','UNIDAD','-',3),
+('2101','2101005','DIFUSOR DE CERÁMICA AC45','DIFUSOR DE CERÁMICA AC45 PARA PULVERIZACIÓN ALBUZ','ALBUZ','AC45','STD','UNIDAD','-',308),
+('2101','2101005','DISCO DE CERÁMICA AD3','DISCO DE CERÁMICA AD3 PARA SISTEMAS DE PULVERIZACIÓN ALBUZ','ALBUZ','AD3','STD','UNIDAD','-',300),
+('2101','2101005','DISCO DE CERÁMICA AD4','DISCO DE CERÁMICA AD4 PARA SISTEMAS DE PULVERIZACIÓN ALBUZ','ALBUZ','AD4','STD','UNIDAD','-',96),
+('2101','2101005','DISCO DE CERÁMICA AD5','DISCO DE CERÁMICA AD5 PARA SISTEMAS DE PULVERIZACIÓN ALBUZ','ALBUZ','AD5','STD','UNIDAD','-',24),
+('2101','2101005','DISCO DE CERÁMICA AD6','DISCO DE CERÁMICA AD6 PARA SISTEMAS DE PULVERIZACIÓN ALBUZ','ALBUZ','AD6','STD','UNIDAD','-',210),
+('2101','2101005','DISCO DE CERÁMICA AD7','DISCO DE CERÁMICA AD7 PARA SISTEMAS DE PULVERIZACIÓN ALBUZ','ALBUZ','AD7','STD','UNIDAD','-',250),
+('2101','2101005','VÁLVULA OR 320 UDOR','VÁLVULA OR 320 TIPO UDOR PARA SISTEMAS DE PULVERIZACIÓN AGRÍCOLA','NACIONAL','OR 320','STD','UNIDAD','-',46),
+('2101','2101005','CODO GIRATORIO','CODO GIRATORIO PARA CONEXIONES EN SISTEMAS DE RIEGO AGRÍCOLA','NACIONAL','UNIVERSAL','STD','UNIDAD','-',200),
+('2101','2101005','PORTABOQUILLAS TOBERA','PORTABOQUILLAS TIPO TOBERA PARA PULVERIZACIÓN AGRÍCOLA','NACIONAL','UNIVERSAL','STD','UNIDAD','-',199),
+('2101','2101005','PORTABOQUILLA FINAL 13 MM TEEJET','PORTABOQUILLA FINAL 13 MM COMPATIBLE SISTEMA TEEJET','NACIONAL','13 MM','STD','UNIDAD','-',20),
+('2101','2101005','TAPA QUICK AMARILLA','TAPA QUICK COLOR AMARILLO PARA PORTABOQUILLAS AGRÍCOLAS','NACIONAL','QUICK','STD','UNIDAD','-',75),
+('2101','2101005','PORTABOQUILLAS TOBERA + ESPIGA + NIPLE','PORTABOQUILLAS CON TOBERA, ESPIGA Y NIPLE PARA RIEGO AGRÍCOLA','NACIONAL','KIT','STD','UNIDAD','-',10),
+('2101','2101005','KIT RIC VÁLVULA 43356 BHA-BHS 170–200 ANNOVI','KIT RIC VÁLVULA MODELO 43356 PARA EQUIPOS ANNOVI BHA-BHS 170–200','NACIONAL','43356','STD','KIT','-',3),
+('2101','2101005','ADAPTADOR 45° ROSCA MACHO 1/4" 22674-NYB TEEJET','ADAPTADOR 45° ROSCA MACHO 1/4" COMPATIBLE TEEJET NYB','NACIONAL','22674','STD','UNIDAD','-',20),
+('2101','2101007','TRAJE CHAVIGOLDEN TALLA S','TRAJE DE PROTECCIÓN PERSONAL CHAVIGOLDEN TALLA S','CHAVIGOLDEN','TALLA S','-','UNIDAD','-',6),
+('2101','2101007','TRAJE CHAVIGOLDEN TALLA M','TRAJE DE PROTECCIÓN PERSONAL CHAVIGOLDEN TALLA M','CHAVIGOLDEN','TALLA M','-','UNIDAD','-',5),
+('2101','2101007','TRAJE CHAVIGOLDEN TALLA L','TRAJE DE PROTECCIÓN PERSONAL CHAVIGOLDEN TALLA L','CHAVIGOLDEN','TALLA L','-','UNIDAD','-',6),
+('2101','2101007','TRAJE CHAVIGOLDEN TALLA XL','TRAJE DE PROTECCIÓN PERSONAL CHAVIGOLDEN TALLA XL','CHAVIGOLDEN','TALLA XL','-','UNIDAD','-',3),
+('2101','2101007','TRAJE CHAVIGOLDEN TALLA XXL','TRAJE DE PROTECCIÓN PERSONAL CHAVIGOLDEN TALLA XXL','CHAVIGOLDEN','TALLA XXL','-','UNIDAD','-',9),
+('2101','2101007','PANTALÓN CHAVIGOLDEN','PANTALÓN DE PROTECCIÓN PERSONAL CHAVIGOLDEN','CHAVIGOLDEN','ESTÁNDAR','-','UNIDAD','-',26),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN TALLA S','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA S','SUPER CHAVIGOLDEN','TALLA S','-','UNIDAD','-',8),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN TALLA M','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA M','SUPER CHAVIGOLDEN','TALLA M','-','UNIDAD','-',2),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN TALLA L','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA L','SUPER CHAVIGOLDEN','TALLA L','-','UNIDAD','-',1),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN TALLA XL','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA XL','SUPER CHAVIGOLDEN','TALLA XL','-','UNIDAD','-',1),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN TALLA XXL','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA XXL','SUPER CHAVIGOLDEN','TALLA XXL','-','UNIDAD','-',8),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN AGROBERRIES TALLA M','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN AGROBERRIES TALLA M','SUPER CHAVIGOLDEN','TALLA M','-','UNIDAD','-',7),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN SIN TALLA','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN SIN TALLA','SUPER CHAVIGOLDEN','SIN TALLA','-','UNIDAD','-',1),
+('2101','2101007','TRAJE SUPER CHAVIGOLDEN SIN GORRO TALLA M','TRAJE DE PROTECCIÓN SUPER CHAVIGOLDEN SIN GORRO TALLA M','SUPER CHAVIGOLDEN','TALLA M','-','UNIDAD','-',1),
+('2101','2101007','CHAQUETA SUPER CHAVIGOLDEN ALAYA TALLA L','CHAQUETA DE PROTECCIÓN SUPER CHAVIGOLDEN ALAYA TALLA L','SUPER CHAVIGOLDEN','TALLA L','-','UNIDAD','-',1),
+('2101','2101007','PANTALÓN SUPER CHAVIGOLDEN TALLA M','PANTALÓN DE PROTECCIÓN SUPER CHAVIGOLDEN TALLA M','SUPER CHAVIGOLDEN','TALLA M','-','UNIDAD','-',74),
+('2101','2101007','TRAJE DE APICULTOR TALLA ÚNICA','TRAJE DE PROTECCIÓN PARA APICULTURA TALLA ÚNICA','APICULTOR','TALLA ÚNICA','-','UNIDAD','-',12),
+('2101','2101007','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA M','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA M','BAGUMZ','TALLA M','-','UNIDAD','-',40),
+('2101','2101007','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA L','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA L','BAGUMZ','TALLA L','-','UNIDAD','-',149),
+('2101','2101007','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA XL','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA XL','BAGUMZ','TALLA XL','-','UNIDAD','-',30),
+('2101','2101007','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA XXL','EQUIPO DE PROTECCIÓN BAGUMZ 6 PIEZAS TALLA XXL','BAGUMZ','TALLA XXL','-','UNIDAD','-',6),
+('2101','2101007','TRAJE CHAVIPREMIUM TALLA S SIN MANDIL','TRAJE DE PROTECCIÓN CHAVIPREMIUM TALLA S SIN MANDIL','CHAVIPREMIUM','TALLA S','-','UNIDAD','-',14),
+('2101','2101007','TRAJE CHAVIPREMIUM TALLA L SIN MANDIL','TRAJE DE PROTECCIÓN CHAVIPREMIUM TALLA L SIN MANDIL','CHAVIPREMIUM','TALLA L','-','UNIDAD','-',32),
+('2101','2101007','TRAJE CHAVIPREMIUM TALLA L CON MANDIL','TRAJE DE PROTECCIÓN CHAVIPREMIUM TALLA L CON MANDIL','CHAVIPREMIUM','TALLA L','-','UNIDAD','-',1),
+('2101','2101007','GORRO CHAVIPREMIUM TALLA ÚNICA','GORRO DE PROTECCIÓN CHAVIPREMIUM TALLA ÚNICA','CHAVIPREMIUM','TALLA ÚNICA','-','UNIDAD','-',2),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA S CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA S CON CINTA REFLECTIVA','AMERICAZ','TALLA S','-','UNIDAD','-',10),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA M CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA M CON CINTA REFLECTIVA','AMERICAZ','TALLA M','-','UNIDAD','-',21),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA L CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA L CON CINTA REFLECTIVA','AMERICAZ','TALLA L','-','UNIDAD','-',32),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XL CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XL CON CINTA REFLECTIVA','AMERICAZ','TALLA XL','-','UNIDAD','-',22),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XXL CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XXL CON CINTA REFLECTIVA','AMERICAZ','TALLA XXL','-','UNIDAD','-',31),
+('2101','2101007','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XXXL CON CINTA REFLECTIVA','EQUIPO DE PROTECCIÓN AMERICAZ TALLA XXXL CON CINTA REFLECTIVA','AMERICAZ','TALLA XXXL','-','UNIDAD','-',14),
+('2101','2101007','TRAJE INTERIOR CORTO TALLA S','TRAJE INTERIOR CORTO DE PROTECCIÓN TALLA S','INTERIOR','TALLA S','-','UNIDAD','-',3),
+('2101','2101007','TRAJE INTERIOR CORTO TALLA L','TRAJE INTERIOR CORTO DE PROTECCIÓN TALLA L','INTERIOR','TALLA L','-','UNIDAD','-',8),
+('2101','2101007','TRAJE INTERIOR LARGO TALLA M','TRAJE INTERIOR LARGO DE PROTECCIÓN TALLA M','INTERIOR','TALLA M','-','UNIDAD','-',10),
+('2101','2101007','TRAJE INTERIOR CORTO TALLA L','TRAJE INTERIOR CORTO DE PROTECCIÓN TALLA L','INTERIOR','TALLA L','-','UNIDAD','-',10),
+('2101','2101007','SHORT INTERIOR TALLA ÚNICA','SHORT INTERIOR DE PROTECCIÓN TALLA ÚNICA','INTERIOR','TALLA ÚNICA','-','UNIDAD','-',32),
+('2101','2101007','UNIFORME CHAVIMOCHIC COMPLETO TALLA S 3 PIEZAS','UNIFORME CHAVIMOCHIC COMPLETO TALLA S COMPUESTO POR 3 PIEZAS','CHAVIAGRO','TALLA S','-','UNIDAD','-',3),
+('2101','2101007','UNIFORME CHAVIMOCHIC COMPLETO TALLA L 3 PIEZAS','UNIFORME CHAVIMOCHIC COMPLETO TALLA L COMPUESTO POR 3 PIEZAS','CHAVIAGRO','TALLA L','-','UNIDAD','-',12),
+('2101','2101007','UNIFORME CHAVIMOCHIC COMPLETO TALLA L 4 PIEZAS','UNIFORME CHAVIMOCHIC COMPLETO TALLA L COMPUESTO POR 4 PIEZAS','CHAVIAGRO','TALLA L','-','UNIDAD','-',3),
+('2101','2101007','CAMISA CHAVIMOCHIC TALLA XXL','CAMISA DE UNIFORME CHAVIMOCHIC TALLA XXL','CHAVIAGRO','TALLA XXL','-','UNIDAD','-',1),
+('2101','2101007','CAMISA CHAVIMOCHIC TALLA XXXL','CAMISA DE UNIFORME CHAVIMOCHIC TALLA XXXL','CHAVIAGRO','TALLA XXXL','-','UNIDAD','-',1),
+('2101','2101007','ACCESORIO CHAVIMOCHIC SIN TALLA','ACCESORIO DE UNIFORME CHAVIMOCHIC SIN TALLA DEFINIDA','CHAVIAGRO','SIN TALLA','-','UNIDAD','-',5),
+('2101','2101007','GORRO CHAVIMOCHIC TALLA ÚNICA','GORRO DE PROTECCIÓN CHAVIMOCHIC TALLA ÚNICA','CHAVIAGRO','TALLA ÚNICA','-','UNIDAD','-',3),
+('2101','2101007','MANDIL ANARANJADO CHAVIMOCHIC TALLA ÚNICA','MANDIL DE PROTECCIÓN COLOR ANARANJADO CHAVIMOCHIC TALLA ÚNICA','CHAVIAGRO','TALLA ÚNICA','-','UNIDAD','-',1),
+('2101','2101007','EQUIPO DE PROTECCIÓN CHIAWAY 5 PIEZAS TALLA M SIN MANDIL','EQUIPO DE PROTECCIÓN CHIAWAY DE 5 PIEZAS TALLA M SIN MANDIL','CHIAWAY','TALLA M','-','UNIDAD','-',14),
+('2101','2101007','EQUIPO DE PROTECCIÓN CHIAWAY 5 PIEZAS TALLA L SIN MANDIL','EQUIPO DE PROTECCIÓN CHIAWAY DE 5 PIEZAS TALLA L SIN MANDIL','CHIAWAY','TALLA L','-','UNIDAD','-',1),
+('2101','2101007','TRAJE SUPER CHAVIPREMIUM CON CINTA REFLECTIVA TALLA L','TRAJE SUPER CHAVIPREMIUM TALLA L CON CINTA REFLECTIVA','SUPER CHAVIPREMIUM','TALLA L','-','UNIDAD','-',14);
+
+-- ==========================================
+-- 4. LIMPIEZA Y NORMALIZACIÓN DE DATOS
+-- ==========================================
+PRINT '>> Normalizando datos...'
+
+-- Normalizar Unidades
+UPDATE @ImportData SET cod_unidad_final = 'NIU' WHERE nombre_unidad = 'UNIDAD';
+UPDATE @ImportData SET cod_unidad_final = 'KT' WHERE nombre_unidad = 'KIT';
+UPDATE @ImportData SET cod_unidad_final = 'SET' WHERE nombre_unidad = 'JGO';
+UPDATE @ImportData SET cod_unidad_final = 'MTR' WHERE nombre_unidad = 'ML';
+UPDATE @ImportData SET cod_unidad_final = 'NIU' WHERE cod_unidad_final IS NULL; -- Default
+
+-- Crear Marcas faltantes
+INSERT INTO marca (nombre, estado, empresa_id)
+SELECT DISTINCT nombre_marca, 1, @EmpresaID 
+FROM @ImportData 
+WHERE nombre_marca IS NOT NULL 
+AND nombre_marca NOT IN (SELECT nombre FROM marca WHERE empresa_id = @EmpresaID);
+
+-- Crear Modelos faltantes
+INSERT INTO modelo (nombre, estado, marca_id, empresa_id)
+SELECT DISTINCT i.nombre_modelo, 1, m.id, @EmpresaID
+FROM @ImportData i
+JOIN marca m ON m.nombre = i.nombre_marca AND m.empresa_id = @EmpresaID
+WHERE i.nombre_modelo IS NOT NULL AND i.nombre_modelo <> 'N/A' AND i.nombre_modelo <> '-'
+AND i.nombre_modelo NOT IN (SELECT nombre FROM modelo WHERE empresa_id = @EmpresaID);
+
+-- Recuperar IDs a la tabla temporal
+UPDATE i
+SET 
+    i.grupo_id = g.id,
+    i.subgrupo_id = sg.id,
+    i.marca_id = m.id,
+    i.modelo_id = mo.id
+FROM @ImportData i
+LEFT JOIN grupo g ON g.codigo = i.cod_grupo AND g.empresa_id = @EmpresaID
+LEFT JOIN subgrupo sg ON sg.codigo = i.cod_subgrupo AND sg.empresa_id = @EmpresaID
+LEFT JOIN marca m ON m.nombre = i.nombre_marca AND m.empresa_id = @EmpresaID
+LEFT JOIN modelo mo ON mo.nombre = i.nombre_modelo AND mo.empresa_id = @EmpresaID;
+
+-- ==========================================
+-- 5. GENERACIÓN DE CÓDIGOS DE PRODUCTO
+-- ==========================================
+PRINT '>> Generando Códigos de Producto...'
+
+-- Generamos un correlativo temporal por subgrupo para armar el código
+;WITH CTE_Codigos AS (
+    SELECT id, cod_subgrupo, ROW_NUMBER() OVER(PARTITION BY cod_subgrupo ORDER BY id) as correlativo
+    FROM @ImportData
+)
+UPDATE i
+SET i.codigo_generado = i.cod_subgrupo + RIGHT('000' + CAST(c.correlativo AS VARCHAR(10)), 3)
+FROM @ImportData i
+JOIN CTE_Codigos c ON i.id = c.id;
+
+-- ==========================================
+-- 6. INSERTAR PRODUCTOS
+-- ==========================================
+PRINT '>> Insertando Productos en Maestro...'
+
+INSERT INTO producto (
+    codigo, grupo_id, cod_grupo, descripcion_grupo, subgrupo_id, cod_subgrupo, descripcion_subgrupo,
+    descripcion_producto, descripcion_comercial, cod_unidad_medida, 
+    marca_id, modelo_id, serie, lote, es_activo_fijo, estado, empresa_id
+)
+SELECT 
+    i.codigo_generado, 
+    i.grupo_id, i.cod_grupo, g.descripcion,
+    i.subgrupo_id, i.cod_subgrupo, sg.descripcion,
+    i.desc_producto, i.desc_comercial, i.cod_unidad_final,
+    i.marca_id, i.modelo_id, 
+    CASE WHEN i.serie = '-' THEN NULL ELSE i.serie END,
+    CASE WHEN i.lote = '-' THEN NULL ELSE i.lote END,
+    0, 1, @EmpresaID
+FROM @ImportData i
+JOIN grupo g ON g.id = i.grupo_id
+JOIN subgrupo sg ON sg.id = i.subgrupo_id;
+
+-- Recuperar el ID de producto generado a la temporal
+UPDATE i
+SET i.producto_id = p.id
+FROM @ImportData i
+JOIN producto p ON p.codigo = i.codigo_generado AND p.empresa_id = @EmpresaID;
+
+-- ==========================================
+-- 7. REGISTRAR SALDO INICIAL (INGRESO ALMACÉN)
+-- ==========================================
+PRINT '>> Registrando Saldo Inicial en Almacén...'
+
+DECLARE @IdIngreso INT;
+
+-- Insertar Cabecera
+INSERT INTO ingresosalidaalm (
+    fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
+    moneda_id, estado_id, usuario_id, empresa_id
+) 
+VALUES (
+    @Fecha, '0000000001', @SucursalID, @AlmacenID, 1, @MotivoID, 
+    1, 1, NULL, @EmpresaID
+);
+
+SET @IdIngreso = SCOPE_IDENTITY();
+
+-- Insertar Detalles (Solo aquellos con cantidad > 0)
+INSERT INTO dingresosalidaalm (
+    ingresosalidaalm_id, item, producto_id, cod_producto, descripcion_producto, 
+    cod_unidad_medida, cantidad, precio, subtotal, total, 
+    fecha_registro, empresa_id
+)
+SELECT 
+    @IdIngreso,
+    RIGHT('000' + CAST(ROW_NUMBER() OVER(ORDER BY id) AS VARCHAR), 3),
+    producto_id, codigo_generado, desc_comercial,
+    cod_unidad_final, cantidad, 0, 0, 0,
+    GETDATE(), @EmpresaID
+FROM @ImportData
+WHERE cantidad > 0;
+
+-- ==========================================
+-- 8. ACTUALIZAR STOCK FÍSICO
+-- ==========================================
+PRINT '>> Actualizando Stock Físico...'
+
+INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, empresa_id, ultima_actualizacion)
+SELECT 
+    @AlmacenID,
+    producto_id,
+    cantidad,
+    @EmpresaID,
+    GETDATE()
+FROM @ImportData
+WHERE cantidad > 0;
+
+PRINT '>> CARGA MASIVA COMPLETADA EXITOSAMENTE.';
+GO
