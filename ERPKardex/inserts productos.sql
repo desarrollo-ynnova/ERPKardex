@@ -689,9 +689,21 @@ BEGIN
     PRINT 'Almacén PRINCIPAL ya existía.';
 END
 
+IF NOT EXISTS (SELECT 1 FROM almacen WHERE codigo = '02' AND empresa_id = @EmpresaID)
+BEGIN
+    INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) 
+    VALUES ('02', 'CONSIGNACIÓN STALNO-MAQSA', 1, '001', @SucursalID, 1, @EmpresaID);
+    PRINT 'Almacén CONSIGNACIÓN STALNO-MAQSA creado.';
+END
+ELSE
+BEGIN
+    PRINT 'Almacén CONSIGNACIÓN STALNO-MAQSA ya existía.';
+END
+
 
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'CHICLAYO', 1, 3);
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 3);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','CONSIGNACIÓN STALNO',1,'001', 1, 0, 3);
 
 GO
 
