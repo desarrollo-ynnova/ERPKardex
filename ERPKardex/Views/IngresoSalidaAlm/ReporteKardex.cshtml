@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Kardex Valorizado";
+    ViewData["Title"] = "Kardex";
     var primerDiaAnio = new DateTime(DateTime.Now.Year, 1, 1).ToString("yyyy-MM-dd");
     var ultimoDiaAnio = new DateTime(DateTime.Now.Year, 12, 31).ToString("yyyy-MM-dd");
     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
@@ -13,15 +13,18 @@
 </div>
 
 <div class="container-fluid py-4">
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4" id="card_filtros">
         <div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="bi bi-calendar3"></i> Filtros de Reporte Kardex</h5></div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-3 mb-3"><label>Desde</label><input type="date" id="f_Inicio" class="form-control" value="@primerDiaAnio"></div>
                 <div class="col-md-3 mb-3"><label>Hasta</label><input type="date" id="f_Fin" class="form-control" value="@ultimoDiaAnio"></div>
+
                 <div class="col-md-3 mb-3"><label>Sucursal</label><select id="cbx_Sucursal" class="form-control select2-busqueda"></select></div>
+
                 <div class="col-md-3 mb-3"><label>Almacén</label><select id="cbx_Almacen" class="form-control select2-busqueda"><option value="">-- SELECCIONE --</option></select></div>
-                <div class="col-md-4 mb-3">
+
+                <div class="col-md-4 mb-3" id="div_metodo">
                     <label>Método Valorización</label>
                     <select id="cbx_Metodo" class="form-control">
                         <option value="PROM">PROMEDIO PONDERADO</option>
@@ -29,39 +32,67 @@
                     </select>
                 </div>
                 <div class="col-md-4 mb-3"><label>Producto</label><select id="cbx_Producto" class="form-control select2-busqueda"></select></div>
+
                 <div class="col-md-4 text-right">
-                    <button id="btn_Generar" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Generar Reporte</button>
+                    <button id="btn_Generar" class="btn btn-primary btn-lg mt-4"><i class="bi bi-play-fill"></i> Generar Reporte</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="row mb-2">
+        <div class="col-12 text-right">
+            <button class="btn btn-success" onclick="exportarExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+            <button class="btn btn-danger" onclick="exportarPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+        </div>
+    </div>
+
     <div class="card shadow">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table id="tbl_Kardex" class="table table-bordered table-sm text-center font-weight-normal" style="font-size: 0.85rem;">
-                    <thead class="bg-light">
+        <div class="card-body p-4" id="area_impresion">
+
+            <div id="cabecera_sunat" class="d-none mb-3" style="font-family: Arial, sans-serif; font-size: 0.85rem; color: #000;">
+                <h5 class="text-center font-weight-bold mb-4" id="lbl_TituloReporte">
+                    FORMATO 13.1: REGISTRO DE INVENTARIO PERMANENTE VALORIZADO
+                </h5>
+                <div class="row"><div class="col-md-3 font-weight-bold">PERIODO:</div><div class="col-md-9" id="lbl_Periodo">-</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">RUC:</div><div class="col-md-9" id="lbl_Ruc">@User.FindFirst("RucEmpresa")?.Value </div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">RAZÓN SOCIAL:</div><div class="col-md-9" id="lbl_RazonSocial">@User.FindFirst("NombreEmpresa")?.Value</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">ESTABLECIMIENTO:</div><div class="col-md-9" id="lbl_Establecimiento">-</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">CÓDIGO EXISTENCIA:</div><div class="col-md-9" id="lbl_CodExistencia">-</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">TIPO (TABLA 5):</div><div class="col-md-9" id="lbl_TipoExistencia">-</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">DESCRIPCIÓN:</div><div class="col-md-9" id="lbl_Descripcion">-</div></div>
+                <div class="row"><div class="col-md-3 font-weight-bold">UNID. MEDIDA (TABLA 6):</div><div class="col-md-9" id="lbl_UnidadMedida">-</div></div>
+                <div class="row row-val"><div class="col-md-3 font-weight-bold">MÉTODO VALUACIÓN:</div><div class="col-md-9" id="lbl_MetodoVal">-</div></div>
+            </div>
+
+            <div class="table-responsive" id="contenedor_reporte">
+                <table id="tbl_Kardex" class="table table-bordered table-sm text-center font-weight-normal" style="font-size: 0.75rem; border-color: #000;">
+                    <thead class="bg-light text-dark font-weight-bold">
                         <tr>
-                            <th colspan="4" class="border-bottom-0">DOCUMENTO DE TRASLADO</th>
+                            <th colspan="4" class="align-middle">DOCUMENTO DE TRASLADO</th>
                             <th rowspan="2" class="align-middle">MOTIVO</th>
-                            <th colspan="3" class="bg-success text-white">ENTRADAS</th>
-                            <th colspan="3" class="bg-danger text-white">SALIDAS</th>
-                            <th colspan="3" class="bg-info text-white">SALDO FINAL</th>
+
+                            <th id="th_head_entradas" colspan="3" class="bg-success text-white">ENTRADAS</th>
+                            <th id="th_head_salidas" colspan="3" class="bg-danger text-white">SALIDAS</th>
+                            <th id="th_head_saldos" colspan="3" class="bg-info text-white">SALDO FINAL</th>
                         </tr>
                         <tr>
                             <th>FECHA</th>
                             <th>TIPO</th>
                             <th>SERIE</th>
                             <th>NÚMERO</th>
-                            <th>CANT.</th>
-                            <th>C. UNIT.</th>
-                            <th>C. TOTAL</th>
-                            <th>CANT.</th>
-                            <th>C. UNIT.</th>
-                            <th>C. TOTAL</th>
-                            <th>CANT.</th>
-                            <th>C. UNIT.</th>
-                            <th>C. TOTAL</th>
+
+                            <th class="bg-light">CANT.</th>
+                            <th class="col-val">C. UNIT.</th>
+                            <th class="col-val">C. TOTAL</th>
+
+                            <th class="bg-light">CANT.</th>
+                            <th class="col-val">C. UNIT.</th>
+                            <th class="col-val">C. TOTAL</th>
+
+                            <th class="table-info font-weight-bold">CANT.</th>
+                            <th class="col-val">C. UNIT.</th>
+                            <th class="col-val">C. TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,15 +104,37 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <script>
+    // VARIABLE GLOBAL PARA CONTROLAR EL ESTADO
+    let _esValorizado = true;
+
     $(document).ready(function () {
         $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%' });
 
         fct_FillCombo('/IngresoSalidaAlm/GetSucursalesByEmpresa?empresaId=@empresaId', '#cbx_Sucursal', 'id', 'nombre', '-- SUCURSAL --', 'codigo');
         fct_FillCombo('/IngresoSalidaAlm/GetProductos', '#cbx_Producto', 'id', 'descripcionProducto', '-- PRODUCTO --', 'codigo');
 
+        // Al cambiar sucursal, cargamos almacenes con lógica custom para leer 'esValorizado'
         $('#cbx_Sucursal').on('change', function () {
-            fct_FillCombo(`/IngresoSalidaAlm/GetAlmacenesBySucursal?sucursalId=${$(this).val()}&empresaId=@empresaId`, '#cbx_Almacen', 'id', 'nombre', '-- ALMACÉN --', 'codigo');
+            cargarAlmacenes($(this).val());
+        });
+
+        // Al cambiar almacén, actualizamos la variable global y la UI
+        $('#cbx_Almacen').on('change', function(){
+            let opt = $(this).find('option:selected');
+            let esVal = opt.attr('data-valorizado');
+
+            // Si es undefined (opcion por defecto) asumimos false para limpiar, o true por defecto.
+            if(esVal === "true") {
+                _esValorizado = true;
+                $('#div_metodo').show(); // Mostrar combo metodo
+            } else {
+                _esValorizado = false;
+                $('#div_metodo').hide(); // Ocultar combo metodo
+            }
         });
 
         $('#btn_Generar').click(function () {
@@ -96,35 +149,110 @@
             if (!data.almacenId || !data.productoId) return toastr.warning("Seleccione Almacén y Producto");
 
             ShowSpinner();
-            $('#tbl_Kardex tbody').html('<tr><td colspan="14" class="text-center p-4"><i class="fas fa-sync fa-spin"></i> Calculando saldos históricos y valorización...</td></tr>');
+            $('#cabecera_sunat').addClass('d-none');
 
             $.getJSON('/IngresoSalidaAlm/GenerarKardexValorizado', data, function (res) {
                 if (res.status) {
+                    $('#cabecera_sunat').removeClass('d-none');
+
+                    // 1. CONFIGURAR VISTA SEGÚN TIPO (VALORIZADO vs FISICO)
+                    if(_esValorizado){
+                         $('#lbl_TituloReporte').text("FORMATO 13.1: REGISTRO DE INVENTARIO PERMANENTE VALORIZADO - DETALLE DEL INVENTARIO VALORIZADO");
+                         $('.col-val').show(); // Mostrar columnas de costos
+                         $('.row-val').show(); // Mostrar fila de metodo en cabecera
+                         // Ajustar colspan
+                         $('#th_head_entradas').attr('colspan', 3);
+                         $('#th_head_salidas').attr('colspan', 3);
+                         $('#th_head_saldos').attr('colspan', 3);
+                    } else {
+                         $('#lbl_TituloReporte').text("FORMATO 12.1: REGISTRO DE INVENTARIO PERMANENTE EN UNIDADES FÍSICAS - DETALLE DEL INVENTARIO FÍSICO");
+                         $('.col-val').hide(); // Ocultar columnas de costos
+                         $('.row-val').hide(); // Ocultar fila de metodo
+                         // Ajustar colspan a 1 (solo cantidad)
+                         $('#th_head_entradas').attr('colspan', 1);
+                         $('#th_head_salidas').attr('colspan', 1);
+                         $('#th_head_saldos').attr('colspan', 1);
+                    }
+
+                    // 2. LLENAR CABECERA
+                    $('#lbl_Periodo').text(`${data.fechaInicio} al ${data.fechaFin}`);
+                    $('#lbl_Establecimiento').text($('#cbx_Sucursal option:selected').text());
+                    $('#lbl_MetodoVal').text($('#cbx_Metodo option:selected').text());
+                    $('#lbl_Descripcion').text($('#cbx_Producto option:selected').text());
+
+                    if(res.infoProducto) {
+                        $('#lbl_CodExistencia').text(res.infoProducto.codigo);
+                        $('#lbl_TipoExistencia').text(res.infoProducto.tipo);
+                        $('#lbl_UnidadMedida').text(res.infoProducto.unidad);
+                        $('#lbl_Ruc').text(res.infoProducto.rucEmpresa);
+                        $('#lbl_RazonSocial').text(res.infoProducto.razonSocial);
+                    }
+
+                    // 3. LLENAR TABLA
                     let h = "";
                     res.data.forEach(d => {
-                        // Estilo para el Saldo Anterior
                         let rowClass = d.isHeader ? 'table-warning font-weight-bold' : '';
+                        let docArr = d.doc.split('-');
+                        let serie = docArr[0] || '';
+                        let num = docArr[1] || '';
+
+                        // Construimos las celdas de costos condicionalmente
+                        let celdasEntrada = `<td class="bg-light">${d.eCant}</td>`;
+                        let celdasSalida  = `<td class="bg-light">${d.sCant}</td>`;
+                        let celdasSaldo   = `<td class="table-info font-weight-bold">${d.finalCant}</td>`;
+
+                        if(_esValorizado) {
+                            celdasEntrada += `<td>${d.eCosto}</td><td>${d.eTotal}</td>`;
+                            celdasSalida  += `<td>${d.sCosto}</td><td>${d.sTotal}</td>`;
+                            celdasSaldo   += `<td>${d.finalCosto}</td><td>${d.finalTotal}</td>`;
+                        }
 
                         h += `<tr class="${rowClass}">
-                            <td>${d.fecha}</td>
-                            <td>${d.tipoDoc}</td>
-                            <td>${d.doc.split('-')[0]}</td>
-                            <td>${d.doc.split('-')[1]}</td>
-                            <td class="text-left">${d.motivo}</td>
-                            <td class="bg-light">${d.eCant}</td><td>${d.eCosto}</td><td>${d.eTotal}</td>
-                            <td class="bg-light">${d.sCant}</td><td>${d.sCosto}</td><td>${d.sTotal}</td>
-                            <td class="table-info font-weight-bold">${d.finalCant}</td><td>${d.finalCosto}</td><td>${d.finalTotal}</td>
-                        </tr>`;
+                                <td>${d.fecha}</td>
+                                <td>${d.tipoDoc}</td>
+                                <td>${serie}</td>
+                                <td>${num}</td>
+                                <td class="text-left">${d.motivo}</td>
+                                ${celdasEntrada}
+                                ${celdasSalida}
+                                ${celdasSaldo}
+                            </tr>`;
                     });
-                    $('#tbl_Kardex tbody').html(h || '<tr><td colspan="14">No se encontraron movimientos para los criterios seleccionados</td></tr>');
+
+                    // Colspan del mensaje vacio depende de si es valorizado (14 cols) o fisico (8 cols)
+                    let totalCols = _esValorizado ? 14 : 8;
+                    $('#tbl_Kardex tbody').html(h || `<tr><td colspan="${totalCols}">No hay movimientos</td></tr>`);
+
                 } else {
                     toastr.error(res.message);
+                    $('#tbl_Kardex tbody').html('');
                 }
                 HideSpinner();
             });
         });
     });
 
+    // Función específica para cargar almacenes y guardar el atributo esValorizado
+    function cargarAlmacenes(sucursalId) {
+        let url = `/IngresoSalidaAlm/GetAlmacenesBySucursal?sucursalId=${sucursalId}&empresaId=@empresaId`;
+        $.getJSON(url, function (res) {
+            let h = `<option value="">-- SELECCIONE --</option>`;
+            if (res.status) {
+                res.data.forEach(i => {
+                    // Texto visual del select
+                    let indicador = i.esValorizado ? " (VALORIZADO)" : " (FÍSICO)";
+
+                    // Aquí guardamos el booleano en data-valorizado
+                    h += `<option value="${i.id}" data-valorizado="${i.esValorizado}">
+                             ${i.codigo} - ${i.nombre} ${indicador}
+                          </option>`;
+                });
+            }
+            $('#cbx_Almacen').html(h).trigger('change');
+        });
+    }
+
+    // Funcion generica para otros combos
     function fct_FillCombo(url, id, val, txt, ph, extra) {
         $.getJSON(url, function (res) {
             let h = `<option value="">${ph}</option>`;
@@ -134,6 +262,118 @@
             });
             $(id).html(h).trigger('change');
         });
+    }
+
+    // ==========================================
+    // EXPORTAR A EXCEL (CONDICIONAL)
+    // ==========================================
+    function exportarExcel() {
+        if ($('#tbl_Kardex tbody tr').length <= 1) {
+            toastr.warning("Genere el reporte primero"); return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        // Determinar título según estado
+        let titulo = _esValorizado
+            ? "FORMATO 13.1: REGISTRO DE INVENTARIO PERMANENTE VALORIZADO"
+            : "FORMATO 12.1: REGISTRO DE INVENTARIO PERMANENTE EN UNIDADES FÍSICAS";
+
+        // Preparar Cabecera
+        var ws_data = [
+            [titulo],
+            [""],
+            ["PERIODO:", $('#lbl_Periodo').text()],
+            ["RUC:", $('#lbl_Ruc').text()],
+            ["RAZÓN SOCIAL:", $('#lbl_RazonSocial').text()],
+            ["ESTABLECIMIENTO:", $('#lbl_Establecimiento').text()],
+            ["CÓDIGO DE LA EXISTENCIA:", $('#lbl_CodExistencia').text()],
+            ["TIPO (TABLA 5):", $('#lbl_TipoExistencia').text()],
+            ["DESCRIPCIÓN:", $('#lbl_Descripcion').text()],
+            ["CÓDIGO DE LA UNIDAD DE MEDIDA (TABLA 6):", $('#lbl_UnidadMedida').text()]
+        ];
+
+        // Solo agregamos método de valuación si es valorizado
+        if(_esValorizado) {
+            ws_data.push(["MÉTODO DE VALUACIÓN:", $('#lbl_MetodoVal').text()]);
+        }
+        ws_data.push([""]); // Espacio final
+
+        var ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+        // Agregar la tabla HTML (Solo agregará lo que esté visible en el HTML, o podemos filtrar columnas)
+        // Nota: sheet_add_dom a veces captura columnas hidden. Es mejor construir la tabla manual o confiar en el display:none
+        // Para asegurar, usaremos sheet_add_dom pero luego ajustaremos anchos.
+        XLSX.utils.sheet_add_dom(ws, document.getElementById('tbl_Kardex'), { origin: -1 });
+
+        // ESTILOS
+        const borderStyle = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E7E6E6" } }, border: borderStyle, alignment: { horizontal: "center", vertical: "center" } };
+        const cellStyle = { border: borderStyle, alignment: { vertical: "center" } };
+        const titleStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center" } };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cell_address]) continue;
+
+                // Título
+                if (R === 0) ws[cell_address].s = titleStyle;
+                // Datos cabecera
+                else if (R >= 2 && R <= 10 && C === 0) ws[cell_address].s = { font: { bold: true } };
+                // Tabla Kardex (empieza aprox en fila 12 o 13 dependiendo si mostramos metodo)
+                else if (R >= (_esValorizado ? 12 : 11)) {
+                    // Detectar headers de tabla
+                    let esHeaderTabla = (_esValorizado && (R === 12 || R === 13)) || (!_esValorizado && (R === 11 || R === 12));
+
+                    if (esHeaderTabla) ws[cell_address].s = headerStyle;
+                    else ws[cell_address].s = cellStyle;
+                }
+            }
+        }
+
+        // Anchos de columna dinámicos
+        let columnas = [
+            { wch: 12 }, { wch: 6 }, { wch: 8 }, { wch: 10 }, { wch: 30 }, // Comunes
+            { wch: 10 }, // Entradas Cant
+        ];
+
+        if(_esValorizado){
+             columnas.push({ wch: 10 }, { wch: 12 }); // Costo, Total Entradas
+             columnas.push({ wch: 10 }, { wch: 10 }, { wch: 12 }); // Salidas
+             columnas.push({ wch: 10 }, { wch: 10 }, { wch: 12 }); // Saldos
+        } else {
+             // Si no es valorizado, solo agregamos las cantidades de Salida y Saldo
+             columnas.push({ wch: 10 }); // Salidas Cant
+             columnas.push({ wch: 10 }); // Saldos Cant
+        }
+
+        ws['!cols'] = columnas;
+
+        // Merge Título
+        if(!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: _esValorizado ? 13 : 7 } });
+
+        XLSX.utils.book_append_sheet(wb, ws, "Kardex");
+        XLSX.writeFile(wb, `Kardex_${_esValorizado ? 'Valorizado' : 'Fisico'}.xlsx`);
+    }
+
+    function exportarPDF() {
+         // Reutilizamos la lógica visual actual del HTML
+         if ($('#tbl_Kardex tbody tr').length <= 1) return toastr.warning("Genere reporte");
+
+         const element = document.getElementById("area_impresion");
+         const opt = {
+           margin: 0.3,
+           filename: `Kardex_${_esValorizado ? 'Valorizado' : 'Fisico'}.pdf`,
+           image: { type: 'jpeg', quality: 0.98 },
+           html2canvas: { scale: 2 },
+           jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+         };
+         ShowSpinner();
+         html2pdf().set(opt).from(element).save().then(() => HideSpinner());
     }
 
     function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }

@@ -35,36 +35,59 @@
                     </div>
                 </div>
             </div>
-
             <div class="card shadow mb-4 border-left-info" id="div_DocRef">
                 <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia</h5></div>
                 <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label>Proveedor (Ref.)</label>
+                            <div class="input-group">
+                                <select id="cbx_ProveedorRef" class="form-control select2-busqueda"></select>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-info" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-3 mb-3"><label>Fecha Doc.</label><input type="date" id="dtp_FechaDoc" class="form-control"></div>
                         <div class="col-md-9 mb-3"><label>Tipo Documento</label><select id="cbx_TipoDoc" class="form-control select2-busqueda"></select></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3"><label>Serie</label><input type="text" id="txt_SerieDoc" class="form-control" placeholder="Ej: T001"></div>
-                        <div class="col-md-6 mb-3"><label>Número</label><input type="text" id="txt_NumeroDoc" class="form-control" placeholder="Ej: 000123"></div>
+                        <div class="col-md-6 mb-3"><label>Serie</label><input type="text" id="txt_SerieDoc" class="form-control"></div>
+                        <div class="col-md-6 mb-3"><label>Número</label><input type="text" id="txt_NumeroDoc" class="form-control"></div>
                     </div>
                 </div>
             </div>
-
             <div class="card shadow mb-4 border-left-danger" id="div_DocVal">
                 <div class="card-header bg-danger text-white"><h5 class="mb-0">Documento de Valorización</h5></div>
                 <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label>Proveedor (Valoriz.)</label>
+                            <div class="input-group">
+                                <select id="cbx_ProveedorVal" class="form-control select2-busqueda"></select>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-danger" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-3 mb-3"><label>Fecha Valoriz.</label><input type="date" id="dtp_FechaDocVal" class="form-control"></div>
                         <div class="col-md-9 mb-3"><label>Tipo Doc. Valoriz.</label><select id="cbx_TipoDocVal" class="form-control select2-busqueda"></select></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-4 mb-3"><label>Serie</label><input type="text" id="txt_SerieDocVal" class="form-control" placeholder="Ej: F001"></div>
-                        <div class="col-md-4 mb-3"><label>Número</label><input type="text" id="txt_NumeroDocVal" class="form-control" placeholder="Ej: 000456"></div>
+                        <div class="col-md-4 mb-3"><label>Serie</label><input type="text" id="txt_SerieDocVal" class="form-control"></div>
+                        <div class="col-md-4 mb-3"><label>Número</label><input type="text" id="txt_NumeroDocVal" class="form-control"></div>
                         <div class="col-md-4 mb-3"><label>Moneda</label><select id="cbx_MonedaCab" class="form-control select2-busqueda"></select></div>
                     </div>
                 </div>
             </div>
-
             <div class="card shadow mb-4">
                 <div class="card-header bg-success text-white"><h5 class="mb-0">Búsqueda y Detalle de Productos</h5></div>
                 <div class="card-body bg-light">
@@ -140,8 +163,16 @@
     const TASA_IGV = 0.18; // Constante para Perú
 
     $(document).ready(function () {
-        $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', allowClear: true });
+        $('.select2-busqueda').select2({ theme: 'bootstrap4', allowClear: true });
         fct_InitCombos();
+        
+        $('#cbx_ProveedorRef').on('change', function() {
+            $('#cbx_ProveedorVal').val($(this).val()).trigger('change.select2');
+        });
+
+        $('#cbx_ProveedorVal').on('change', function() {
+            $('#cbx_ProveedorRef').val($(this).val()).trigger('change.select2');
+        });
 
         // --- LÓGICA DE TIPO MOVIMIENTO ---
         $('#cbx_TipoMovimiento').on('change', function () {
@@ -202,7 +233,7 @@
         });
 
         $('#cbx_ProductoBusqueda').on('change', function () {
-            let p = PRODUCTOS_TEMP.find(x => x.codigo == $(this).val());
+            let p = PRODUCTOS_TEMP.find(x => x.id == $(this).val());
             $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
 
             ShowSpinner();
@@ -270,6 +301,7 @@
             if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío");
             
             let cab = {
+                EntidadId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
                 Fecha: $("#dtp_FechaMov").val(),
                 TipoMovimiento: MOTIVOS_FULL.find(x => x.id == $("#cbx_Motivo").val())?.tipoMovimiento,
                 SucursalId: parseInt($("#cbx_Sucursal").val()),
@@ -338,6 +370,23 @@
         $.getJSON('/IngresoSalidaAlm/GetMotivosData', function(res){ if(res.status){ MOTIVOS_FULL = res.data; } });
         fct_FillCombo('/IngresoSalidaAlm/GetCentrosCosto', '#cbx_CentroCosto', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         fct_FillCombo('/IngresoSalidaAlm/GetActividades', '#cbx_Actividad', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
+        cargarComboEntidades();
+    }
+    
+    function cargarComboEntidades(callback) {
+        $.get('/IngresoSalidaAlm/GetEntidades', function (response) {
+            let options = '<option value="">-- Seleccione --</option>';
+            let data = response.data;
+
+            data.forEach(item => {
+                options += `<option value="${item.id}">${item.ruc} - ${item.razonSocial}</option>`;
+            });
+
+            // Actualiza ambos combos redundantes
+            $('#cbx_ProveedorRef, #cbx_ProveedorVal').html(options);
+            
+            if (callback) callback();
+        });
     }
 
     function fct_FillCombo(url, id, valProp, txtProp, ph, extra) {

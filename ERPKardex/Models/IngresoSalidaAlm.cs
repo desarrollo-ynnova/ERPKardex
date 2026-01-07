@@ -44,7 +44,7 @@ namespace ERPKardex.Models
         public DateTime? FechaRegistro { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
-        [Column("cliente_id")]
-        public int? ClienteId { get; set; }
+        [Column("entidad_id")]
+        public int? EntidadId { get; set; }
     }
 }

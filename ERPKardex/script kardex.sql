@@ -27,7 +27,10 @@ drop table if exists estado;
 drop table if exists usuario;
 drop table if exists tipo_usuario;
 drop table if exists empresa_usuario;
-drop table if exists cliente;
+drop table if exists entidad;
+drop table if exists tipo_existencia;
+
+GO
 
 CREATE TABLE tipo_usuario (
     id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -83,6 +86,7 @@ create table almacen (
 	estado BIT,
 	sucursal_id INT,
 	cod_sucursal varchar(255),
+	es_valorizado BIT,
 	empresa_id int
 );
 
@@ -127,9 +131,8 @@ create table tipo_documento (
 	estado BIT
 );
 
-CREATE TABLE cliente (
+CREATE TABLE entidad (
 	id INT IDENTITY(1,1) PRIMARY KEY,
-	nombre varchar(255),
 	ruc varchar(255),
 	razon_social varchar(255),
 	estado BIT,
@@ -157,7 +160,7 @@ create table ingresosalidaalm (
 	usuario_id INT,
 	fecha_registro DATETIME DEFAULT GETDATE(),
 	empresa_id INT,
-	cliente_id INT,
+	entidad_id INT,
 );
 
 create table dingresosalidaalm (
@@ -186,6 +189,13 @@ create table dingresosalidaalm (
 	empresa_id INT,
 );
 
+create table tipo_existencia (
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	codigo varchar(255),
+	nombre varchar(255),
+	estado BIT
+);
+
 create table cuenta (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	codigo varchar(255),
@@ -198,7 +208,8 @@ create table grupo (
 	codigo varchar(255),
 	descripcion varchar(200),
 	cuenta_id INT,
-	empresa_id INT
+	empresa_id INT,
+	tipo_existencia_id INT
 );
 
 create table subgrupo (
@@ -393,8 +404,8 @@ INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCI
 --INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 2);
 
 -- inserts de 'almacen'
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1,1);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) VALUES ('02','TERCEROS',1,'001', 1,1);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 1);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','TERCEROS',1,'001', 1, 1, 1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'001',1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'001',1);
 --INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'001',1);
@@ -538,6 +549,15 @@ INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DEL SISTEMA', 1
 INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DE EMPRESA', 1);  -- ID 2
 INSERT INTO tipo_usuario (nombre, estado) VALUES ('OPERADOR DE ALMACEN', 1);       -- ID 3
 INSERT INTO tipo_usuario (nombre, estado) VALUES ('CONTADOR', 1);                   -- ID 4
+
+INSERT INTO tipo_existencia (codigo, nombre, estado) 
+VALUES 
+('01', 'MERCADERÍA', 1),
+('02', 'PRODUCTO TERMINADO', 1),
+('03', 'MATERIAS PRIMAS Y AUXILIARES - MATERIALES', 1),
+('04', 'ENVASES Y EMBALAJES', 1),
+('05', 'SUMINISTROS DIVERSOS', 1),
+('99', 'OTROS', 1);
 
 PRINT '>> Insertando Usuario Alexis...';
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado) 

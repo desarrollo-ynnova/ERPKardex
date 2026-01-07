@@ -86,14 +86,18 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
                 var productosData = (from pro in _context.Productos
                                      join disa in _context.DIngresoSalidaAlms on pro.Codigo equals disa.CodProducto
                                      join isa in _context.IngresoSalidaAlms on disa.IngresoSalidaAlmId equals isa.Id
                                      where isa.AlmacenId == almacenId
                                      join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
                                      from td in joinDoc.DefaultIfEmpty()
-                                     join cli in _context.Clientes on isa.ClienteId equals cli.Id into joinCli
-                                     from cli in joinCli.DefaultIfEmpty()
+                                     join ent in _context.Entidades on isa.EntidadId equals ent.Id into joinEnt
+                                     from ent in joinEnt.DefaultIfEmpty()
+                                     where pro.EmpresaId == empresaId
                                      select new
                                      {
                                          pro.Codigo,
@@ -105,7 +109,7 @@ namespace ERPKardex.Controllers
                                          pro.DescripcionProducto,
                                          pro.CodUnidadMedida,
                                          disa.Cantidad,
-                                         Cliente = cli.Nombre ?? "Sin Cliente",
+                                         Proveedor = ((ent.Ruc ?? "") + " - " + (ent.RazonSocial ?? "")) ?? "Sin Proveedor",
                                          TipoDocumento = td != null ? td.Descripcion : "S/D",
                                          Documento = (isa.SerieDocumento ?? "") + " - " + (isa.NumeroDocumento ?? ""),
                                      }).ToList();

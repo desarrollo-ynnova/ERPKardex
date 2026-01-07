@@ -15,6 +15,8 @@ namespace ERPKardex.Models
         public int? SucursalId { get; set; }
         [Column("cod_sucursal")]
         public string? CodSucursal { get; set; }
+        [Column("es_valorizado")]
+        public bool? EsValorizado { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
     }

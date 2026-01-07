@@ -19,6 +19,11 @@ namespace ERPKardex.Controllers
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
         public IActionResult ReporteKardex() => View();
+        public IActionResult ObtenerVistaRegistroEntidad()
+        {
+            // Retorna una vista parcial (_RegistroEntidad.cshtml) solo con los campos RUC y Razon Social
+            return PartialView("_RegistroEntidad");
+        }
         #endregion 
 
         #region APIs Maestro-Detalle
@@ -192,7 +197,20 @@ namespace ERPKardex.Controllers
 
         #region APIs Filtrado de Productos (Cascada)
         [HttpGet]
-        public JsonResult GetProductos() => Json(new { data = _context.Productos.Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.CodUnidadMedida }).ToList(), status = true });
+        public JsonResult GetProductos()
+        {
+            try
+            {
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
+                return Json(new { data = _context.Productos.Where(p => p.EmpresaId == empresaId).Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.CodUnidadMedida }).ToList(), status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
+            }
+        }
         [HttpGet]
         public JsonResult GetStockProductoAlmacen(int? almacenId, int? productoId)
         {
@@ -247,24 +265,80 @@ namespace ERPKardex.Controllers
             }
         }
         [HttpGet]
+        public JsonResult GetEntidades()
+        {
+            try
+            {
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
+                var entidadesData = _context.Entidades.Where(a => a.Estado == true).ToList();
+                return Json(new { data = entidadesData, status = true, message = "Entidades retornadas exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
+            }
+        }
+        [HttpGet]
         public JsonResult GenerarKardexValorizado(DateTime fechaInicio, DateTime fechaFin, int almacenId, int productoId, string metodo)
         {
             try
             {
+                // 1. OBTENER METADATOS (AHORA CON JOIN DIRECTO)
+
+                // Datos Empresa
+                var datosEmpresa = (from a in _context.Almacenes
+                                    join s in _context.Sucursales on a.SucursalId equals s.Id
+                                    join e in _context.Empresas on s.EmpresaId equals e.Id
+                                    where a.Id == almacenId
+                                    select new { e.Ruc, e.RazonSocial, NombreSucursal = s.Nombre }).FirstOrDefault();
+
+                // Datos Producto + Grupo + TIPO EXISTENCIA (La clave del éxito)
+                var datosProducto = (from p in _context.Productos
+                                     join g in _context.Grupos on p.GrupoId equals g.Id
+                                     // Join con la nueva tabla
+                                     join te in _context.TipoExistencias on g.TipoExistenciaId equals te.Id
+                                     join u in _context.UnidadesMedida on p.CodUnidadMedida equals u.Codigo
+                                     where p.Id == productoId
+                                     select new
+                                     {
+                                         p.Codigo,
+                                         p.DescripcionProducto,
+                                         UnidadCodigo = u.Codigo,
+                                         UnidadNombre = u.Descripcion,
+                                         // Datos directos de BD, cero lógica hardcoded
+                                         TipoExistenciaCod = te.Codigo,
+                                         TipoExistenciaDesc = te.Nombre
+                                     }).FirstOrDefault();
+
+                // VALIDACIÓN DE SEGURIDAD
+                // Si el grupo no tiene asignado un tipo de existencia, usamos un valor por defecto para no romper el reporte
+                string codigoSunatTabla5 = datosProducto?.TipoExistenciaCod ?? "99";
+                string nombreSunatTabla5 = datosProducto?.TipoExistenciaDesc ?? "OTROS (SIN CLASIFICAR)";
+
+                // =================================================================================
+                // 2. TU LÓGICA DE MOVIMIENTOS (INTACTA)
+                // =================================================================================
+
                 var movimientos = (from d in _context.DIngresoSalidaAlms
                                    join c in _context.IngresoSalidaAlms on d.IngresoSalidaAlmId equals c.Id
                                    join m in _context.Motivos on c.MotivoId equals m.Id
                                    join td in _context.TipoDocumentos on c.TipoDocumentoId equals td.Id into joinDoc
                                    from docRef in joinDoc.DefaultIfEmpty()
                                    where c.AlmacenId == almacenId && d.ProductoId == productoId
-                                         && c.Fecha <= fechaFin && c.EstadoId == 1
+                                           && c.Fecha <= fechaFin && c.EstadoId == 1
                                    orderby c.Fecha, c.FechaRegistro
                                    select new
                                    {
                                        c.Fecha,
+                                       // IMPORTANTE: Para SUNAT Tabla 10, necesitamos el CÓDIGO del tipo doc (ej: 01, 09), no solo la descripción
+                                       CodigoTipoDoc = docRef != null ? docRef.Codigo : "00",
                                        TipoDoc = docRef != null ? docRef.Descripcion : "S/D",
                                        SerieDocumento = c.SerieDocumento != null ? c.SerieDocumento : "S/D",
                                        NumeroDocumento = c.NumeroDocumento != null ? c.NumeroDocumento : "S/D",
+                                       // IMPORTANTE: Para SUNAT Tabla 12, necesitamos el CÓDIGO del motivo
+                                       CodigoMotivo = m.Codigo,
                                        Motivo = m.Descripcion,
                                        m.TipoMovimiento,
                                        d.Cantidad,
@@ -344,7 +418,6 @@ namespace ERPKardex.Controllers
                     }
                     else // MOVIMIENTOS DENTRO DEL RANGO
                     {
-                        // Si es el primer movimiento del rango, inyectamos la fila de Saldo Anterior
                         if (reporte.Count == 0 && fechaInicio > movimientos.Min(x => x.Fecha))
                         {
                             reporte.Add(new
@@ -362,16 +435,18 @@ namespace ERPKardex.Controllers
                                 finalCant = antCant.ToString("N2"),
                                 finalCosto = (antCant > 0 ? antCostoTotal / antCant : 0).ToString("N4"),
                                 finalTotal = antCostoTotal.ToString("N2"),
-                                isHeader = true // Bandera para estilo CSS
+                                isHeader = true
                             });
                         }
 
                         reporte.Add(new
                         {
                             fecha = mov.Fecha.Value.ToString("dd/MM/yyyy"),
-                            tipoDoc = mov.TipoDoc,
+                            // AQUÍ USAMOS EL CÓDIGO PARA SUNAT (TABLA 10)
+                            tipoDoc = mov.CodigoTipoDoc + " - " + mov.TipoDoc,
                             doc = $"{(mov.SerieDocumento ?? "---")}-{(mov.NumeroDocumento ?? "---")}",
-                            motivo = mov.Motivo,
+                            // AQUÍ USAMOS EL CÓDIGO DE MOTIVO (TABLA 12) CONCATENADO CON DESCRIPCIÓN
+                            motivo = mov.CodigoMotivo + " - " + mov.Motivo,
                             eCant = cantEntrada > 0 ? cantEntrada.ToString("N2") : "-",
                             eCosto = cantEntrada > 0 ? costoUEntrada.ToString("N4") : "-",
                             eTotal = cantEntrada > 0 ? totalEntrada.ToString("N2") : "-",
@@ -385,9 +460,68 @@ namespace ERPKardex.Controllers
                         });
                     }
                 }
-                return Json(new { status = true, data = reporte });
+
+                // =================================================================================
+                // 3. RETORNO CON METADATOS EXTRA
+                // =================================================================================
+
+                return Json(new
+                {
+                    status = true,
+                    data = reporte,
+                    // Agregamos el objeto extra para llenar la cabecera en el JS
+                    infoProducto = new
+                    {
+                        codigo = datosProducto?.Codigo ?? "S/D",
+                        descripcion = datosProducto?.DescripcionProducto ?? "S/D",
+                        unidad = (datosProducto?.UnidadCodigo ?? "NIU") + " - " + (datosProducto?.UnidadNombre ?? "UNIDAD"), // Tabla 6
+                        tipo = codigoSunatTabla5 + " - " + nombreSunatTabla5, // Tabla 5 Calculada
+                        rucEmpresa = datosEmpresa?.Ruc ?? "",
+                        razonSocial = datosEmpresa?.RazonSocial ?? "",
+                        sucursal = datosEmpresa?.NombreSucursal ?? ""
+                    }
+                });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+        [HttpPost]
+        public async Task<JsonResult> GuardarEntidadRapido(Entidad modelo)
+        {
+            try
+            {
+                // 1. Recuperamos el ID de la empresa de la sesión (Opción 3 que elegiste)
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                if (string.IsNullOrEmpty(empresaIdClaim))
+                    return Json(new { status = false, message = "Sesión expirada" });
+
+                int empresaId = int.Parse(empresaIdClaim);
+
+                // 2. Validar si ya existe en esta empresa
+                var existe = await _context.Entidades
+                    .AnyAsync(x => x.Ruc == modelo.Ruc && x.EmpresaId == empresaId);
+
+                if (existe)
+                    return Json(new { status = false, message = "El RUC ya está registrado en su empresa." });
+
+                // 3. Asignar valores por defecto
+                modelo.EmpresaId = empresaId;
+                modelo.Estado = true;
+
+                _context.Entidades.Add(modelo);
+                await _context.SaveChangesAsync();
+
+                // 4. Retornamos el ID para seleccionarlo automáticamente en el combo
+                return Json(new
+                {
+                    status = true,
+                    message = "Entidad registrada correctamente",
+                    id = modelo.Id
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = "Error: " + ex.Message });
+            }
         }
     }
 }

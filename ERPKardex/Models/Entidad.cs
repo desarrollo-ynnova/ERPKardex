@@ -2,11 +2,10 @@
 
 namespace ERPKardex.Models
 {
-    [Table("cliente")]
-    public class Cliente
+    [Table("entidad")]
+    public class Entidad
     {
         public int Id { get; set; }
-        public string? Nombre { get; set; }
         public string? Ruc { get; set; }
         [Column("razon_social")]
         public string? RazonSocial { get; set; }

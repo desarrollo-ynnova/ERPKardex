@@ -15,6 +15,7 @@ namespace ERPKardex.Data
         public DbSet<EmpresaUsuario> EmpresaUsuarios { get; set; }
         public DbSet<Grupo> Grupos { get; set; }
         public DbSet<Subgrupo> Subgrupos { get; set; }
+        public DbSet<TipoExistencia> TipoExistencias { get; set; }
         public DbSet<Cuenta> Cuentas { get; set; }
         public DbSet<UnidadMedida> UnidadesMedida { get; set; }
         public DbSet<FormulacionQuimica> FormulacionesQuimicas { get; set; }
@@ -35,6 +36,6 @@ namespace ERPKardex.Data
         public DbSet<Estado> Estados { get; set; }
         public DbSet<CentroCosto> CentroCostos { get; set; }
         public DbSet<Actividad> Actividades { get; set; }
-        public DbSet<Cliente> Clientes { get; set; }
+        public DbSet<Entidad> Entidades { get; set; }
     }
 }

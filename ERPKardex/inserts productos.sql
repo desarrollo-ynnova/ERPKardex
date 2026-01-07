@@ -13,11 +13,11 @@ SELECT @AlmacenPrincipalID = id FROM almacen WHERE codigo = '01' AND empresa_id 
 PRINT '>> Cargando Metadata...'
 
 -- GRUPOS
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2102' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2102', 'PRODUCTO TERMINADO', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID);
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2404' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2404', 'ENVASES Y EMBALAJES', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID);
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2405' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2405', 'SUMINISTROS DIVERSOS', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID);
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '3306' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('3306', 'ACTIVOS', (select id from cuenta where codigo = '33' and empresa_id = @EmpresaID), @EmpresaID);
-IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2101' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2101', 'MERCADERÍA', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2102' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2102', 'PRODUCTO TERMINADO', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID, 2);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2404' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2404', 'ENVASES Y EMBALAJES', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID, 4);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2405' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2405', 'SUMINISTROS DIVERSOS', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID, 5);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '3306' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('3306', 'ACTIVOS', (select id from cuenta where codigo = '33' and empresa_id = @EmpresaID), @EmpresaID, 6);
+IF NOT EXISTS (SELECT * FROM grupo WHERE codigo = '2101' AND empresa_id = @EmpresaID) INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2101', 'MERCADERÍA', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID, 1);
 
 -- SUBGRUPOS
 DECLARE @Subgrupos TABLE (cod_full VARCHAR(50), cod_g VARCHAR(50), descr VARCHAR(255));
@@ -472,20 +472,20 @@ GO
 PRINT '>> Verificando/Creando Cliente COMEXDI...'
 
 DECLARE @EmpresaID INT = 1; -- Control Science
-DECLARE @ClienteComexdiID INT;
+DECLARE @EntidadComexdiID INT;
 
--- Insertamos el cliente solo si no existe
-IF NOT EXISTS (SELECT 1 FROM cliente WHERE nombre = 'COMEXDI' AND empresa_id = @EmpresaID)
+-- Insertamos el entidad solo si no existe
+IF NOT EXISTS (SELECT 1 FROM entidad WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID)
 BEGIN
-    INSERT INTO cliente (nombre, ruc, razon_social, estado, empresa_id)
-    VALUES ('COMEXDI', NULL, NULL, 1, @EmpresaID); -- RUC y Razón Social en NULL como indicaste
+    INSERT INTO entidad (ruc, razon_social, estado, empresa_id)
+    VALUES ('20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1, @EmpresaID); -- RUC en NULL como indicaste
 END
 
 -- Recuperamos el ID (Sea el 1 o cualquiera que le asigne el Identity)
-SELECT @ClienteComexdiID = id FROM cliente WHERE nombre = 'COMEXDI' AND empresa_id = @EmpresaID;
+SELECT @EntidadComexdiID = id FROM entidad WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID;
 
 -- =============================================
--- 5. MIGRACIÓN HISTÓRICA (ALMACÉN TERCEROS) - CORREGIDO CON CLIENTE_ID
+-- 5. MIGRACIÓN HISTÓRICA (ALMACÉN TERCEROS) - CORREGIDO CON ENTIDAD_ID
 -- =============================================
 PRINT '>> Migrando movimientos históricos de Almacén Terceros...'
 
@@ -500,14 +500,14 @@ INSERT INTO ingresosalidaalm (
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
     empresa_id, 
-    cliente_id -- <--- CAMBIO AQUÍ
+    entidad_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
     '2025-12-23', '0000000002', 1, @AlmacenTercerosID, 1, 7, 
     '2025-12-06', 9, 'T001', '00001', 
     NULL, 1, NULL, '2025-12-23 18:58:45', 
     @EmpresaID, 
-    @ClienteComexdiID -- <--- USA EL ID DE COMEXDI
+    @EntidadComexdiID -- <--- USA EL ID DE COMEXDI
 );
 
 SET @IdMovimiento1 = SCOPE_IDENTITY();
@@ -529,14 +529,14 @@ INSERT INTO ingresosalidaalm (
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
     empresa_id, 
-    cliente_id -- <--- CAMBIO AQUÍ
+    entidad_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
     '2025-12-23', '0000000003', 1, @AlmacenTercerosID, 1, 7, 
     '2025-12-06', 9, 'T001', '00002', 
     NULL, 1, NULL, '2025-12-23 18:59:21', 
     @EmpresaID, 
-    @ClienteComexdiID -- <--- USA EL ID DE COMEXDI
+    @EntidadComexdiID -- <--- USA EL ID DE COMEXDI
 );
 
 SET @IdMovimiento2 = SCOPE_IDENTITY();
@@ -596,15 +596,15 @@ PRINT '>> Insertando Grupos...'
 
 -- 2101 MERCADERÍAS (Cuenta 21)
 IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2101' AND empresa_id = @EmpresaID)
-    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2101', 'MERCADERÍAS', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID);
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2101', 'MERCADERÍA', (select id from cuenta where codigo = '21' and empresa_id = @EmpresaID), @EmpresaID, 1);
 
 -- 2401 REPUESTOS (Cuenta 24)
 IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2401' AND empresa_id = @EmpresaID)
-    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2401', 'REPUESTOS', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID);
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2401', 'REPUESTOS', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID, 5);
 
 -- 2404 ENVASES Y EMBALAJES (Cuenta 24)
 IF NOT EXISTS (SELECT 1 FROM grupo WHERE codigo = '2404' AND empresa_id = @EmpresaID)
-    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id) VALUES ('2404', 'ENVASES Y EMBALAJES', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID);
+    INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id) VALUES ('2404', 'ENVASES Y EMBALAJES', (select id from cuenta where codigo = '24' and empresa_id = @EmpresaID), @EmpresaID, 4);
 
 
 -- =============================================
@@ -666,12 +666,12 @@ PRINT '>> Creando Infraestructura para MAQSA (Empresa 2)...';
 
 DECLARE @EmpresaID INT = 2; -- MAQSA
 
--- 1. CREAR SUCURSAL 'PRINCIPAL'
+-- 1. CREAR SUCURSAL 'CHICLAYO'
 IF NOT EXISTS (SELECT 1 FROM sucursal WHERE codigo = '001' AND empresa_id = @EmpresaID)
 BEGIN
     INSERT INTO sucursal (codigo, nombre, estado, empresa_id) 
-    VALUES ('001', 'PRINCIPAL', 1, @EmpresaID);
-    PRINT 'Sucursal PRINCIPAL creada.';
+    VALUES ('001', 'CHICLAYO', 1, @EmpresaID);
+    PRINT 'Sucursal CHICLAYO creada.';
 END
 
 -- 2. CREAR ALMACÉN 'PRINCIPAL'
@@ -680,14 +680,18 @@ SELECT @SucursalID = id FROM sucursal WHERE codigo = '001' AND empresa_id = @Emp
 
 IF NOT EXISTS (SELECT 1 FROM almacen WHERE codigo = '01' AND empresa_id = @EmpresaID)
 BEGIN
-    INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, empresa_id) 
-    VALUES ('01', 'PRINCIPAL', 1, '001', @SucursalID, @EmpresaID);
+    INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) 
+    VALUES ('01', 'PRINCIPAL', 1, '001', @SucursalID, 1, @EmpresaID);
     PRINT 'Almacén PRINCIPAL creado.';
 END
 ELSE
 BEGIN
     PRINT 'Almacén PRINCIPAL ya existía.';
 END
+
+
+INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'CHICLAYO', 1, 3);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 3);
 
 GO
 
