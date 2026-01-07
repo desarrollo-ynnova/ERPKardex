@@ -29,8 +29,21 @@ drop table if exists tipo_usuario;
 drop table if exists empresa_usuario;
 drop table if exists entidad;
 drop table if exists tipo_existencia;
+drop table if exists dpedservicio;
+drop table if exists pedservicio;
+drop table if exists dpedcompra;
+drop table if exists pedcompra;
+drop table if exists tipo_documento_interno;
 
 GO
+
+CREATE TABLE tipo_documento_interno (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    codigo VARCHAR(20),      -- Ej: PED, PS, REQ, NI (Nota Ingreso)
+    descripcion VARCHAR(200),
+    ultimo_correlativo INT DEFAULT 0, -- Para llevar el control del número actual (ej. va en el 150)
+    estado BIT DEFAULT 1
+);
 
 CREATE TABLE tipo_usuario (
     id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
@@ -141,6 +154,8 @@ CREATE TABLE entidad (
 
 create table ingresosalidaalm (
 	id INT IDENTITY(1,1) PRIMARY KEY,
+	-- Referencia al Tipo de Documento Interno (IALM / SALM)
+    tipo_documento_interno_id INT,
 	fecha DATE,
 	numero varchar(255),
 	sucursal_id INT,
@@ -307,6 +322,82 @@ CREATE TABLE stock_almacen (
     ultima_actualizacion DATETIME DEFAULT GETDATE(),
     CONSTRAINT UQ_Stock_Almacen UNIQUE (almacen_id, producto_id, empresa_id)
 );
+
+-- ==========================================
+-- 3. PEDIDOS (REQUERIMIENTOS)
+-- ==========================================
+CREATE TABLE pedcompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, -- Referencia a 'PED'
+    numero VARCHAR(20),            -- Ej: 'PED-00001'
+    
+    fecha_emision DATE,
+    fecha_necesaria DATE,
+    
+    sucursal_id INT,
+    centro_costo_id INT,
+    usuario_solicitante_id INT,
+    observacion VARCHAR(500),
+    estado_id INT,
+    
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dpedcompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    pedcompra_id INT,
+    item CHAR(3),                  -- '001', '002'
+    producto_id INT,
+    descripcion_libre VARCHAR(500), 
+    unidad_medida VARCHAR(50),
+    cantidad_solicitada DECIMAL(12,2),
+    cantidad_aprobada DECIMAL(12,2),
+    observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+CREATE TABLE pedservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, -- Referencia a 'PS'
+    numero VARCHAR(20),            -- Ej: 'PS-00001'
+    
+    fecha_emision DATE,
+    fecha_necesaria DATE,
+    sucursal_id INT,
+    centro_costo_id INT,
+    actividad_id INT,
+    usuario_solicitante_id INT,
+    observacion VARCHAR(500),
+    estado_id INT,
+    
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dpedservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    pedservicio_id INT,
+	producto_id INT,
+    item CHAR(3),
+    descripcion_servicio VARCHAR(MAX),
+    cantidad DECIMAL(12,2) DEFAULT 1,
+    unidad_medida VARCHAR(50),
+    observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+GO
+
+-- ==========================================
+-- 4. INSERTAR DATOS INICIALES (GLOBALES)
+-- ==========================================
+INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
+('IALM', 'NOTA DE INGRESO ALMACEN', 0),
+('SALM', 'NOTA DE SALIDA ALMACEN', 0),
+('PED',  'PEDIDO DE COMPRA', 0),
+('PS',   'PEDIDO DE SERVICIO', 0);
+GO
 
 -- inserts de 'unidad_medida'
 INSERT INTO unidad_medida (codigo, descripcion) VALUES ('4A','BOBINAS');

@@ -37,5 +37,10 @@ namespace ERPKardex.Data
         public DbSet<CentroCosto> CentroCostos { get; set; }
         public DbSet<Actividad> Actividades { get; set; }
         public DbSet<Entidad> Entidades { get; set; }
+        public DbSet<TipoDocumentoInterno> TiposDocumentoInterno { get; set; }
+        public DbSet<PedCompra> PedCompras { get; set; }
+        public DbSet<DPedCompra> DPedidoCompras { get; set; }
+        public DbSet<PedServicio> PedServicios { get; set; }
+        public DbSet<DPedServicio> DPedidosServicio { get; set; }
     }
 }

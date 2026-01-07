@@ -404,7 +404,11 @@ BEGIN
     -- Opcional: SET @MotivoSaldoInicialID = 7; 
 END
 
+DECLARE @IdTipoIALM INT;
+SELECT @IdTipoIALM = id FROM tipo_documento_interno WHERE codigo = 'IALM';
+
 INSERT INTO ingresosalidaalm (
+    tipo_documento_interno_id,
     fecha, 
     numero, 
     sucursal_id, 
@@ -417,8 +421,9 @@ INSERT INTO ingresosalidaalm (
     empresa_id       
 ) 
 VALUES (
+    @IdTipoIALM,
     @Fecha, 
-    '0000000001',    
+    'IALM-0000000001',    
     1,                
     @AlmacenPrincipalID,                
     1,                
@@ -492,10 +497,14 @@ PRINT '>> Migrando movimientos históricos de Almacén Terceros...'
 DECLARE @AlmacenTercerosID INT;
 SELECT @AlmacenTercerosID = id FROM almacen WHERE codigo = '02' AND empresa_id = @EmpresaID;
 
+DECLARE @IdTipoIALM INT;
+SELECT @IdTipoIALM = id FROM tipo_documento_interno WHERE codigo = 'IALM';
+
 -- A. MOVIMIENTO 1
 DECLARE @IdMovimiento1 INT;
 
 INSERT INTO ingresosalidaalm (
+    tipo_documento_interno_id,
     fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
@@ -503,7 +512,8 @@ INSERT INTO ingresosalidaalm (
     entidad_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
-    '2025-12-23', '0000000002', 1, @AlmacenTercerosID, 1, 7, 
+    @IdTipoIALM,
+    '2025-12-23', 'IALM-0000000002', 1, @AlmacenTercerosID, 1, 7, 
     '2025-12-06', 9, 'T001', '00001', 
     NULL, 1, NULL, '2025-12-23 18:58:45', 
     @EmpresaID, 
@@ -525,6 +535,7 @@ SELECT @IdMovimiento1, '003', p.id, p.codigo, '2102010004 - LEONARDITA 56 % SL -
 DECLARE @IdMovimiento2 INT;
 
 INSERT INTO ingresosalidaalm (
+    tipo_documento_interno_id,
     fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
@@ -532,7 +543,8 @@ INSERT INTO ingresosalidaalm (
     entidad_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
-    '2025-12-23', '0000000003', 1, @AlmacenTercerosID, 1, 7, 
+    @IdTipoIALM,
+    '2025-12-23', 'IALM-0000000003', 1, @AlmacenTercerosID, 1, 7, 
     '2025-12-06', 9, 'T001', '00002', 
     NULL, 1, NULL, '2025-12-23 18:59:21', 
     @EmpresaID, 
@@ -1315,15 +1327,20 @@ JOIN producto p ON p.codigo = i.codigo_generado AND p.empresa_id = @EmpresaID;
 -- ==========================================
 PRINT '>> Registrando Saldo Inicial en Almacén...'
 
+DECLARE @IdTipoIALM INT;
+SELECT @IdTipoIALM = id FROM tipo_documento_interno WHERE codigo = 'IALM';
+
 DECLARE @IdIngreso INT;
 
 -- Insertar Cabecera
 INSERT INTO ingresosalidaalm (
+    tipo_documento_interno_id,
     fecha, numero, sucursal_id, almacen_id, tipo_movimiento, motivo_id, 
     moneda_id, estado_id, usuario_id, empresa_id
 ) 
 VALUES (
-    @Fecha, '0000000001', @SucursalID, @AlmacenID, 1, @MotivoID, 
+    @IdTipoIALM,
+    @Fecha, 'IALM-0000000001', @SucursalID, @AlmacenID, 1, @MotivoID, 
     1, 1, NULL, @EmpresaID
 );
 

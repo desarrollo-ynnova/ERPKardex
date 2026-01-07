@@ -8,6 +8,8 @@ namespace ERPKardex.Models
     {
         [Key]
         public int Id { get; set; }
+        [Column("tipo_documento_interno_id")]
+        public int? TipoDocumentoInternoId { get; set; }
         public DateTime? Fecha { get; set; }
         public string? Numero { get; set; }
         [Column("sucursal_id")]

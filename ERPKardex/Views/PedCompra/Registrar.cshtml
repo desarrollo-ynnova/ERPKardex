@@ -1,0 +1,284 @@
+﻿@{
+    ViewData["Title"] = "Nuevo Pedido de Compra";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cart-plus"></i> Generar Requerimiento de Bienes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Fecha Emisión</label>
+                            <input type="date" id="dtp_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="font-weight-bold text-danger">Fecha Necesaria (*)</label>
+                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Sucursal (*)</label>
+                            <select id="cbx_Sucursal" class="form-control select2-busqueda"></select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Centro de Costo (Solicitante) (*)</label>
+                            <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label>Observación General</label>
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Para campaña escolar 2026...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-secondary text-white"><h5 class="mb-0">Lista de Productos</h5></div>
+                <div class="card-body bg-light">
+
+                    <div class="row align-items-end">
+                        <div class="col-md-5 mb-3">
+                            <label>Producto (*)</label>
+                            <select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>U.M.</label>
+                            <input type="text" id="txt_DetUnidad" class="form-control" readonly style="background-color: #e9ecef;">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Cantidad (*)</label>
+                            <input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" step="0.01" value="1.00">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button id="btn_AgregarDetalle" type="button" class="btn btn-success btn-block font-weight-bold">
+                                <i class="bi bi-plus-lg"></i> AGREGAR
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Observación específica para este ítem (Ej: Color rojo, marca específica...)">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table id="tbl_Detalle" class="table table-bordered table-hover text-center bg-white shadow-sm">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 50px;">Item</th>
+                                    <th style="width: 120px;">Código</th>
+                                    <th>Descripción Producto</th>
+                                    <th style="width: 80px;">U.M.</th>
+                                    <th style="width: 100px;">Cant.</th>
+                                    <th>Observación Item</th>
+                                    <th style="width: 60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right mb-5">
+                <a href="/PedCompra/Index" class="btn btn-danger btn-lg mr-2"><i class="bi bi-x-circle"></i> Cancelar</a>
+                <button id="btn_GuardarTodo" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> REGISTRAR PEDIDO</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    var LISTA_DETALLE = [];
+    var PRODUCTOS_TEMP = [];
+
+    $(document).ready(function () {
+        // 1. Configuración Inicial
+        $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', placeholder: '-- Seleccione --' });
+        fct_InitCombos();
+
+        // 2. Al seleccionar producto, mostrar su U.M.
+        $('#cbx_ProductoBusqueda').on('change', function () {
+            let id = $(this).val();
+            let p = PRODUCTOS_TEMP.find(x => x.id == id);
+            $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
+            if(p) $("#txt_DetCantidad").focus().select();
+        });
+
+        // 3. Botón Agregar Item
+        $("#btn_AgregarDetalle").click(function () {
+            let id = $("#cbx_ProductoBusqueda").val();
+            let textCombo = $("#cbx_ProductoBusqueda option:selected").text(); // Ej: "001 - LAPTOP HP"
+            let um = $("#txt_DetUnidad").val();
+            let can = parseFloat($("#txt_DetCantidad").val());
+            let obsItem = $("#txt_DetObservacion").val();
+
+            if (!id || isNaN(can) || can <= 0) {
+                return toastr.warning("Seleccione un producto y una cantidad válida mayor a 0.");
+            }
+
+            // Evitar duplicados visuales (opcional, depende de tu lógica de negocio)
+            // if (LISTA_DETALLE.some(x => x.ProductoId == id)) { return toastr.warning("El producto ya está en la lista."); }
+
+            // Separar código y nombre para visualización limpia
+            let codProd = "";
+            let nomProd = textCombo;
+            if(textCombo.includes('-')){
+                let parts = textCombo.split('-');
+                codProd = parts[0].trim();
+                nomProd = parts.slice(1).join('-').trim();
+            }
+
+            LISTA_DETALLE.push({
+                Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
+                ProductoId: parseInt(id),
+                Codigo: codProd,        // Solo visual
+                Descripcion: nomProd,   // Solo visual
+                UnidadMedida: um,       // Se guarda snapshot en BD
+                CantidadSolicitada: can,
+                ObservacionItem: obsItem
+            });
+
+            fct_RenderDetalle();
+            fct_LimpiarInputsDetalle();
+        });
+
+        // 4. Botón Guardar Todo
+        $("#btn_GuardarTodo").click(function () {
+            // Validaciones Cabecera
+            if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar al menos un producto al detalle.", "error");
+            if (!$("#cbx_Sucursal").val()) return toastr.warning("La Sucursal es obligatoria.");
+            if (!$("#cbx_CentroCosto").val()) return toastr.warning("El Centro de Costo es obligatorio.");
+            if (!$("#dtp_FechaNecesaria").val()) return toastr.warning("La fecha necesaria es obligatoria.");
+
+            // Objeto PedCompra (Mapeado a tu clase C#)
+            let cabecera = {
+                FechaEmision: $("#dtp_FechaEmision").val(),
+                FechaNecesaria: $("#dtp_FechaNecesaria").val(),
+                SucursalId: parseInt($("#cbx_Sucursal").val()),
+                CentroCostoId: parseInt($("#cbx_CentroCosto").val()),
+                Observacion: $("#txt_Observacion").val()
+            };
+
+            Swal.fire({
+                title: "¿Registrar Pedido?",
+                text: "Se generará el requerimiento de compra.",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                reverseButtons: true,
+                confirmButtonText: "Sí, Registrar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    ShowSpinner();
+                    $.ajax({
+                        url: "/PedCompra/GuardarPedido",
+                        type: "POST",
+                        data: {
+                            cabecera: cabecera,
+                            detallesJson: JSON.stringify(LISTA_DETALLE)
+                        },
+                        success: function (res) {
+                            if (res.status) {
+                                Swal.fire("¡Registrado!", res.message, "success").then(() => {
+                                    // Recargar o ir al Index
+                                    window.location.href = "/PedCompra/Index";
+                                    // O location.reload() si quieres seguir registrando
+                                });
+                            } else {
+                                Swal.fire("Error", res.message, "error");
+                            }
+                            HideSpinner();
+                        },
+                        error: function () {
+                            toastr.error("Error de conexión con el servidor.");
+                            HideSpinner();
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    // --- FUNCIONES AUXILIARES ---
+
+    function fct_InitCombos() {
+        // Carga Sucursales
+        $.getJSON('/PedCompra/GetSucursales', function (res) {
+            let h = '<option value="">-- SELECCIONE --</option>';
+            if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.nombre}</option>`);
+            $('#cbx_Sucursal').html(h);
+        });
+
+        // Carga Centros de Costo
+        $.getJSON('/PedCompra/GetCentrosCosto', function (res) {
+            let h = '<option value="">-- SELECCIONE --</option>';
+            if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.nombre}</option>`);
+            $('#cbx_CentroCosto').html(h);
+        });
+
+        // Carga Productos (Guardamos en memoria para obtener datos extra como U.M.)
+        $.getJSON('/PedCompra/GetProductos', function (res) {
+            if (res.status) {
+                PRODUCTOS_TEMP = res.data;
+                let h = '<option value="">-- BUSCAR PRODUCTO --</option>';
+                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionProducto}</option>`);
+                $('#cbx_ProductoBusqueda').html(h);
+            }
+        });
+    }
+
+    function fct_RenderDetalle() {
+        let html = "";
+        LISTA_DETALLE.forEach((d, index) => {
+            html += `<tr>
+                <td class="align-middle font-weight-bold">${d.Item}</td>
+                <td class="align-middle">${d.Codigo}</td>
+                <td class="align-middle text-left">${d.Descripcion}</td>
+                <td class="align-middle">${d.UnidadMedida}</td>
+                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.CantidadSolicitada.toFixed(2)}</td>
+                <td class="align-middle text-left small text-muted">${d.ObservacionItem || '<em>Ninguna</em>'}</td>
+                <td class="align-middle">
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})" title="Quitar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+
+        if(LISTA_DETALLE.length === 0) html = '<tr><td colspan="7" class="text-center py-3 text-muted">No hay productos agregados</td></tr>';
+
+        $("#tbl_Detalle tbody").html(html);
+    }
+
+    function fct_EliminarDetalle(index) {
+        LISTA_DETALLE.splice(index, 1);
+        // Reordenar items (001, 002...)
+        LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
+        fct_RenderDetalle();
+    }
+
+    function fct_LimpiarInputsDetalle() {
+        $("#cbx_ProductoBusqueda").val("").trigger("change");
+        $("#txt_DetCantidad").val("1.00");
+        $("#txt_DetObservacion").val("");
+    }
+
+    function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+    function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
+
+</script>

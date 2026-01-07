@@ -10,6 +10,6 @@ namespace ERPKardex.Models
         public string? Nombre { get; set; }
         public bool? Estado { get; set; }
         [Column("empresa_id")]
-        public string? EmpresaId { get; set; }
+        public int? EmpresaId { get; set; }
     }
 }

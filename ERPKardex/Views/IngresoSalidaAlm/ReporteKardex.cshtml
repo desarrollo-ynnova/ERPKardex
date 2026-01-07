@@ -268,7 +268,7 @@
     // EXPORTAR A EXCEL (CONDICIONAL)
     // ==========================================
     function exportarExcel() {
-        if ($('#tbl_Kardex tbody tr').length <= 1) {
+        if ($('#tbl_Kardex tbody tr').length <= 0) {
             toastr.warning("Genere el reporte primero"); return;
         }
 
@@ -362,7 +362,7 @@
 
     function exportarPDF() {
          // Reutilizamos la lógica visual actual del HTML
-         if ($('#tbl_Kardex tbody tr').length <= 1) return toastr.warning("Genere reporte");
+         if ($('#tbl_Kardex tbody tr').length <= 0) return toastr.warning("Genere reporte");
 
          const element = document.getElementById("area_impresion");
          const opt = {

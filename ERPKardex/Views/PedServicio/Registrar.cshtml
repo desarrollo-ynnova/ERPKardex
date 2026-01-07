@@ -1,0 +1,277 @@
+﻿@{
+    ViewData["Title"] = "Nuevo Pedido de Servicio";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-tools fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+
+            <div class="card shadow mb-4 border-left-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-tools"></i> Solicitud de Servicios</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label>Fecha Emisión</label>
+                            <input type="date" id="dtp_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="font-weight-bold text-danger">Fecha Necesaria (*)</label>
+                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Sucursal (*)</label>
+                            <select id="cbx_Sucursal" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Actividad / Proyecto</label>
+                            <select id="cbx_Actividad" class="form-control select2-busqueda"></select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Centro de Costo (*)</label>
+                            <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label>Observación General</label>
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Comentarios generales para Logística...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-secondary text-white"><h5 class="mb-0">Servicios a Solicitar</h5></div>
+                <div class="card-body bg-light">
+
+                    <div class="row align-items-end">
+                        <div class="col-md-6 mb-3">
+                            <label>Servicio / Producto (*)</label>
+                            <select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>U.M.</label>
+                            <input type="text" id="txt_DetUnidad" class="form-control" readonly style="background-color: #e9ecef;">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Cantidad</label>
+                            <input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" step="0.01" value="1.00">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <button id="btn_AgregarDetalle" type="button" class="btn btn-info btn-block font-weight-bold">
+                                <i class="bi bi-plus-lg"></i> AGREGAR
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <input type="text" id="txt_DetObservacionItem" class="form-control form-control-sm" placeholder="Detalle técnico o especificaciones del servicio...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table id="tbl_Detalle" class="table table-bordered table-striped text-center bg-white shadow-sm">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 50px;">Item</th>
+                                    <th style="width: 120px;">Código</th>
+                                    <th class="text-left">Descripción del Servicio</th>
+                                    <th style="width: 80px;">U.M.</th>
+                                    <th style="width: 100px;">Cant.</th>
+                                    <th>Observación</th>
+                                    <th style="width: 60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right mb-5">
+                <a href="/PedServicio/Index" class="btn btn-danger btn-lg mr-2">Cancelar</a>
+                <button id="btn_GuardarTodo" class="btn btn-info btn-lg"><i class="bi bi-save"></i> Registrar Solicitud</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    var LISTA_DETALLE = [];
+    var PRODUCTOS_TEMP = [];
+
+    $(document).ready(function () {
+        $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', placeholder: '-- Seleccione --' });
+        fct_InitCombos();
+
+        // Al seleccionar servicio, llenar U.M.
+        $('#cbx_ProductoBusqueda').on('change', function () {
+            let id = $(this).val();
+            let p = PRODUCTOS_TEMP.find(x => x.id == id);
+            $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
+            if(p) $("#txt_DetCantidad").focus().select();
+        });
+
+        // Agregar Item
+        $("#btn_AgregarDetalle").click(function () {
+            let id = $("#cbx_ProductoBusqueda").val();
+            let textCombo = $("#cbx_ProductoBusqueda option:selected").text();
+            let um = $("#txt_DetUnidad").val();
+            let can = parseFloat($("#txt_DetCantidad").val());
+            let obs = $("#txt_DetObservacionItem").val().trim();
+
+            if (!id || can <= 0) {
+                return toastr.warning("Seleccione un servicio y cantidad válida.");
+            }
+
+            // Parsear texto del combo para visualización
+            let codProd = "", nomProd = textCombo;
+            if(textCombo.includes('-')){
+                let parts = textCombo.split('-');
+                codProd = parts[0].trim();
+                nomProd = parts.slice(1).join('-').trim();
+            }
+
+            LISTA_DETALLE.push({
+                Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
+                ProductoId: parseInt(id),       // ID Real
+                Codigo: codProd,                // Visual
+                DescripcionServicio: nomProd,   // Se guarda como snapshot del nombre
+                UnidadMedida: um,
+                Cantidad: can,
+                ObservacionItem: obs
+            });
+
+            fct_RenderDetalle();
+            fct_LimpiarInputsDetalle();
+        });
+
+        // Guardar Todo
+        $("#btn_GuardarTodo").click(function () {
+            if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar al menos un servicio.", "error");
+            if (!$("#cbx_Sucursal").val()) return toastr.warning("Seleccione Sucursal.");
+            if (!$("#cbx_CentroCosto").val()) return toastr.warning("Seleccione Centro de Costo.");
+
+            let cabecera = {
+                FechaEmision: $("#dtp_FechaEmision").val(),
+                FechaNecesaria: $("#dtp_FechaNecesaria").val(),
+                SucursalId: parseInt($("#cbx_Sucursal").val()),
+                CentroCostoId: parseInt($("#cbx_CentroCosto").val()),
+                ActividadId: $("#cbx_Actividad").val() ? parseInt($("#cbx_Actividad").val()) : null,
+                Observacion: $("#txt_Observacion").val()
+            };
+
+            Swal.fire({
+                title: "¿Registrar Solicitud?",
+                text: "Se generará el pedido de servicio PS-XXXX.",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                reverseButtons: true,
+                confirmButtonText: "Sí, Registrar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    ShowSpinner();
+                    $.ajax({
+                        url: "/PedServicio/GuardarPedido",
+                        type: "POST",
+                        data: {
+                            cabecera: cabecera,
+                            detallesJson: JSON.stringify(LISTA_DETALLE)
+                        },
+                        success: function (res) {
+                            if (res.status) {
+                                Swal.fire("Registrado", res.message, "success").then(() => {
+                                    window.location.href = "/PedServicio/Index";
+                                });
+                            } else {
+                                Swal.fire("Error", res.message, "error");
+                            }
+                            HideSpinner();
+                        },
+                        error: function () {
+                            toastr.error("Error de conexión.");
+                            HideSpinner();
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    function fct_InitCombos() {
+        $.getJSON('/PedServicio/GetSucursales', function (res) {
+            fct_LlenarSelect(res, '#cbx_Sucursal', 'id', 'nombre', '-- SELECCIONE --');
+        });
+        $.getJSON('/PedServicio/GetCentrosCosto', function (res) {
+            fct_LlenarSelect(res, '#cbx_CentroCosto', 'id', 'nombre', '-- SELECCIONE --', 'codigo');
+        });
+        $.getJSON('/PedServicio/GetActividades', function (res) {
+            fct_LlenarSelect(res, '#cbx_Actividad', 'id', 'nombre', '-- SELECCIONE --', 'codigo');
+        });
+        $.getJSON('/PedServicio/GetProductosServicio', function (res) {
+            if (res.status) {
+                PRODUCTOS_TEMP = res.data;
+                let h = '<option value="">-- BUSCAR SERVICIO --</option>';
+                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionProducto}</option>`);
+                $('#cbx_ProductoBusqueda').html(h);
+            }
+        });
+    }
+
+    function fct_LlenarSelect(res, id, val, txt, ph, extra) {
+        let h = `<option value="">${ph}</option>`;
+        if (res.status) {
+            res.data.forEach(i => {
+                let display = extra ? `${i[extra]} - ${i[txt]}` : i[txt];
+                h += `<option value="${i[val]}">${display}</option>`;
+            });
+        }
+        $(id).html(h);
+    }
+
+    function fct_RenderDetalle() {
+        let html = "";
+        LISTA_DETALLE.forEach((d, index) => {
+            html += `<tr>
+                <td class="font-weight-bold align-middle">${d.Item}</td>
+                <td class="align-middle">${d.Codigo}</td>
+                <td class="text-left align-middle">${d.DescripcionServicio}</td>
+                <td class="align-middle">${d.UnidadMedida}</td>
+                <td class="font-weight-bold align-middle">${d.Cantidad.toFixed(2)}</td>
+                <td class="text-left small align-middle text-muted">${d.ObservacionItem || ''}</td>
+                <td class="align-middle">
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})"><i class="bi bi-trash-fill"></i></button>
+                </td>
+            </tr>`;
+        });
+        $("#tbl_Detalle tbody").html(html);
+    }
+
+    function fct_EliminarDetalle(index) {
+        LISTA_DETALLE.splice(index, 1);
+        LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
+        fct_RenderDetalle();
+    }
+
+    function fct_LimpiarInputsDetalle() {
+        $("#cbx_ProductoBusqueda").val("").trigger("change");
+        $("#txt_DetCantidad").val("1.00");
+        $("#txt_DetObservacionItem").val("");
+    }
+
+    function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+    function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
+</script>

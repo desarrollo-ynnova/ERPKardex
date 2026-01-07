@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Movimientos de Almacén";
+    ViewData["Title"] = "Pedidos de Servicio";
 }
 <div class="card d-none" id="efec-cargando">
     <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
@@ -10,26 +10,24 @@
     <div class="panel-heading">
         <div class="row">
             <div class="col-md-12">
-                <h1>Gestionar ingresos y salidas</h1>
+                <h1>Gestionar pedidos de servicio</h1>
             </div>
         </div>
     </div>
     <div class="panel-body">
         <div class="row">
             <div class="col-12">
-                <table id="tbl_Movimientos" class="table table-bordered table-striped">
+                <table id="tbl_PedServicios" class="table table-bordered table-striped">
                     <thead>
                         <tr>
                             <th class="text-center">ID</th>
-                            <th class="text-center">FECHA</th>
                             <th class="text-center">NÚMERO</th>
-                            <th class="text-center">MOVIMIENTO</th>
-                            <th class="text-center">MOTIVO</th>
+                            <th class="text-center">F. EMISIÓN</th>
+                            <th class="text-center">F. NECESARIA</th>
                             <th class="text-center">SUCURSAL</th>
-                            <th class="text-center">ALMACÉN</th>
-                            <th class="text-center">TIPO DOC.</th>
-                            <th class="text-center">DOCUMENTO</th>
-                            <th class="text-center">MONEDA</th>
+                            <th class="text-center">C. COSTO</th>
+                            <th class="text-center">ACTIVIDAD / PROY.</th>
+                            <th class="text-center">SOLICITANTE</th>
                             <th class="text-center">ESTADO</th>
                             <th class="text-center">ACCIÓN</th>
                         </tr>
@@ -42,7 +40,7 @@
     </div>
 </div>
 <script>
-    var dtMovimientos;
+    var dtPedidos;
 
     $(document).ready(function () {
         // $('body').addClass('sidebar-collapse');
@@ -108,12 +106,12 @@
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
         });
 
-        fct_IniciarTablaMovimientos('#tbl_Movimientos');
+        fct_IniciarTablaPedServicios('#tbl_PedServicios');
     });
 
-    function fct_IniciarTablaMovimientos(IdTabla) {
+    function fct_IniciarTablaPedServicios(IdTabla) {
         // Inicializar DataTables con botones
-        dtMovimientos = $(IdTabla).DataTable({
+        dtPedidos = $(IdTabla).DataTable({
             buttons: [
                 {
                     extend: 'copy',
@@ -126,7 +124,7 @@
                     text: '<i class="bi bi-file-earmark-excel"></i>',
                     titleAttr: 'Exportar a Excel',
                     className: 'btn btn-success',
-                    filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Pedidos servicios ' + moment().format('DD-MM-YYYY HH_mm'),
                     footer: true,
                     exportOptions:
                     {
@@ -139,7 +137,7 @@
                     text: '<i class="bi bi-file-earmark-pdf"></i>',
                     titleAttr: 'Exportar a PDF',
                     className: 'btn btn-danger',
-                    filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Pedidos servicios ' + moment().format('DD-MM-YYYY HH_mm'),
                     exportOptions:
                     {
                         stripHtml: true,
@@ -167,16 +165,16 @@
                     columns: ':not(.noVis)',
                 },
                 {
-                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nuevo movimiento',
+                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nuevo pedido',
                     className: 'btn bg-success m-1',
                     titleAttr: 'Nuevo',
                     action: function (e, dt, node, config) {
-                        fct_MovimientoNuevo();
+                        fct_PedidoNuevo();
                     },
                 },
             ],
             ajax: {
-                url: "/IngresoSalidaAlm/GetMovimientosData",
+                url: "/PedServicio/GetPedidosServicioData",
                 type: "GET",
                 datatype: "json",
                 data: function (d) {
@@ -195,76 +193,77 @@
                 },
             },
             columns: [
-                { data: "id", name: "id" },
-                {
-                    data: "fecha",
-                    render: function (data) { return data ? moment(data).format('DD/MM/YYYY') : ''; }
-                },
-                { data: "numero", className: "font-weight-bold" },
-                { 
-                    data: "tipoMovimiento", 
-                    name: "tipoMovimiento",
-                    render: function(data, type, row) {
-                        return data ? "ENTRADA" : "SALIDA";
-                    }
-                },
-                { data: "motivo" },
-                { data: "sucursal" }, // Mapeado en el Controller
-                { data: "almacen" },
-                { data: "tipoDocumento", name: "tipoDocumento" },
-                {
-                    data: null,
-                    render: function (row) { return (row.serieDocumento || '') + ' - ' + (row.numeroDocumento || ''); }
-                },
-                { data: "moneda" },
-                {
-                    data: "estado",
-                    name: "estado",
-                    render: function (data) {
-                        let badgeClass = "";
-                        // Evaluamos el texto que viene de est.Nombre
-                        switch (data) {
-                            case "Aprobado": case "Activo": case "Pagado":
-                                badgeClass = "badge-success";
-                                break;
-                            case "Pendiente":
-                                badgeClass = "badge-warning text-dark";
-                                break;
-                            case "Rechazado": case "Anulado": case "Inactivo":
-                                badgeClass = "badge-danger";
-                                break;
-                            default:
-                                badgeClass = "badge-secondary";
+                    { data: "id", name: "id", className: "text-center align-middle" },
+                    { data: "numero", className: "align-middle font-weight-bold" }, // Color info para diferenciar visualmente
+                    {
+                        data: "fechaEmision",
+                        className: "text-center align-middle",
+                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
+                    },
+                    {
+                        data: "fechaNecesaria",
+                        className: "text-center align-middle",
+                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
+                    },
+                    { data: "sucursal", className: "align-middle" },
+                    { data: "centroCosto", className: "align-middle" },
+                    {
+                        data: "actividad",
+                        className: "align-middle",
+                        render: function(data) {
+                            // Si no hay actividad, mostrar guion suave
+                            return data === '--' ? '<span class="text-muted text-center d-block">-</span>' : data;
                         }
-                        return `<h5 class="mb-0 d-flex align-items-center justify-content-center"><span class="badge ${badgeClass} fs-5">${data}</span></h5>`;
                     },
-                },
-                {
-                    data: null,
-                    orderable: false,
-                    render: function (data) {
-                        return '';
-
-                        return `
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-info" onclick="fct_VerMovimiento('${data.id}')" title="Ver"><i class="bi bi-eye"></i></button>
-                            <button class="btn btn-sm btn-danger" onclick="fct_AnularMovimiento('${data.id}')" title="Anular"><i class="bi bi-x-circle"></i></button>
-                        </div>`;
+                    { data: "solicitante", className: "align-middle" },
+                    {
+                        data: "estado",
+                        name: "estado",
+                        className: "text-center align-middle",
+                        render: function (data) {
+                            let badgeClass = "";
+                            switch (data) {
+                                case "Aprobado": case "Atendido": case "Autorizado":
+                                    badgeClass = "badge-success";
+                                    break;
+                                case "Pendiente": case "En Proceso":
+                                    badgeClass = "badge-warning text-dark";
+                                    break;
+                                case "Rechazado": case "Anulado":
+                                    badgeClass = "badge-danger";
+                                    break;
+                                default:
+                                    badgeClass = "badge-secondary";
+                            }
+                            return `<span class="badge ${badgeClass}" style="font-size: 0.9rem;">${data}</span>`;
+                        },
                     },
-                    className: 'text-center'
-                }
-            ],
+                    {
+                        data: null,
+                        orderable: false,
+                        className: 'text-center align-middle',
+                        render: function (data) {
+                            return "";
+                            return `
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-info" onclick="fct_VerPedido(${data.id})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                                <button class="btn btn-sm btn-secondary" onclick="fct_Imprimir(${data.id})" title="Imprimir"><i class="bi bi-printer"></i></button>
+                                ${data.estado === 'Pendiente' ? `<button class="btn btn-sm btn-danger" onclick="fct_Anular(${data.id})" title="Anular"><i class="bi bi-x-circle"></i></button>` : ''}
+                            </div>`;
+                        }
+                    }
+                ],
             columnDefs: [
                 {
                     targets: [0],
                     className: "text-center align-middle",
                 },
                 {
-                    targets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                    targets: [1, 2, 3, 4, 5, 6, 7, 8],
                     className: 'align-middle',
                 },
                 {
-                    targets: [11],
+                    targets: [8],
                     orderable: false,
                 },
             ],
@@ -285,8 +284,8 @@
         });
     }
 
-    function fct_MovimientoNuevo() {
-        window.location.href = '/IngresoSalidaAlm/Registrar';
+    function fct_PedidoNuevo() {
+        window.location.href = '/PedServicio/Registrar';
     }
 
     function fct_EmpresaEditar(Id) {

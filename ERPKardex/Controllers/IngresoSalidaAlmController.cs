@@ -41,6 +41,7 @@ namespace ERPKardex.Controllers
                                    join suc in _context.Sucursales on isa.SucursalId equals suc.Id
                                    join alm in _context.Almacenes on isa.AlmacenId equals alm.Id
                                    join emp in _context.Empresas on alm.EmpresaId equals emp.Id
+                                   join tdi in _context.TiposDocumentoInterno on isa.TipoDocumentoInternoId equals tdi.Id
                                    join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
                                    from tc in joinDoc.DefaultIfEmpty()
                                    join mon in _context.Monedas on isa.MonedaId equals mon.Id into joinMon
@@ -92,19 +93,63 @@ namespace ERPKardex.Controllers
                     int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-                    // 1. Generar número correlativo (Algoritmo previo)
-                    var ultimoRegistro = _context.IngresoSalidaAlms
-                        .OrderByDescending(x => x.Numero)
-                        .Select(x => x.Numero).FirstOrDefault();
-                    int nuevoCorrelativo = string.IsNullOrEmpty(ultimoRegistro) ? 1 : int.Parse(ultimoRegistro) + 1;
+                    // =================================================================================
+                    // 1. DETERMINAR TIPO DE DOCUMENTO Y OBTENER SU ID
+                    // =================================================================================
 
-                    cabecera.Numero = nuevoCorrelativo.ToString("D10");
+                    // Definimos el código según el tipo de movimiento (1: IALM, 0: SALM)
+                    string codigoDoc = (cabecera.TipoMovimiento == true) ? "IALM" : "SALM";
+
+                    // Buscamos el ID del tipo de documento en la maestra (Global)
+                    var tipoDocInterno = _context.TiposDocumentoInterno
+                        .FirstOrDefault(t => t.Codigo == codigoDoc && t.Estado == true);
+
+                    if (tipoDocInterno == null)
+                        throw new Exception($"No se encontró el tipo de documento interno '{codigoDoc}'.");
+
+                    // =================================================================================
+                    // 2. CALCULAR CORRELATIVO (Manual, por Empresa y Tipo)
+                    // =================================================================================
+
+                    // Buscamos el último movimiento de ESTA EMPRESA y de ESTE TIPO (IALM o SALM)
+                    var ultimoRegistro = _context.IngresoSalidaAlms
+                        .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDocInterno.Id)
+                        .OrderByDescending(x => x.Numero)
+                        .Select(x => x.Numero)
+                        .FirstOrDefault();
+
+                    int nuevoCorrelativo = 1;
+
+                    if (!string.IsNullOrEmpty(ultimoRegistro))
+                    {
+                        // El formato es "IALM-0000000005". Separamos por guion y tomamos la parte derecha.
+                        var partes = ultimoRegistro.Split('-');
+                        if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
+                        {
+                            nuevoCorrelativo = numeroActual + 1;
+                        }
+                    }
+
+                    // Formateamos el nuevo número: IALM-0000000001
+                    string numeroGenerado = $"{codigoDoc}-{nuevoCorrelativo.ToString("D10")}";
+
+                    // Asignamos a la cabecera
+                    cabecera.TipoDocumentoInternoId = tipoDocInterno.Id;
+                    cabecera.Numero = numeroGenerado;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.UsuarioId = usuarioId;
                     cabecera.EmpresaId = empresaId;
 
+                    // =================================================================================
+                    // 3. GUARDAR CABECERA
+                    // =================================================================================
+
                     _context.IngresoSalidaAlms.Add(cabecera);
                     _context.SaveChanges();
+
+                    // =================================================================================
+                    // 4. PROCESAR DETALLES Y STOCK (Igual que antes)
+                    // =================================================================================
 
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
@@ -112,19 +157,19 @@ namespace ERPKardex.Controllers
 
                         foreach (var detalle in listaDetalles)
                         {
-                            // --- LÓGICA DE ACTUALIZACIÓN DE STOCK POR ALMACÉN ---
-
-                            // Buscamos si el producto ya existe en ese almacén específico
+                            // Lógica de Stock (se mantiene intacta)
                             var registroStock = _context.StockAlmacenes
-                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId);
+                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId && s.EmpresaId == empresaId);
 
                             if (registroStock == null)
                             {
-                                // Si no existe, creamos la "ubicación" en el almacén
+                                if (cabecera.TipoMovimiento == false)
+                                    throw new Exception($"No existe registro de stock para el producto ID {detalle.ProductoId} en este almacén.");
+
                                 registroStock = new StockAlmacen
                                 {
                                     AlmacenId = cabecera.AlmacenId ?? 0,
-                                    ProductoId = detalle.ProductoId,
+                                    ProductoId = detalle.ProductoId ?? 0,
                                     StockActual = 0,
                                     UltimaActualizacion = DateTime.Now,
                                     EmpresaId = empresaId,
@@ -132,41 +177,49 @@ namespace ERPKardex.Controllers
                                 _context.StockAlmacenes.Add(registroStock);
                             }
 
-                            // Aplicamos el movimiento al stock
-                            if (cabecera.TipoMovimiento == true) // 1: ENTRADA
+                            if (cabecera.TipoMovimiento == true)
                             {
                                 registroStock.StockActual += detalle.Cantidad ?? 0;
                             }
-                            else // 0: SALIDA
+                            else
                             {
-                                // OPCIONAL: Validar stock negativo antes de restar
                                 if ((registroStock.StockActual - (detalle.Cantidad ?? 0)) < 0)
                                 {
-                                    throw new Exception($"Stock insuficiente para el producto {detalle.CodProducto}. Stock actual: {registroStock.StockActual}");
+                                    var codProd = _context.Productos.Where(p => p.Id == detalle.ProductoId).Select(p => p.Codigo).FirstOrDefault();
+                                    throw new Exception($"Stock insuficiente para el producto {codProd}. Stock actual: {registroStock.StockActual}, Intento de salida: {detalle.Cantidad}");
                                 }
                                 registroStock.StockActual -= detalle.Cantidad ?? 0;
                             }
-
                             registroStock.UltimaActualizacion = DateTime.Now;
 
-                            // --- GUARDADO DEL DETALLE ---
+                            // Guardado del Detalle
                             detalle.Id = 0;
                             detalle.IngresoSalidaAlmId = cabecera.Id;
                             detalle.FechaRegistro = DateTime.Now;
                             detalle.EmpresaId = empresaId;
-                            detalle.CodProducto = _context.Productos.Where(p => p.Id == detalle.ProductoId).Select(p => p.Codigo).FirstOrDefault();
+
+                            var prodData = _context.Productos
+                                .Where(p => p.Id == detalle.ProductoId)
+                                .Select(p => new { p.Codigo, p.DescripcionProducto, p.CodUnidadMedida })
+                                .FirstOrDefault();
+
+                            if (prodData != null)
+                            {
+                                detalle.CodProducto = prodData.Codigo;
+                                detalle.DescripcionProducto = prodData.DescripcionProducto;
+                                detalle.CodUnidadMedida = prodData.CodUnidadMedida;
+                            }
                             _context.DIngresoSalidaAlms.Add(detalle);
                         }
                         _context.SaveChanges();
                     }
 
                     transaction.Commit();
-                    return Json(new { status = true, message = "Movimiento " + cabecera.Numero + " registrado y stock actualizado." });
+                    return Json(new { status = true, message = "Movimiento " + cabecera.Numero + " registrado correctamente." });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    // El mensaje de "Stock insuficiente" llegará aquí y se mostrará en el SweetAlert
                     return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
                 }
             }
@@ -256,7 +309,7 @@ namespace ERPKardex.Controllers
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
                 int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                var actividadesData = _context.Actividades.Where(a => a.Estado == true).ToList();
+                var actividadesData = _context.Actividades.Where(a => a.Estado == true && a.EmpresaId == empresaId).ToList();
                 return Json(new { data = actividadesData, status = true, message = "Actividades retornadas exitosamente" });
             }
             catch (Exception ex)
