@@ -14,6 +14,8 @@ namespace ERPKardex.Models
         public string? CodProducto { get; set; }
         [Column("stock_actual")]
         public decimal? StockActual { get; set; }
+        [Column("empresa_id")]
+        public int? EmpresaId { get; set; }
         [Column("ultima_actualizacion")]
         public DateTime? UltimaActualizacion { get; set; }
     }

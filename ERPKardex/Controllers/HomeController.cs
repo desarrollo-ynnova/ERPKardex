@@ -17,7 +17,7 @@ namespace ERPKardex.Controllers
         {
             _context = context;
         }
-
+        [Authorize]
         public IActionResult Index()
         {
             return View();
@@ -40,42 +40,51 @@ namespace ERPKardex.Controllers
         }
         [AllowAnonymous]
         [HttpPost]
-        public async Task<JsonResult> IniciarSesion(string dni, string password)
+        public async Task<JsonResult> IniciarSesion(string ruc, string dni, string password)
         {
             try
             {
-                var usuario = (from u in _context.Usuarios
-                               where u.Dni == dni
-                               where u.Password == password
-                               where u.Estado == true
-                               select new
-                               {
-                                   u.Id,
-                                   u.Dni,
-                                   u.Nombre,
-                                   u.EmpresaId,
-                               }).FirstOrDefault();
+                // 1. Buscamos la combinación de Empresa + Usuario + Relación (empresa_usuario)
+                // Hacemos el join manual ya que no usamos FKs estrictas en el modelo
+                var datosUsuario = await (from e in _context.Empresas
+                                          join eu in _context.EmpresaUsuarios on e.Id equals eu.EmpresaId
+                                          join u in _context.Usuarios on eu.UsuarioId equals u.Id
+                                          where e.Ruc == ruc
+                                          where u.Dni == dni
+                                          where u.Password == password
+                                          where u.Estado == true && e.Estado == true && eu.Estado == true
+                                          select new
+                                          {
+                                              UsuarioId = u.Id,
+                                              u.Nombre,
+                                              u.Dni,
+                                              e.Id, // Este es el EmpresaId real
+                                              RazonSocial = e.RazonSocial,
+                                              eu.TipoUsuarioId // El rol por si lo necesitas luego
+                                          }).FirstOrDefaultAsync();
 
-                if (usuario == null)
+                if (datosUsuario == null)
                 {
-                    return Json(new ApiResponse { data = null, message = "Credenciales incorrectas.", status = false });
+                    return Json(new ApiResponse { data = null, message = "Credenciales incorrectas o el usuario no pertenece a esta empresa.", status = false });
                 }
                 else
                 {
+                    // 2. Cargamos los Claims con la información de la empresa seleccionada
                     var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, usuario.Nombre),
-                        new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-                        new Claim("EmpresaId", usuario.EmpresaId.GetValueOrDefault().ToString()),
-                        new Claim("DNI", usuario.Dni),
-                    };
+            {
+                new Claim(ClaimTypes.Name, datosUsuario.Nombre),
+                new Claim(ClaimTypes.NameIdentifier, datosUsuario.UsuarioId.ToString()),
+                new Claim("EmpresaId", datosUsuario.Id.ToString()), // EmpresaId recuperado del RUC
+                new Claim("RazonSocial", datosUsuario.RazonSocial),
+                new Claim("DNI", datosUsuario.Dni),
+                new Claim(ClaimTypes.Role, datosUsuario.TipoUsuarioId.GetValueOrDefault().ToString())
+            };
 
                     var claimsIdentity = new ClaimsIdentity(
                         claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
                     var authProperties = new AuthenticationProperties
                     {
-                        // Puedes configurar la duración de la cookie si lo deseas
                         IsPersistent = true,
                         ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(60)
                     };
@@ -85,7 +94,7 @@ namespace ERPKardex.Controllers
                         new ClaimsPrincipal(claimsIdentity),
                         authProperties);
 
-                    return Json(new ApiResponse { data = null, message = "Login satisfactorio.", status = true });
+                    return Json(new ApiResponse { data = null, message = "Bienvenido a " + datosUsuario.RazonSocial, status = true });
                 }
             }
             catch (Exception ex)

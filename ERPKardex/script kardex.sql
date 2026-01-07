@@ -547,3 +547,48 @@ VALUES (1, @NewUsuarioID, 2, 1); -- Empresa 1, Rol 2 (Admin Empresa)
 
 PRINT '>> Proceso de tablas de usuario finalizado.';
 GO
+
+USE erp_kardex_dev;
+GO
+
+PRINT '>> Insertando Rol: USUARIO...';
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('USUARIO', 1);
+DECLARE @RolUsuarioID INT = SCOPE_IDENTITY();
+
+-- ======================================================
+-- 1. USUARIOS PARA EMPRESA_ID = 1 (CONTROL SCIENCE)
+-- ======================================================
+PRINT '>> Insertando usuarios para Empresa 1...';
+
+-- James de la Cruz Calopino
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
+VALUES ('74814548', 'James de la Cruz Calopino', 'jproduccion@agrosayans.com', '910467055', 'password123', 1);
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+
+-- Lilyan Lozada Diaz
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
+VALUES ('73138239', 'Lilyan Lozada Diaz', 'llozada@agrosayans.com', '930939954', 'password123', 1);
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+
+-- Katherin Espinal Vasquez
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
+VALUES ('75185380', 'Katherin Espinal Vasquez', 'kespinal@agrosayans.com', '977796697', 'password123', 1);
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+
+
+-- ======================================================
+-- 2. USUARIOS PARA EMPRESA_ID = 2 (MAQSA)
+-- ======================================================
+PRINT '>> Insertando usuario para Empresa 2...';
+
+-- Edwin Roy Suárez Sánchez
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
+VALUES ('42642076', 'Edwin Roy Suárez Sánchez', 'almacen@maqsa.pe', '983059270', 'password123', 1);
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (2, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+
+PRINT '>> Proceso de inserción finalizado correctamente.';
+GO

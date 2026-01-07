@@ -88,6 +88,14 @@ Layout = null;
             <div class="card-body login-card-body">
                 <p class="login-box-msg">Inicia sesión para acceder al sistema</p>
                 <form>
+                    <div class="input-group mb-3 form-input-container">
+                        <input id="txt_RUC" type="text" class="form-control form-input" placeholder="RUC de la empresa">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-building"></span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="input-group mb-3 form-input">
                         <input id="txt_DNI" type="text" class="form-control" placeholder="DNI">
                         <div class="input-group-append">
@@ -146,6 +154,13 @@ Layout = null;
 
         $(document).ready(function () {
 
+            // 1. Validación de RUC (11 dígitos)
+            $('#txt_RUC').on('keypress', function (e) {
+                var charCode = (e.which) ? e.which : e.keyCode;
+                if (charCode > 31 && (charCode < 48 || charCode > 57)) return false;
+                if ($(this).val().length >= 11) return false;
+            });
+
             // 1. Validación de DNI (solo dígitos y límite de 8)
             $('#txt_DNI').on('keypress', function (e) {
                 // Obtenemos el código de la tecla presionada
@@ -185,12 +200,18 @@ Layout = null;
 
             // 4. Lógica principal de Login
             $('#btn_Login').on('click', function () {
+                const ruc = $('#txt_RUC').val().trim();
                 const dni = $('#txt_DNI').val().trim();
                 const password = $('#txt_Password').val().trim();
 
                 // Validar campos vacíos
-                if (dni === '' || password === '') {
+                if (ruc === '' || dni === '' || password === '') {
                     toastr.warning('Debe ingresar sus credenciales de acceso', 'MENSAJE DE SISTEMA');
+                    return;
+                }
+
+                if (ruc.length !== 11) {
+                    toastr.warning('El RUC debe tener 11 dígitos', 'MENSAJE DE SISTEMA');
                     return;
                 }
 
@@ -204,6 +225,7 @@ Layout = null;
                 btn.prop('disabled', true);
 
                 let formData = new FormData();
+                formData.append("ruc", ruc);
                 formData.append("dni", dni);
                 formData.append("password", password);
 

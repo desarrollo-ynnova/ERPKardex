@@ -8,7 +8,6 @@ namespace ERPKardex.Models
     {
         [Key]
         public int Id { get; set; }
-        public string? Cliente { get; set; }
         public DateTime? Fecha { get; set; }
         public string? Numero { get; set; }
         [Column("sucursal_id")]
@@ -37,5 +36,7 @@ namespace ERPKardex.Models
         public DateTime? FechaRegistro { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
+        [Column("cliente_id")]
+        public int? ClienteId { get; set; }
     }
 }

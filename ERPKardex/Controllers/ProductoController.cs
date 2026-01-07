@@ -93,6 +93,8 @@ namespace ERPKardex.Controllers
                                      where isa.AlmacenId == almacenId
                                      join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
                                      from td in joinDoc.DefaultIfEmpty()
+                                     join cli in _context.Clientes on isa.ClienteId equals cli.Id into joinCli
+                                     from cli in joinCli.DefaultIfEmpty()
                                      select new
                                      {
                                          pro.Codigo,
@@ -104,7 +106,7 @@ namespace ERPKardex.Controllers
                                          pro.DescripcionProducto,
                                          pro.CodUnidadMedida,
                                          disa.Cantidad,
-                                         Cliente = isa.Cliente ?? "Sin Cliente",
+                                         Cliente = cli.Nombre ?? "Sin Cliente",
                                          TipoDocumento = td != null ? td.Descripcion : "S/D",
                                          Documento = (isa.SerieDocumento ?? "") + " - " + (isa.NumeroDocumento ?? ""),
                                      }).ToList();

@@ -12,7 +12,5 @@ namespace ERPKardex.Models
         public string? Telefono { get; set; }
         public string? Password { get; set; }
         public bool? Estado { get; set; }
-        [Column("empresa_id")]
-        public int? EmpresaId { get; set; }
     }
 }
