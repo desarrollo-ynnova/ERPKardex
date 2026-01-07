@@ -229,7 +229,7 @@
         });
 
         $.getJSON('/IngresoSalidaAlm/GetProductos', function(res){
-            if(res.status){ PRODUCTOS_TEMP = res.data; let h = '<option value="">-- SELECCIONAR PRODUCTO --</option>'; res.data.forEach(p => h += `<option value="${p.id}">${p.codigo} - ${p.descripcionProducto}</option>`); $('#cbx_ProductoBusqueda').html(h).trigger('change'); }
+            if(res.status){ PRODUCTOS_TEMP = res.data; let h = '<option value="">-- SELECCIONAR PRODUCTO --</option>'; res.data.forEach(p => h += `<option value="${p.id}">${p.codigo} - ${p.descripcionComercial}</option>`); $('#cbx_ProductoBusqueda').html(h).trigger('change'); }
         });
 
         $('#cbx_ProductoBusqueda').on('change', function () {

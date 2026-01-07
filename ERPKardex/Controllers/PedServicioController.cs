@@ -96,7 +96,7 @@ namespace ERPKardex.Controllers
         {
             var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
             var data = await _context.CentroCostos
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
+                .Where(x => x.EsImputable == true && x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
                 .Select(x => new { x.Id, x.Nombre, x.Codigo })
                 .ToListAsync();
             return Json(new { status = true, data });
@@ -122,7 +122,7 @@ namespace ERPKardex.Controllers
             // pero como pediste "listar todos", traemos todo el catálogo.
             var data = await _context.Productos
                 .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.DescripcionProducto, x.Codigo, x.CodUnidadMedida })
+                .Select(x => new { x.Id, x.DescripcionProducto, x.DescripcionComercial, x.Codigo, x.CodUnidadMedida })
                 .ToListAsync();
             return Json(new { status = true, data });
         }

@@ -257,7 +257,7 @@ namespace ERPKardex.Controllers
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
                 int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                return Json(new { data = _context.Productos.Where(p => p.EmpresaId == empresaId).Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.CodUnidadMedida }).ToList(), status = true });
+                return Json(new { data = _context.Productos.Where(p => p.EmpresaId == empresaId).Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.DescripcionComercial, p.CodUnidadMedida }).ToList(), status = true });
             }
             catch (Exception ex)
             {
@@ -293,7 +293,7 @@ namespace ERPKardex.Controllers
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
                 int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                var centrosCostosData = _context.CentroCostos.Where(c => c.Estado == true && c.EmpresaId == empresaId).ToList();
+                var centrosCostosData = _context.CentroCostos.Where(c => c.EsImputable == true && c.Estado == true && c.EmpresaId == empresaId).ToList();
                 return Json(new { data = centrosCostosData, status = true, message = "Centros de costo retornados exitosamente" });
             }
             catch (Exception ex)
@@ -358,6 +358,7 @@ namespace ERPKardex.Controllers
                                      {
                                          p.Codigo,
                                          p.DescripcionProducto,
+                                         p.DescripcionComercial,
                                          UnidadCodigo = u.Codigo,
                                          UnidadNombre = u.Descripcion,
                                          // Datos directos de BD, cero lógica hardcoded
@@ -527,6 +528,7 @@ namespace ERPKardex.Controllers
                     {
                         codigo = datosProducto?.Codigo ?? "S/D",
                         descripcion = datosProducto?.DescripcionProducto ?? "S/D",
+                        descripcionComercial = datosProducto?.DescripcionComercial ?? "S/D",
                         unidad = (datosProducto?.UnidadCodigo ?? "NIU") + " - " + (datosProducto?.UnidadNombre ?? "UNIDAD"), // Tabla 6
                         tipo = codigoSunatTabla5 + " - " + nombreSunatTabla5, // Tabla 5 Calculada
                         rucEmpresa = datosEmpresa?.Ruc ?? "",

@@ -115,7 +115,7 @@
         $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%' });
 
         fct_FillCombo('/IngresoSalidaAlm/GetSucursalesByEmpresa?empresaId=@empresaId', '#cbx_Sucursal', 'id', 'nombre', '-- SUCURSAL --', 'codigo');
-        fct_FillCombo('/IngresoSalidaAlm/GetProductos', '#cbx_Producto', 'id', 'descripcionProducto', '-- PRODUCTO --', 'codigo');
+        fct_FillCombo('/IngresoSalidaAlm/GetProductos', '#cbx_Producto', 'id', 'descripcionComercial', '-- PRODUCTO --', 'codigo');
 
         // Al cambiar sucursal, cargamos almacenes con lógica custom para leer 'esValorizado'
         $('#cbx_Sucursal').on('change', function () {
