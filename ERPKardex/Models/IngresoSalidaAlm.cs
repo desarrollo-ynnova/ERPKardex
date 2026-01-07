@@ -26,6 +26,14 @@ namespace ERPKardex.Models
         public string? SerieDocumento { get; set; }
         [Column("numero_documento")]
         public string? NumeroDocumento { get; set; }
+        [Column("fecha_documento_valorizacion")]
+        public DateTime? FechaDocumentoValorizacion { get; set; }
+        [Column("tipo_documento_valorizacion_id")]
+        public int? TipoDocumentoValorizacionId { get; set; }
+        [Column("serie_documento_valorizacion")]
+        public string? SerieDocumentoValorizacion { get; set; }
+        [Column("numero_documento_valorizacion")]
+        public string? NumeroDocumentoValorizacion { get; set; }
         [Column("moneda_id")]
         public int? MonedaId { get; set; }
         [Column("estado_id")]

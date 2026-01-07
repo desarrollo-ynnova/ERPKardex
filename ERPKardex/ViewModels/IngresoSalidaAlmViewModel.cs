@@ -10,10 +10,15 @@
         public bool? TipoMovimiento { get; set; }
         public string? Motivo { get; set; }
         public int? TipoDocumentoId { get; set; }
+        public DateTime? FechaDocumento { get; set; }
         public string? TipoDocumento { get; set; }
         public string? SerieDocumento { get; set; }
         public string? NumeroDocumento { get; set; }
-        public DateTime? FechaDocumento { get; set; }
+        public int? TipoDocumentoValorizacionId { get; set; }
+        public DateTime? FechaDocumentoValorizacion { get; set; }
+        public string? TipoDocumentoValorizacion { get; set; }
+        public string? SerieDocumentoValorizacion { get; set; }
+        public string? NumeroDocumentoValorizacion { get; set; }
         public int? MonedaId { get; set; }
         public string? Moneda { get; set; }
         public int? EstadoId { get; set; }

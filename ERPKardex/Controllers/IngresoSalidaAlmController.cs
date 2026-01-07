@@ -4,6 +4,7 @@ using ERPKardex.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Security.Claims;
 
 namespace ERPKardex.Controllers
 {
@@ -26,6 +27,9 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
                 var movimientos = (from isa in _context.IngresoSalidaAlms
                                    join mot in _context.Motivos on isa.MotivoId equals mot.Id
                                    join est in _context.Estados on isa.EstadoId equals est.Id
@@ -36,7 +40,8 @@ namespace ERPKardex.Controllers
                                    from tc in joinDoc.DefaultIfEmpty()
                                    join mon in _context.Monedas on isa.MonedaId equals mon.Id into joinMon
                                    from mo in joinMon.DefaultIfEmpty()
-                                       // where emp.Id == 1
+                                   where isa.EmpresaId == empresaId
+                                   // where emp.Id == 1
                                    select new IngresoSalidaAlmViewModel
                                    {
                                        Id = isa.Id,
@@ -78,6 +83,10 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
+                    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+                    int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+
                     // 1. Generar número correlativo (Algoritmo previo)
                     var ultimoRegistro = _context.IngresoSalidaAlms
                         .OrderByDescending(x => x.Numero)
@@ -86,6 +95,8 @@ namespace ERPKardex.Controllers
 
                     cabecera.Numero = nuevoCorrelativo.ToString("D10");
                     cabecera.FechaRegistro = DateTime.Now;
+                    cabecera.UsuarioId = usuarioId;
+                    cabecera.EmpresaId = empresaId;
 
                     _context.IngresoSalidaAlms.Add(cabecera);
                     _context.SaveChanges();
@@ -100,7 +111,7 @@ namespace ERPKardex.Controllers
 
                             // Buscamos si el producto ya existe en ese almacén específico
                             var registroStock = _context.StockAlmacenes
-                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.CodProducto == detalle.CodProducto);
+                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId);
 
                             if (registroStock == null)
                             {
@@ -108,9 +119,10 @@ namespace ERPKardex.Controllers
                                 registroStock = new StockAlmacen
                                 {
                                     AlmacenId = cabecera.AlmacenId ?? 0,
-                                    CodProducto = detalle.CodProducto,
+                                    ProductoId = detalle.ProductoId,
                                     StockActual = 0,
-                                    UltimaActualizacion = DateTime.Now
+                                    UltimaActualizacion = DateTime.Now,
+                                    EmpresaId = empresaId,
                                 };
                                 _context.StockAlmacenes.Add(registroStock);
                             }
@@ -136,6 +148,8 @@ namespace ERPKardex.Controllers
                             detalle.Id = 0;
                             detalle.IngresoSalidaAlmId = cabecera.Id;
                             detalle.FechaRegistro = DateTime.Now;
+                            detalle.EmpresaId = empresaId;
+                            detalle.CodProducto = _context.Productos.Where(p => p.Id == detalle.ProductoId).Select(p => p.Codigo).FirstOrDefault();
                             _context.DIngresoSalidaAlms.Add(detalle);
                         }
                         _context.SaveChanges();
@@ -163,8 +177,8 @@ namespace ERPKardex.Controllers
             Json(new { data = _context.Sucursales.Where(s => s.EmpresaId == empresaId && s.Estado == true).ToList(), status = true });
 
         [HttpGet]
-        public JsonResult GetAlmacenesBySucursal(string codSucursal, int empresaId) =>
-            Json(new { data = _context.Almacenes.Where(a => a.CodSucursal == codSucursal && a.EmpresaId == empresaId && a.Estado == true).ToList(), status = true });
+        public JsonResult GetAlmacenesBySucursal(int sucursalId, int empresaId) =>
+            Json(new { data = _context.Almacenes.Where(a => a.SucursalId == sucursalId && a.EmpresaId == empresaId && a.Estado == true).ToList(), status = true });
 
         [HttpGet]
         public JsonResult GetMotivosData() => Json(new { data = _context.Motivos.Where(m => m.Estado == true).ToList(), status = true });
@@ -178,15 +192,15 @@ namespace ERPKardex.Controllers
 
         #region APIs Filtrado de Productos (Cascada)
         [HttpGet]
-        public JsonResult GetProductos() => Json(new { data = _context.Productos.Select(p => new { p.Codigo, p.DescripcionProducto, p.CodUnidadMedida }).ToList(), status = true });
+        public JsonResult GetProductos() => Json(new { data = _context.Productos.Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.CodUnidadMedida }).ToList(), status = true });
         [HttpGet]
-        public JsonResult GetStockProductoAlmacen(int? almacenId, string? codProducto)
+        public JsonResult GetStockProductoAlmacen(int? almacenId, int? productoId)
         {
             try
             {
-                if (almacenId != null && !string.IsNullOrEmpty(codProducto))
+                if (almacenId != null && productoId != null)
                 {
-                    var stockProducto = _context.StockAlmacenes.Where(sa => sa.AlmacenId == almacenId && sa.CodProducto == codProducto).Select(sa => sa.StockActual).FirstOrDefault();
+                    var stockProducto = _context.StockAlmacenes.Where(sa => sa.AlmacenId == almacenId && sa.ProductoId == productoId).Select(sa => sa.StockActual).FirstOrDefault();
                     return Json(new { data = stockProducto, status = true, message = "Stock de almacén recuperado exitosamente." });
                 }
 
@@ -205,7 +219,10 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var centrosCostosData = _context.CentroCostos.Where(c => c.Estado == true).ToList();
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
+                var centrosCostosData = _context.CentroCostos.Where(c => c.Estado == true && c.EmpresaId == empresaId).ToList();
                 return Json(new { data = centrosCostosData, status = true, message = "Centros de costo retornados exitosamente" });
             }
             catch (Exception ex)
@@ -218,6 +235,9 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
                 var actividadesData = _context.Actividades.Where(a => a.Estado == true).ToList();
                 return Json(new { data = actividadesData, status = true, message = "Actividades retornadas exitosamente" });
             }
@@ -227,7 +247,7 @@ namespace ERPKardex.Controllers
             }
         }
         [HttpGet]
-        public JsonResult GenerarKardexValorizado(DateTime fechaInicio, DateTime fechaFin, int almacenId, string codProducto, string metodo)
+        public JsonResult GenerarKardexValorizado(DateTime fechaInicio, DateTime fechaFin, int almacenId, int productoId, string metodo)
         {
             try
             {
@@ -236,15 +256,15 @@ namespace ERPKardex.Controllers
                                    join m in _context.Motivos on c.MotivoId equals m.Id
                                    join td in _context.TipoDocumentos on c.TipoDocumentoId equals td.Id into joinDoc
                                    from docRef in joinDoc.DefaultIfEmpty()
-                                   where c.AlmacenId == almacenId && d.CodProducto == codProducto
+                                   where c.AlmacenId == almacenId && d.ProductoId == productoId
                                          && c.Fecha <= fechaFin && c.EstadoId == 1
                                    orderby c.Fecha, c.FechaRegistro
                                    select new
                                    {
                                        c.Fecha,
                                        TipoDoc = docRef != null ? docRef.Descripcion : "S/D",
-                                       c.SerieDocumento,
-                                       c.NumeroDocumento,
+                                       SerieDocumento = c.SerieDocumento != null ? c.SerieDocumento : "S/D",
+                                       NumeroDocumento = c.NumeroDocumento != null ? c.NumeroDocumento : "S/D",
                                        Motivo = m.Descripcion,
                                        m.TipoMovimiento,
                                        d.Cantidad,

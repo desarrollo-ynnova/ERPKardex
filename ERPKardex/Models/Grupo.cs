@@ -14,7 +14,7 @@ namespace ERPKardex.Models
         [Column("descripcion")]
         public string? Descripcion { get; set; }
         [Column("cuenta_id")]
-        public string? CuentaId { get; set; }
+        public int? CuentaId { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
     }

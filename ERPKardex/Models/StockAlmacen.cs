@@ -10,8 +10,8 @@ namespace ERPKardex.Models
         public int Id { get; set; }
         [Column("almacen_id")]
         public int AlmacenId { get; set; }
-        [Column("cod_producto")]
-        public string? CodProducto { get; set; }
+        [Column("producto_id")]
+        public int? ProductoId { get; set; }
         [Column("stock_actual")]
         public decimal? StockActual { get; set; }
         [Column("empresa_id")]

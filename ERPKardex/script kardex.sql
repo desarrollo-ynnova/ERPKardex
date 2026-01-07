@@ -148,6 +148,10 @@ create table ingresosalidaalm (
 	tipo_documento_id int,
 	serie_documento varchar(255),
 	numero_documento varchar(255),
+	fecha_documento_valorizacion DATE,
+	tipo_documento_valorizacion_id int,
+	serie_documento_valorizacion varchar(255),
+	numero_documento_valorizacion varchar(255),
 	moneda_id int,
 	estado_id int,
 	usuario_id INT,
@@ -193,7 +197,7 @@ create table grupo (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	codigo varchar(255),
 	descripcion varchar(200),
-	cuenta_id varchar(255),
+	cuenta_id INT,
 	empresa_id INT
 );
 
@@ -358,10 +362,10 @@ INSERT INTO unidad_medida (codigo, descripcion) VALUES ('YRD','YARDA');
 INSERT INTO unidad_medida (codigo, descripcion) VALUES ('YDK','YARDA CUADRADA');
 
 -- inserts de 'cuenta'
-INSERT INTO cuenta (codigo, descripcion) VALUES ('21', 'MERCADERÍAS');
-INSERT INTO cuenta (codigo, descripcion) VALUES ('24', 'MATERIALES SUMINISTROS Y REPUESTOS');
-INSERT INTO cuenta (codigo, descripcion) VALUES ('33', 'ACTIVOS');
-INSERT INTO cuenta (codigo, descripcion) VALUES ('63', 'SERVICIOS');
+INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('21', 'MERCADERÍAS', 1);
+INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('24', 'MATERIALES SUMINISTROS Y REPUESTOS', 1);
+INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('33', 'ACTIVOS', 1);
+INSERT INTO cuenta (codigo, descripcion, empresa_id) VALUES ('63', 'SERVICIOS', 1);
 
 -- inserts de 'peligrosidad'
 INSERT INTO peligrosidad (codigo, clase, banda_color, descripcion, nivel_riesgo, uso_senasa) VALUES ('OMS-IA','IA','ROJO INTENSO','EXTREMADAMENTE PELIGROSO','MUY ALTO',1);
@@ -379,7 +383,8 @@ INSERT INTO formulacion_quimica (codigo, nombre, descripcion, ejemplo) VALUES ('
 
 -- inserts de 'empresa'
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20607778338', 'CONTROL SCIENCE DEL PERU S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQSA', 1);
+INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S.A.C', 1);
+INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRÍCOLA S.A.C.', 1);
 
 -- inserts de 'sucursal'
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCIPAL - POMALCA', 1, 1);
@@ -578,7 +583,6 @@ VALUES ('75185380', 'Katherin Espinal Vasquez', 'kespinal@agrosayans.com', '9777
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
 VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
 
-
 -- ======================================================
 -- 2. USUARIOS PARA EMPRESA_ID = 2 (MAQSA)
 -- ======================================================
@@ -589,6 +593,8 @@ INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('42642076', 'Edwin Roy Suárez Sánchez', 'almacen@maqsa.pe', '983059270', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
 VALUES (2, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (3, SCOPE_IDENTITY(), @RolUsuarioID, 1);
 
 PRINT '>> Proceso de inserción finalizado correctamente.';
 GO

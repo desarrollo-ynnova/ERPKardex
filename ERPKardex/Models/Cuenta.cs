@@ -7,6 +7,7 @@ namespace ERPKardex.Models
     public class Cuenta
     {
         [Key]
+        public int Id { get; set; }
         [Column("codigo")]
         public string Codigo { get; set; } = null!;
 
