@@ -28,7 +28,7 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label>Observación General</label>
-                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Mantenimiento correctivo...">
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Mantenimiento de aires acondicionados...">
                         </div>
                     </div>
                 </div>
@@ -39,11 +39,19 @@
                 <div class="card-body bg-light">
 
                     <div class="row align-items-end">
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label>Servicio (*)</label>
-                            <select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select>
+                            <select id="cbx_ServicioBusqueda" class="form-control select2-busqueda"></select>
                         </div>
-                        <div class="col-md-2 mb-3">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="text-info font-weight-bold">Centro de Costo (*)</label>
+                            <select id="cbx_CentroCosto" class="form-control select2-basic">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-1 mb-3">
                             <label>U.M.</label>
                             <input type="text" id="txt_DetUnidad" class="form-control" readonly style="background-color: #e9ecef;">
                         </div>
@@ -51,16 +59,16 @@
                             <label>Cantidad (*)</label>
                             <input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" step="0.01" value="1.00">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <button id="btn_AgregarDetalle" type="button" class="btn btn-info btn-block font-weight-bold">
                                 <i class="bi bi-plus-lg"></i> AGREGAR
                             </button>
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label>Observación / Detalle Específico</label>
-                            <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Ej: Aire acondicionado de la oficina 202...">
+                            <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Detalle específico del servicio (Ej: Oficina Gerencia)">
                         </div>
                     </div>
 
@@ -69,11 +77,10 @@
                             <thead class="thead-dark">
                                 <tr>
                                     <th style="width: 50px;">Item</th>
-                                    <th style="width: 120px;">Código</th>
-                                    <th>Descripción Servicio</th>
-                                    <th style="width: 80px;">U.M.</th>
+                                    <th>Servicio / Descripción</th>
+                                    <th style="width: 200px;">Centro Costo</th>
                                     <th style="width: 100px;">Cant.</th>
-                                    <th>Observación Item</th>
+                                    <th>Detalle Adicional</th>
                                     <th style="width: 60px;"></th>
                                 </tr>
                             </thead>
@@ -85,73 +92,70 @@
 
             <div class="text-right mb-5">
                 <a href="/ReqServicio/Index" class="btn btn-danger btn-lg mr-2"><i class="bi bi-x-circle"></i> Cancelar</a>
-                <button id="btn_GuardarTodo" class="btn btn-info btn-lg"><i class="bi bi-save"></i> REGISTRAR SERVICIO</button>
+                <button id="btn_GuardarTodo" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> REGISTRAR SERVICIO</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     var LISTA_DETALLE = [];
     var SERVICIOS_TEMP = [];
 
     $(document).ready(function () {
-        // 1. Configuración Inicial
+        // Inicializar Select2
         $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', placeholder: '-- Buscar Servicio --' });
+        $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' });
 
         fct_CargarServicios();
+        fct_CargarCentrosCosto(); // <-- Llamada para RS
 
-        // 2. Al seleccionar servicio, mostrar su U.M.
-        $('#cbx_ProductoBusqueda').on('change', function () {
+        // Al seleccionar servicio
+        $('#cbx_ServicioBusqueda').on('change', function () {
             let id = $(this).val();
-            let p = SERVICIOS_TEMP.find(x => x.id == id);
-            $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
-            if(p) $("#txt_DetCantidad").focus().select();
+            let s = SERVICIOS_TEMP.find(x => x.id == id);
+            $("#txt_DetUnidad").val(s ? s.codUnidadMedida : "");
+            if(s) $("#txt_DetCantidad").focus().select();
         });
 
-        // 3. Botón Agregar Item
+        // Botón Agregar
         $("#btn_AgregarDetalle").click(function () {
-            let id = $("#cbx_ProductoBusqueda").val();
-            let textCombo = $("#cbx_ProductoBusqueda option:selected").text();
-            let um = $("#txt_DetUnidad").val();
+            let idServ = $("#cbx_ServicioBusqueda").val();
+            let txtServ = $("#cbx_ServicioBusqueda option:selected").text();
+
+            let idCC = $("#cbx_CentroCosto").val();
+            let txtCC = $("#cbx_CentroCosto option:selected").text();
+
             let can = parseFloat($("#txt_DetCantidad").val());
             let obsItem = $("#txt_DetObservacion").val();
 
-            if (!id || isNaN(can) || can <= 0) {
-                return toastr.warning("Seleccione un servicio y una cantidad válida.");
-            }
+            if (!idServ) return toastr.warning("Seleccione un servicio.");
+            if (!idCC) return toastr.warning("Seleccione un Centro de Costo.");
+            if (isNaN(can) || can <= 0) return toastr.warning("Cantidad inválida.");
 
-            // Separar código y nombre para visualización y guardado
-            let codProd = "";
-            let nomProd = textCombo;
-            if(textCombo.includes('-')){
-                let parts = textCombo.split('-');
-                codProd = parts[0].trim();
-                nomProd = parts.slice(1).join('-').trim();
-            }
+            // Limpieza nombre
+            let nomServ = txtServ;
+            if(txtServ.includes('-')) nomServ = txtServ.split('-').slice(1).join('-').trim();
 
             LISTA_DETALLE.push({
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
-                ProductoId: parseInt(id),
+                ProductoId: parseInt(idServ), // En BD guardamos el ID del producto base
+                CentroCostoId: parseInt(idCC),
 
-                Codigo: codProd,              // Solo visual
-                DescripcionServicio: nomProd, // A LA BD (Campo descripcion_servicio)
-
-                UnidadMedida: um,
+                // Campos para visualización o guardado directo
+                DescripcionServicio: nomServ,
+                NombreCentroCosto: txtCC,
                 CantidadSolicitada: can,
-
-                ObservacionItem: obsItem      // A LA BD (Campo observacion_item)
+                ObservacionItem: obsItem
             });
 
             fct_RenderDetalle();
-            fct_LimpiarInputsDetalle();
+            fct_LimpiarInputs();
         });
 
-        // 4. Botón Guardar Todo
+        // Guardar Todo
         $("#btn_GuardarTodo").click(function () {
             if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Agregue al menos un servicio.", "error");
-            if (!$("#dtp_FechaNecesaria").val()) return toastr.warning("La fecha necesaria es obligatoria.");
 
             let cabecera = {
                 FechaEmision: $("#dtp_FechaEmision").val(),
@@ -160,13 +164,11 @@
             };
 
             Swal.fire({
-                title: "¿Generar Solicitud?",
-                text: "Se registrará el requerimiento de servicio.",
+                title: "¿Registrar Solicitud?",
+                text: "Se generará el requerimiento de servicio.",
                 icon: "question",
                 showCancelButton: true,
-                confirmButtonColor: "#17a2b8",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Sí, Registrar"
+                confirmButtonText: "Sí, Generar"
             }).then((result) => {
                 if (result.isConfirmed) {
                     ShowSpinner();
@@ -179,16 +181,14 @@
                         },
                         success: function (res) {
                             if (res.status) {
-                                Swal.fire("¡Registrado!", res.message, "success").then(() => {
-                                    window.location.reload();
-                                });
+                                Swal.fire("¡Éxito!", res.message, "success").then(() => window.location.reload());
                             } else {
                                 Swal.fire("Error", res.message, "error");
                             }
                             HideSpinner();
                         },
                         error: function () {
-                            toastr.error("Error de conexión con el servidor.");
+                            toastr.error("Error de conexión");
                             HideSpinner();
                         }
                     });
@@ -197,15 +197,23 @@
         });
     });
 
-    // --- FUNCIONES AUXILIARES ---
-
     function fct_CargarServicios() {
         $.getJSON('/ReqServicio/GetServicios', function (res) {
             if (res.status) {
                 SERVICIOS_TEMP = res.data;
-                let h = '<option value="">-- BUSCAR SERVICIO --</option>';
+                let h = '<option value="">-- BUSCAR --</option>';
                 res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionComercial}</option>`);
-                $('#cbx_ProductoBusqueda').html(h);
+                $('#cbx_ServicioBusqueda').html(h);
+            }
+        });
+    }
+
+    function fct_CargarCentrosCosto() {
+        $.getJSON('/ReqServicio/GetCentrosCosto', function (res) {
+            if (res.status) {
+                let h = '<option value="">-- Seleccione --</option>';
+                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.nombre}</option>`);
+                $('#cbx_CentroCosto').html(h);
             }
         });
     }
@@ -215,37 +223,32 @@
         LISTA_DETALLE.forEach((d, index) => {
             html += `<tr>
                 <td class="align-middle font-weight-bold">${d.Item}</td>
-                <td class="align-middle">${d.Codigo}</td>
                 <td class="align-middle text-left">${d.DescripcionServicio}</td>
-                <td class="align-middle">${d.UnidadMedida}</td>
-                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.CantidadSolicitada.toFixed(2)}</td>
+                <td class="align-middle text-info small font-weight-bold">${d.NombreCentroCosto}</td>
+                <td class="align-middle font-weight-bold">${d.CantidadSolicitada.toFixed(2)}</td>
                 <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
                 <td class="align-middle">
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})" title="Quitar">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_Eliminar(${index})"><i class="bi bi-trash-fill"></i></button>
                 </td>
             </tr>`;
         });
-
-        if(LISTA_DETALLE.length === 0) html = '<tr><td colspan="7" class="text-center py-3 text-muted">Ningún servicio agregado</td></tr>';
-
+        if(LISTA_DETALLE.length === 0) html = '<tr><td colspan="6" class="text-center py-3 text-muted">Sin servicios agregados</td></tr>';
         $("#tbl_Detalle tbody").html(html);
     }
 
-    function fct_EliminarDetalle(index) {
+    function fct_Eliminar(index) {
         LISTA_DETALLE.splice(index, 1);
         LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
         fct_RenderDetalle();
     }
 
-    function fct_LimpiarInputsDetalle() {
-        $("#cbx_ProductoBusqueda").val("").trigger("change");
+    function fct_LimpiarInputs() {
+        $("#cbx_ServicioBusqueda").val("").trigger("change");
         $("#txt_DetCantidad").val("1.00");
         $("#txt_DetObservacion").val("");
+        $("#cbx_ServicioBusqueda").select2('open');
     }
 
     function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
     function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
-
 </script>

@@ -99,6 +99,9 @@ namespace ERPKardex.Controllers
 
                     // Definimos el código según el tipo de movimiento (1: IALM, 0: SALM)
                     string codigoDoc = (cabecera.TipoMovimiento == true) ? "IALM" : "SALM";
+                    var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "INGRESOSALIDAALM");
+
+                    if (estadoAprobado == null) throw new Exception("Estado Aprobado no configurado.");
 
                     // Buscamos el ID del tipo de documento en la maestra (Global)
                     var tipoDocInterno = _context.TiposDocumentoInterno
@@ -137,6 +140,7 @@ namespace ERPKardex.Controllers
                     cabecera.TipoDocumentoInternoId = tipoDocInterno.Id;
                     cabecera.Numero = numeroGenerado;
                     cabecera.FechaRegistro = DateTime.Now;
+                    cabecera.EstadoId = estadoAprobado?.Id ?? 1;
                     cabecera.UsuarioId = usuarioId;
                     cabecera.EmpresaId = empresaId;
 

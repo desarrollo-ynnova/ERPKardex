@@ -18,7 +18,7 @@ namespace ERPKardex.Controllers
 
         public IActionResult Index()
         {
-            return View(); // Lo haremos luego
+            return View();
         }
 
         public IActionResult Registrar()
@@ -26,103 +26,213 @@ namespace ERPKardex.Controllers
             return View();
         }
 
-        // GET EMPRESAS
-        public JsonResult GetEmpresaData()
-        {
-            try
-            {
-                var empresaData = _context.Empresas.ToList();
-                return Json(new { data = empresaData, message = "Empresas retornadas exitosamente.", status = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
-            }
-        }
+        // ==========================================
+        // MÉTODOS PARA EL LISTADO (INDEX)
+        // ==========================================
 
         [HttpGet]
-        public JsonResult GetPedidosCompraData()
+        public async Task<JsonResult> GetPedidosCompraData()
         {
             try
             {
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+                int empresaUsuario = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                var data = (from p in _context.PedCompras
-                            join tdi in _context.TiposDocumentoInterno on p.TipoDocumentoInternoId equals tdi.Id
-                            join cc in _context.CentroCostos on p.CentroCostoId equals cc.Id
-                            join est in _context.Estados on p.EstadoId equals est.Id
-
-                            // Left Join con Usuario Solicitante (por si es nulo)
-                            join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
-                            from u in joinUsu.DefaultIfEmpty()
-
-                            where (empresaId == 4 || p.EmpresaId == empresaId)
-                            orderby p.FechaRegistro descending // Ordenar por fecha reciente
-
+                // 1. Consulta base
+                var query = from p in _context.PedCompras
+                            join u in _context.Usuarios on p.UsuarioSolicitanteId equals u.Id
+                            join e in _context.Estados on p.EstadoId equals e.Id
+                            // NOTA: No hacemos join con CentroCosto aquí porque ya no está en cabecera
                             select new
                             {
-                                Id = p.Id,
-                                Numero = p.Numero,
-                                TipoDocumento = tdi.Codigo, // "PED"
-                                FechaEmision = p.FechaEmision.HasValue ? p.FechaEmision.Value.ToString("yyyy-MM-dd") : "-",
-                                FechaNecesaria = p.FechaNecesaria.HasValue ? p.FechaNecesaria.Value.ToString("yyyy-MM-dd") : "-",
+                                p.Id,
+                                p.EmpresaId,
+                                p.Numero,
+                                p.FechaEmision,
+                                p.FechaNecesaria,
+                                Solicitante = u.Nombre,
+                                Estado = e.Nombre,
 
-                                CentroCosto = cc.Nombre,
-                                Solicitante = u != null ? u.Nombre : "Sistema",
+                                // 2. Subconsulta: Traemos los códigos de CC únicos asociados a este pedido
+                                CentrosInvolucrados = (from d in _context.DPedidoCompras
+                                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                                       where d.PedidoCompraId == p.Id
+                                                       select cc.Codigo).Distinct().ToList()
+                            };
 
-                                Estado = est.Nombre,
-                                EstadoId = p.EstadoId, // Útil para pintar badges de colores en el front
-                                Observacion = p.Observacion
-                            }).ToList();
+                // 3. Filtro de seguridad (Si no es Logístico-4, solo ve lo de su empresa)
+                if (empresaUsuario != 4)
+                {
+                    query = query.Where(x => x.EmpresaId == empresaUsuario);
+                }
 
-                return Json(new { data = data, message = "Pedidos de compra retornados exitosamente.", status = true });
+                var listaRaw = await query.OrderByDescending(x => x.Numero).ToListAsync();
+
+                // 4. Formateo final en memoria (Concatenamos los CC con comas)
+                var data = listaRaw.Select(x => new
+                {
+                    x.Id,
+                    x.Numero,
+                    x.FechaEmision,
+                    x.FechaNecesaria,
+                    // Ejemplo de resultado: "ADM, VTA" o "LOG-01"
+                    CentroCosto = x.CentrosInvolucrados.Any() ? string.Join(", ", x.CentrosInvolucrados) : "N/A",
+                    x.Solicitante,
+                    x.Estado
+                });
+
+                return Json(new { status = true, data = data });
             }
             catch (Exception ex)
             {
-                return Json(new { data = Enumerable.Empty<object>(), message = ex.Message, status = false });
+                return Json(new { status = false, message = "Error al cargar: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetDetallePedido(int id)
+        {
+            try
+            {
+                // Consulta detallada incluyendo el Centro de Costo por ítem
+                var detalles = (from d in _context.DPedidoCompras
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                where d.PedidoCompraId == id
+                                select new
+                                {
+                                    d.Item,
+                                    d.DescripcionLibre, // Usamos el campo correcto según tu script
+                                    d.UnidadMedida,
+                                    d.CantidadAprobada, // O CantidadSolicitada según tu lógica de visualización
+                                    d.ObservacionItem,
+                                    CentroCosto = cc.Codigo, // Código del CC específico
+                                    Ref = d.TablaReferencia == "DREQCOMPRA" ? ("Req. " + d.ItemReferencia) : "-"
+                                }).OrderBy(x => x.Item).ToList();
+
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
             }
         }
 
         // ==========================================
-        // MÉTODOS AUXILIARES (COMBOS)
+        // 1. CARGA DE COMBOS Y DATOS MAESTROS
         // ==========================================
         [HttpGet]
-        public async Task<JsonResult> GetSucursales()
+        public JsonResult GetEmpresaData()
         {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            var data = await _context.Sucursales
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.Nombre, x.Codigo })
-                .ToListAsync();
-            return Json(new { status = true, data });
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetCentrosCosto()
-        {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            // Filtramos solo los imputables (último nivel)
-            var data = await _context.CentroCostos
-                .Where(x => x.EsImputable == true && (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true && x.EsImputable == true)
-                .Select(x => new { x.Id, x.Nombre, x.Codigo })
-                .ToListAsync();
-            return Json(new { status = true, data });
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetProductos()
-        {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            var data = await _context.Productos
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.DescripcionProducto, x.DescripcionComercial, x.Codigo, x.CodUnidadMedida })
-                .ToListAsync();
-            return Json(new { status = true, data });
+            try
+            {
+                // Listamos todas las empresas para que el logístico elija a nombre de quién compra
+                var data = _context.Empresas.Where(x => x.Estado == true).Select(x => new { x.Id, x.Ruc, x.RazonSocial }).ToList();
+                return Json(new { status = true, data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
         // ==========================================
-        // GUARDAR PEDIDO (TRANSACCIONAL)
+        // 2. BÚSQUEDA DE REQUERIMIENTOS APROBADOS
+        // ==========================================
+        [HttpGet]
+        public JsonResult GetRequerimientosAprobados(int? empresaDestinoId)
+        {
+            try
+            {
+                var empresaUsuario = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+
+                // Si soy logístico (4), filtro por la empresa seleccionada en el combo.
+                // Si soy otro usuario, filtro por mi propia empresa.
+                int idParaFiltrar = (empresaUsuario == 4) ? (empresaDestinoId ?? 0) : empresaUsuario;
+
+                if (idParaFiltrar == 0) return Json(new { status = false, message = "Seleccione una empresa para buscar requerimientos." });
+
+                var data = (from r in _context.ReqCompras
+                            join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
+                            join e in _context.Estados on r.EstadoId equals e.Id
+                            where r.EmpresaId == idParaFiltrar
+                               && e.Nombre == "Aprobado"
+                               && e.Tabla == "REQ"
+                            orderby r.FechaRegistro descending
+                            select new
+                            {
+                                r.Id,
+                                r.Numero,
+                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                Solicitante = u.Nombre,
+                                r.Observacion
+                            }).ToList();
+
+                return Json(new { status = true, data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // MÉTODO LIGERO PARA VER DETALLE EN MODAL (OJITO)
+        [HttpGet]
+        public JsonResult GetDetallesDeUnReq(int reqId)
+        {
+            try
+            {
+                var detalles = (from d in _context.DReqCompras
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                where d.ReqCompraId == reqId
+                                select new
+                                {
+                                    d.Item,
+                                    d.DescripcionProducto,
+                                    d.CantidadSolicitada,
+                                    d.UnidadMedida,
+                                    CentroCosto = cc.Codigo // Mostramos el CC en la vista previa
+                                }).ToList();
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // ==========================================
+        // 3. CARGA DE PRODUCTOS AL PEDIDO (MAPPING)
+        // ==========================================
+        [HttpPost]
+        public JsonResult GetDetallesBatch([FromBody] List<int> reqIds)
+        {
+            try
+            {
+                if (reqIds == null || reqIds.Count == 0)
+                    return Json(new { status = false, message = "Ningún requerimiento seleccionado" });
+
+                // JALAMOS TODA LA INFO NECESARIA DE DREQCOMPRA
+                // Incluyendo CentroCostoId y DescripcionProducto
+                var detalles = (from d in _context.DReqCompras
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                where reqIds.Contains(d.ReqCompraId)
+                                select new
+                                {
+                                    // Datos para DPedCompra
+                                    ProductoId = d.ProductoId,
+                                    DescripcionLibre = d.DescripcionProducto, // Mapeamos DescripcionProducto -> DescripcionLibre
+                                    UnidadMedida = d.UnidadMedida,
+                                    Cantidad = d.CantidadSolicitada,
+                                    CentroCostoId = d.CentroCostoId, // ¡IMPORTANTE! Jalamos el CC del detalle origen
+
+                                    // Datos visuales extra
+                                    NombreCentroCosto = cc.Codigo + " - " + cc.Nombre,
+                                    Observacion = d.ObservacionItem,
+
+                                    // Datos de Referencia (Para saber de dónde vino y validación)
+                                    ReqOrigenId = d.ReqCompraId,
+                                    IdReferencia = d.Id,   // ID primario de DReqCompra
+                                    ItemReferencia = d.Item
+                                }).ToList();
+
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // ==========================================
+        // 4. GUARDAR PEDIDO (TRANSACCIONAL)
         // ==========================================
         [HttpPost]
         public JsonResult GuardarPedido(PedCompra cabecera, string detallesJson)
@@ -131,156 +241,103 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    // 1. Datos de Sesión
-                    int empresaId = cabecera.EmpresaId.GetValueOrDefault(); // Ahora se envía por combo box
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+                    int empresaId = cabecera.EmpresaId.GetValueOrDefault();
 
-                    if (empresaId == 0) throw new Exception("Sesión no válida.");
+                    if (empresaId == 0) throw new Exception("Empresa inválida.");
 
-                    var estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED");
-                    if (estadoInicial == null) estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
-
-                    // 2. Generar Correlativo (Lógica PED)
-                    // Buscamos el documento interno 'PED'
+                    // 1. CABECERA
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PED");
-                    if (tipoDoc == null) throw new Exception("No existe configuración para el documento 'PED'.");
+                    if (tipoDoc == null) throw new Exception("Falta configurar documento PED.");
 
-                    // Consultamos el último número usado PARA ESTA EMPRESA
-                    var ultimoRegistro = _context.PedCompras
+                    // Correlativo
+                    var ultimo = _context.PedCompras
                         .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
                         .OrderByDescending(x => x.Numero)
-                        .Select(x => x.Numero)
-                        .FirstOrDefault();
+                        .Select(x => x.Numero).FirstOrDefault();
 
-                    int nuevoCorrelativo = 1;
-                    if (!string.IsNullOrEmpty(ultimoRegistro))
+                    int nro = 1;
+                    if (!string.IsNullOrEmpty(ultimo))
                     {
-                        // Formato esperado: PED-0000000001
-                        var partes = ultimoRegistro.Split('-');
-                        if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
-                        {
-                            nuevoCorrelativo = numeroActual + 1;
-                        }
+                        var parts = ultimo.Split('-');
+                        if (parts.Length > 1 && int.TryParse(parts[1], out int val)) nro = val + 1;
                     }
 
-                    string numeroGenerado = $"PED-{nuevoCorrelativo.ToString("D10")}";
-
-                    // 3. Llenar Cabecera
+                    cabecera.Numero = $"PED-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
-                    cabecera.Numero = numeroGenerado;
                     cabecera.UsuarioSolicitanteId = usuarioId;
-                    cabecera.EmpresaId = empresaId;
-                    cabecera.EstadoId = estadoInicial?.Id ?? 1;
                     cabecera.FechaRegistro = DateTime.Now;
 
-                    // Si la fecha necesaria no viene, ponemos la misma de emisión (o validamos)
+                    // Estado Inicial
+                    var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED")
+                                      ?? _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
+                    cabecera.EstadoId = estadoGenerado.Id;
+
+                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now;
 
                     _context.PedCompras.Add(cabecera);
-                    _context.SaveChanges(); // Obtenemos ID
+                    _context.SaveChanges();
 
-                    // 4. Procesar Detalles
+                    // 2. DETALLES
+                    List<int> reqInvolucrados = new List<int>();
+
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
-                        var listaDetalles = JsonConvert.DeserializeObject<List<DPedCompra>>(detallesJson);
-                        int correlativoItem = 1;
+                        var lista = JsonConvert.DeserializeObject<List<DPedCompra>>(detallesJson);
+                        int item = 1;
 
-                        foreach (var det in listaDetalles)
+                        foreach (var det in lista)
                         {
                             det.Id = 0;
                             det.PedidoCompraId = cabecera.Id;
                             det.EmpresaId = empresaId;
-                            det.Item = correlativoItem.ToString("D3"); // 001, 002...
-
-                            // Recuperar snapshot de unidad de medida del producto
-                            var prod = _context.Productos.Find(det.ProductoId);
-                            if (prod != null)
-                            {
-                                det.UnidadMedida = prod.CodUnidadMedida;
-                            }
-
-                            // Al registrar, la cantidad aprobada suele ser igual a la solicitada por defecto
-                            // o 0 si requiere flujo de aprobación estricto. La pondremos igual por ahora.
+                            det.Item = item.ToString("D3");
                             det.CantidadAprobada = det.CantidadSolicitada;
 
+                            // Mapeo de referencias
+                            if (det.IdReferencia != null && det.IdReferencia > 0)
+                            {
+                                det.TablaReferencia = "DREQCOMPRA"; // Nombre de la tabla origen
+
+                                // Consultamos el detalle origen para obtener el ReqId Padre
+                                var dReq = _context.DReqCompras.AsNoTracking().FirstOrDefault(x => x.Id == det.IdReferencia);
+                                if (dReq != null && !reqInvolucrados.Contains(dReq.ReqCompraId))
+                                {
+                                    reqInvolucrados.Add(dReq.ReqCompraId);
+                                }
+                            }
+
+                            // Aseguramos que CentroCostoId y DescripcionLibre vengan del JSON
+                            // (Ya deberían venir cargados desde el front gracias a GetDetallesBatch)
+
                             _context.DPedidoCompras.Add(det);
-                            correlativoItem++;
+                            item++;
                         }
                         _context.SaveChanges();
                     }
 
+                    // 3. ACTUALIZAR ESTADO DE REQUERIMIENTOS A "ATENDIDO"
+                    if (reqInvolucrados.Count > 0)
+                    {
+                        var estAtendido = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido" && e.Tabla == "REQ");
+                        if (estAtendido != null)
+                        {
+                            var reqs = _context.ReqCompras.Where(r => reqInvolucrados.Contains(r.Id)).ToList();
+                            reqs.ForEach(r => r.EstadoId = estAtendido.Id);
+                            _context.SaveChanges();
+                        }
+                    }
+
                     transaction.Commit();
-                    return Json(new { status = true, message = $"Pedido {numeroGenerado} registrado correctamente." });
+                    return Json(new { status = true, message = $"Pedido {cabecera.Numero} generado correctamente." });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
+                    return Json(new { status = false, message = "Error: " + ex.Message });
                 }
             }
-        }
-        [HttpGet]
-        public JsonResult GetRequerimientosAprobados()
-        {
-            try
-            {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-
-                // Consulta con JOIN explícito para filtrar por Estado "Aprobado"
-                var data = (from r in _context.ReqCompras
-                            join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
-                            join e in _context.Estados on r.EstadoId equals e.Id
-                            join emp in _context.Empresas on r.EmpresaId equals emp.Id
-                            where (empresaId == 4 || r.EmpresaId == empresaId)
-                               && e.Nombre == "Aprobado"
-                               && e.Tabla == "REQ"
-                            // Opcional: Filtrar si ya fue atendido, pero por ahora mostramos todos los aprobados
-                            orderby r.FechaRegistro descending
-                            select new
-                            {
-                                r.Id,
-                                r.Numero,
-                                emp.Ruc,
-                                emp.RazonSocial,
-                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
-                                Solicitante = u.Nombre,
-                                r.Observacion
-                            }).ToList();
-
-                return Json(new { status = true, data = data });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
-
-        // --- 2. OBTENER PRODUCTOS DE LOS REQUERIMIENTOS SELECCIONADOS ---
-        [HttpPost]
-        public JsonResult GetDetallesBatch([FromBody] List<int> reqIds)
-        {
-            try
-            {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-
-                if (reqIds == null || reqIds.Count == 0)
-                    return Json(new { status = false, message = "Ningún requerimiento seleccionado" });
-
-                // Consulta directa a DReqCompra (Ya tiene el snapshot del producto)
-                var detalles = (from d in _context.DReqCompras
-                                where reqIds.Contains(d.ReqCompraId)
-                                   && (empresaId == 4 || d.EmpresaId == empresaId)
-                                select new
-                                {
-                                    ProductoId = d.ProductoId,
-                                    Descripcion = d.DescripcionProducto, // Snapshot
-                                    UnidadMedida = d.UnidadMedida,       // Snapshot
-                                    Cantidad = d.CantidadSolicitada,
-                                    Observacion = d.ObservacionItem,
-                                    // Guardamos el ID origen para saber de qué requerimiento vino
-                                    ReferenciaId = d.Id
-                                }).ToList();
-
-                return Json(new { status = true, data = detalles });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
     }
 }

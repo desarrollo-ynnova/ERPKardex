@@ -349,6 +349,7 @@ CREATE TABLE dreqcompra (
     item CHAR(3),                  
     
     producto_id INT,
+	centro_costo_id INT,
     descripcion_producto VARCHAR(500), -- Snapshot nombre
     unidad_medida VARCHAR(50),         -- Snapshot unidad
     
@@ -379,7 +380,8 @@ CREATE TABLE dreqservicio (
     reqservicio_id INT,
     item CHAR(3),
     
-    producto_id INT,                   
+    producto_id INT,         
+	centro_costo_id INT,
     descripcion_servicio VARCHAR(MAX),
     unidad_medida VARCHAR(50),
     
@@ -404,7 +406,6 @@ CREATE TABLE pedcompra (
     
     -- Eliminé Prioridad y Sucursal que no querías
     -- Eliminé Proveedores y Monedas (respetando tu script base, aunque usualmente van)
-    centro_costo_id INT,           -- Opcional, ya que viene del REQ
     usuario_solicitante_id INT,    -- Quien procesa el pedido
     
     observacion VARCHAR(500),
@@ -420,6 +421,7 @@ CREATE TABLE dpedcompra (
     item CHAR(3),
     
     producto_id INT,
+	centro_costo_id INT,           -- Opcional, ya que viene del REQ
     descripcion_libre VARCHAR(500), 
     unidad_medida VARCHAR(50),
     
@@ -427,9 +429,9 @@ CREATE TABLE dpedcompra (
     cantidad_aprobada DECIMAL(12,2),   -- Si hubiera flujo de aprobación de la orden
     
     -- COLUMNAS DE REFERENCIA (LO QUE PEDISTE)
-    referencia_id INT,             -- ID del detalle origen (dreqcompra.id)
-    referencia_tabla VARCHAR(50),  -- 'DREQCOMPRA'
-    referencia_item VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
+    id_referencia INT,             -- ID del detalle origen (dreqcompra.id)
+    tabla_referencia VARCHAR(50),  -- 'DREQCOMPRA'
+    item_referencia VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
     
     observacion_item VARCHAR(255),
     empresa_id INT
@@ -444,7 +446,6 @@ CREATE TABLE pedservicio (
     fecha_emision DATE,
     fecha_necesaria DATE,
     
-    centro_costo_id INT,
     usuario_solicitante_id INT,
     observacion VARCHAR(500),
     estado_id INT,
@@ -458,15 +459,16 @@ CREATE TABLE dpedservicio (
     pedservicio_id INT,
     item CHAR(3),
     producto_id INT,
+	centro_costo_id INT,
     
     descripcion_servicio VARCHAR(MAX),
     cantidad DECIMAL(12,2) DEFAULT 1,
     unidad_medida VARCHAR(50),
     
-    -- COLUMNAS DE REFERENCIA
-    referencia_id INT,             -- ID del detalle origen (dreqservicio.id)
-    referencia_tabla VARCHAR(50),  -- 'DREQSERVICIO'
-    referencia_item VARCHAR(10),
+    -- COLUMNAS DE REFERENCIA (LO QUE PEDISTE)
+    id_referencia INT,             -- ID del detalle origen (dreqservicio.id)
+    tabla_referencia VARCHAR(50),  -- 'DREQSERVICIO'
+    item_referencia VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
     
     observacion_item VARCHAR(255),
     empresa_id INT
@@ -490,6 +492,7 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Pendiente', 'REQ'),
 ('Aprobado', 'REQ'),
+('Atendido', 'REQ'),
 ('Rechazado', 'REQ');
 
 -- Estados para el Pedido (Operativos)

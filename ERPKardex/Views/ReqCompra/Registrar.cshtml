@@ -39,11 +39,19 @@
                 <div class="card-body bg-light">
 
                     <div class="row align-items-end">
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label>Producto (*)</label>
                             <select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select>
                         </div>
-                        <div class="col-md-2 mb-3">
+
+                        <div class="col-md-3 mb-3">
+                            <label class="text-primary font-weight-bold">Centro de Costo (*)</label>
+                            <select id="cbx_CentroCosto" class="form-control select2-basic">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-1 mb-3">
                             <label>U.M.</label>
                             <input type="text" id="txt_DetUnidad" class="form-control" readonly style="background-color: #e9ecef;">
                         </div>
@@ -51,12 +59,13 @@
                             <label>Cantidad (*)</label>
                             <input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" step="0.01" value="1.00">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <button id="btn_AgregarDetalle" type="button" class="btn btn-success btn-block font-weight-bold">
                                 <i class="bi bi-plus-lg"></i> AGREGAR
                             </button>
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Observación específica para este ítem (Opcional)">
@@ -68,8 +77,8 @@
                             <thead class="thead-dark">
                                 <tr>
                                     <th style="width: 50px;">Item</th>
-                                    <th style="width: 120px;">Código</th>
-                                    <th>Descripción Producto</th>
+                                    <th>Producto</th>
+                                    <th style="width: 200px;">Centro Costo</th>
                                     <th style="width: 80px;">U.M.</th>
                                     <th style="width: 100px;">Cant.</th>
                                     <th>Observación Item</th>
@@ -97,8 +106,10 @@
     $(document).ready(function () {
         // 1. Configuración Inicial
         $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', placeholder: '-- Buscar Producto --' });
+        $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' }); // Para el combo de CC
 
         fct_CargarProductos();
+        fct_CargarCentrosCosto(); // <-- NUEVA FUNCIÓN
 
         // 2. Al seleccionar producto, mostrar su U.M.
         $('#cbx_ProductoBusqueda').on('change', function () {
@@ -110,30 +121,41 @@
 
         // 3. Botón Agregar Item
         $("#btn_AgregarDetalle").click(function () {
-            let id = $("#cbx_ProductoBusqueda").val();
-            let textCombo = $("#cbx_ProductoBusqueda option:selected").text();
+            // Obtener Valores
+            let idProd = $("#cbx_ProductoBusqueda").val();
+            let txtProd = $("#cbx_ProductoBusqueda option:selected").text();
+
+            let idCC = $("#cbx_CentroCosto").val();               // ID Centro Costo
+            let txtCC = $("#cbx_CentroCosto option:selected").text(); // Nombre Centro Costo
+
             let um = $("#txt_DetUnidad").val();
             let can = parseFloat($("#txt_DetCantidad").val());
             let obsItem = $("#txt_DetObservacion").val();
 
-            if (!id || isNaN(can) || can <= 0) {
-                return toastr.warning("Seleccione un producto y una cantidad válida mayor a 0.");
-            }
+            // Validaciones
+            if (!idProd) return toastr.warning("Debe seleccionar un producto.");
+            if (!idCC) return toastr.warning("Debe seleccionar un Centro de Costo."); // Validación Nueva
+            if (isNaN(can) || can <= 0) return toastr.warning("La cantidad debe ser mayor a 0.");
 
-            // Separar código y nombre para visualización limpia
+            // Limpieza visual del nombre producto
             let codProd = "";
-            let nomProd = textCombo;
-            if(textCombo.includes('-')){
-                let parts = textCombo.split('-');
+            let nomProd = txtProd;
+            if(txtProd.includes('-')){
+                let parts = txtProd.split('-');
                 codProd = parts[0].trim();
                 nomProd = parts.slice(1).join('-').trim();
             }
 
+            // Agregar al Array (Usar nombres de propiedades exactos del Modelo C#)
             LISTA_DETALLE.push({
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
-                ProductoId: parseInt(id),
-                Codigo: codProd,        // Solo para pintar tabla
-                DescripcionProducto: nomProd,   // Solo para pintar tabla
+                ProductoId: parseInt(idProd),
+                CentroCostoId: parseInt(idCC), // <-- PROPIEDAD CLAVE PARA TU DB
+
+                // Campos solo para visualización o snapshot
+                Codigo: codProd,
+                DescripcionProducto: nomProd,
+                NombreCentroCosto: txtCC, // Para pintar tabla JS
                 UnidadMedida: um,
                 CantidadSolicitada: can,
                 ObservacionItem: obsItem
@@ -145,23 +167,21 @@
 
         // 4. Botón Guardar Todo
         $("#btn_GuardarTodo").click(function () {
-            // Validaciones
             if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar al menos un producto.", "error");
             if (!$("#dtp_FechaNecesaria").val()) return toastr.warning("La fecha necesaria es obligatoria.");
 
-            // Objeto ReqCompra (Según tu modelo limpio)
             let cabecera = {
                 FechaEmision: $("#dtp_FechaEmision").val(),
                 FechaNecesaria: $("#dtp_FechaNecesaria").val(),
-                Prioridad: $("#cbx_Prioridad").val(),
                 Observacion: $("#txt_Observacion").val()
             };
 
             Swal.fire({
                 title: "¿Generar Requerimiento?",
-                text: "La solicitud pasará a estado Pendiente de Aprobación.",
+                text: "Se guardará con los centros de costo asignados.",
                 icon: "question",
                 showCancelButton: true,
+                reverseButtons: true,
                 confirmButtonColor: "#3085d6",
                 cancelButtonColor: "#d33",
                 confirmButtonText: "Sí, Generar"
@@ -178,7 +198,6 @@
                         success: function (res) {
                             if (res.status) {
                                 Swal.fire("¡Registrado!", res.message, "success").then(() => {
-                                    // Recargar página para nuevo registro
                                     window.location.reload();
                                 });
                             } else {
@@ -202,10 +221,20 @@
         $.getJSON('/ReqCompra/GetProductos', function (res) {
             if (res.status) {
                 PRODUCTOS_TEMP = res.data;
-                let h = '<option value="">-- BUSCAR PRODUCTO --</option>';
-                // El controller devuelve: id, codigo, descripcionProducto
+                let h = '<option value="">-- BUSCAR --</option>';
                 res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionComercial}</option>`);
                 $('#cbx_ProductoBusqueda').html(h);
+            }
+        });
+    }
+
+    // NUEVA FUNCIÓN PARA LLENAR EL COMBO DE CENTROS DE COSTO
+    function fct_CargarCentrosCosto() {
+        $.getJSON('/ReqCompra/GetCentrosCosto', function (res) {
+            if (res.status) {
+                let h = '<option value="">-- Seleccione --</option>';
+                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.nombre}</option>`);
+                $('#cbx_CentroCosto').html(h);
             }
         });
     }
@@ -215,8 +244,13 @@
         LISTA_DETALLE.forEach((d, index) => {
             html += `<tr>
                 <td class="align-middle font-weight-bold">${d.Item}</td>
-                <td class="align-middle">${d.Codigo}</td>
-                <td class="align-middle text-left">${d.DescripcionProducto}</td>
+                <td class="align-middle text-left">
+                    <small class="d-block text-muted">${d.Codigo}</small>
+                    ${d.DescripcionProducto}
+                </td>
+
+                <td class="align-middle text-primary small font-weight-bold">${d.NombreCentroCosto}</td>
+
                 <td class="align-middle">${d.UnidadMedida}</td>
                 <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.CantidadSolicitada.toFixed(2)}</td>
                 <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
@@ -235,15 +269,18 @@
 
     function fct_EliminarDetalle(index) {
         LISTA_DETALLE.splice(index, 1);
-        // Reordenar items (001, 002...)
         LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
         fct_RenderDetalle();
     }
 
     function fct_LimpiarInputsDetalle() {
         $("#cbx_ProductoBusqueda").val("").trigger("change");
+        // No limpiamos el Centro de Costo automáticamente por si quiere agregar varios al mismo CC
+        // $("#cbx_CentroCosto").val("").trigger("change");
+
         $("#txt_DetCantidad").val("1.00");
         $("#txt_DetObservacion").val("");
+        $("#cbx_ProductoBusqueda").select2('open'); // Foco al producto de nuevo
     }
 
     function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }

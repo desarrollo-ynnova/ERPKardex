@@ -1,47 +1,77 @@
 ﻿@{
-    ViewData["Title"] = "Pedidos de Compra";
+    ViewData["Title"] = "Bandeja de Pedidos de Compra";
 }
+
 <div class="card d-none" id="efec-cargando">
-    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
         <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
     </div>
 </div>
+
 <div class="container-fluid p-4">
-    <div class="panel-heading">
-        <div class="row">
-            <div class="col-md-12">
-                <h1>Gestionar pedidos de compra</h1>
-            </div>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-white">
+            <h5 class="m-0 font-weight-bold text-primary"><i class="bi bi-basket"></i> Gestión de Pedidos de Compra</h5>
         </div>
-    </div>
-    <div class="panel-body">
-        <div class="row">
-            <div class="col-12">
-                <table id="tbl_PedCompras" class="table table-bordered table-striped">
-                    <thead>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tbl_PedCompras" class="table table-bordered table-striped hover display nowrap w-100">
+                    <thead class="bg-dark text-white">
                         <tr>
-                            <th class="text-center">ID</th>
+                            <th class="text-center" style="width: 5%;">ID</th>
                             <th class="text-center">NÚMERO</th>
                             <th class="text-center">F. EMISIÓN</th>
                             <th class="text-center">F. NECESARIA</th>
-                            <th class="text-center">C. COSTO</th>
+                            <th class="text-center">CC (RESUMEN)</th>
                             <th class="text-center">SOLICITANTE</th>
                             <th class="text-center">ESTADO</th>
-                            <th class="text-center">ACCIÓN</th>
+                            <th class="text-center">ACCIONES</th>
                         </tr>
                     </thead>
-                    <tbody>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalDetallePedido" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-list-check"></i> Detalle del Pedido</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover text-center">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;">Item</th>
+                                <th>Descripción</th>
+                                <th style="width: 100px;">C. Costo</th>
+                                <th style="width: 80px;">U.M.</th>
+                                <th style="width: 80px;">Cant.</th>
+                                <th>Ref. Origen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody_DetallePedido"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     var dtPedidos;
 
     $(document).ready(function () {
-        // $('body').addClass('sidebar-collapse');
         var windowHeight = $('body > div.wrapper > div.content-wrapper').height() / 2;
         //CONFIGURACION POR DEFECTO DATATABLES
         $.extend($.fn.dataTable.defaults, {
@@ -104,12 +134,13 @@
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
         });
 
+        // Inicializamos la tabla
         fct_IniciarTablaPedCompras('#tbl_PedCompras');
     });
 
     function fct_IniciarTablaPedCompras(IdTabla) {
-        // Inicializar DataTables con botones
         dtPedidos = $(IdTabla).DataTable({
+            // Botones estándar
             buttons: [
                 {
                     extend: 'copy',
@@ -122,7 +153,7 @@
                     text: '<i class="bi bi-file-earmark-excel"></i>',
                     titleAttr: 'Exportar a Excel',
                     className: 'btn btn-success',
-                    filename: 'Pedidos compras ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Pedidos servicios ' + moment().format('DD-MM-YYYY HH_mm'),
                     footer: true,
                     exportOptions:
                     {
@@ -135,7 +166,7 @@
                     text: '<i class="bi bi-file-earmark-pdf"></i>',
                     titleAttr: 'Exportar a PDF',
                     className: 'btn btn-danger',
-                    filename: 'Pedidos compras ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Pedidos servicios ' + moment().format('DD-MM-YYYY HH_mm'),
                     exportOptions:
                     {
                         stripHtml: true,
@@ -163,102 +194,70 @@
                     columns: ':not(.noVis)',
                 },
                 {
-                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nuevo pedido',
-                    className: 'btn bg-success m-1',
+                    text: '<i class="bi bi-plus-circle mr-1" style="margin-right: 5px;"></i> Nuevo Pedido',
                     titleAttr: 'Nuevo',
+                    className: 'btn btn-success',
                     action: function (e, dt, node, config) {
-                        fct_PedidoNuevo();
-                    },
+                        window.location.href = '/PedCompra/Registrar';
+                    }
                 },
             ],
             ajax: {
                 url: "/PedCompra/GetPedidosCompraData",
                 type: "GET",
                 datatype: "json",
-                data: function (d) {
-                },
                 dataSrc: function (json) {
                     if (json.status === false) {
-                        toastr.error('Ocurrió un error inesperado al intentar listar la tabla');
-                        console.error(json.message);
+                        toastr.error(json.message);
                         return [];
                     }
                     return json.data;
                 },
-                error: function (xhr, Status, error) {
-                    toastr.error('Ocurrió un error inesperado al intentar listar la tabla');
-                    console.error('Error en la solicitud Ajax. Status:', Status, 'Error:', error, 'XHR:', xhr);
-                },
+                error: function () { toastr.error('Error al cargar la tabla.'); }
             },
             columns: [
-                    { data: "id", name: "id", className: "text-center align-middle" },
-                    { data: "numero", className: "align-middle font-weight-bold" },
-                    {
-                        data: "fechaEmision",
-                        className: "text-center align-middle",
-                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
-                    },
-                    {
-                        data: "fechaNecesaria",
-                        className: "text-center align-middle",
-                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
-                    },
-                    { data: "centroCosto", className: "align-middle" },
-                    { data: "solicitante", className: "align-middle" },
-                    {
-                        data: "estado",
-                        name: "estado",
-                        className: "text-center align-middle",
-                        render: function (data) {
-                            let badgeClass = "";
-                            // Lógica de colores según el texto del estado
-                            switch (data) {
-                                case "Aprobado": case "Atendido": case "Autorizado":
-                                    badgeClass = "badge-success";
-                                    break;
-                                case "Pendiente": case "En Proceso":
-                                    badgeClass = "badge-warning text-dark"; // text-dark para contraste
-                                    break;
-                                case "Rechazado": case "Anulado":
-                                    badgeClass = "badge-danger";
-                                    break;
-                                default:
-                                    badgeClass = "badge-secondary";
-                            }
-                            // Usando estilo fs-5 similar a tu ejemplo
-                            return `<span class="badge ${badgeClass}" style="font-size: 0.9rem;">${data}</span>`;
-                        },
-                    },
-                    {
-                        data: null,
-                        orderable: false,
-                        className: 'text-center align-middle',
-                        render: function (data) {
-                            // Botones de acción
-                            return "";
-                            return `
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-info" onclick="fct_VerPedido(${data.id})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
-                                <button class="btn btn-sm btn-secondary" onclick="fct_Imprimir(${data.id})" title="Imprimir"><i class="bi bi-printer"></i></button>
-                                ${data.estado === 'Pendiente' ? `<button class="btn btn-sm btn-danger" onclick="fct_Anular(${data.id})" title="Anular"><i class="bi bi-x-circle"></i></button>` : ''}
-                            </div>`;
-                        }
+                { data: "id", className: "text-center align-middle" },
+                { data: "numero", className: "align-middle font-weight-bold" },
+                {
+                    data: "fechaEmision", className: "text-center align-middle",
+                    render: function (data) { return data ? moment(data).format('DD/MM/YYYY') : '-'; }
+                },
+                {
+                    data: "fechaNecesaria", className: "text-center align-middle",
+                    render: function (data) { return data ? moment(data).format('DD/MM/YYYY') : '-'; }
+                },
+                {
+                    data: "centroCosto",
+                    className: "align-middle text-info font-weight-bold text-center",
+                    render: function(data) {
+                        // Si hay varios, se mostrarán separados por coma
+                        return `<small style="font-size: 0.9em;">${data}</small>`;
                     }
-                ],
-            columnDefs: [
+                },
+                { data: "solicitante", className: "align-middle" },
                 {
-                    targets: [0],
-                    className: "text-center align-middle",
+                    data: "estado", className: "text-center align-middle",
+                    render: function (data) {
+                        let badgeClass = "badge-secondary";
+                        if(data === "Aprobado" || data === "Atendido" || data === "Generado") badgeClass = "badge-success";
+                        else if(data === "Pendiente" || data === "En Proceso") badgeClass = "badge-warning text-dark";
+                        else if(data === "Anulado" || data === "Rechazado") badgeClass = "badge-danger";
+
+                        return `<span class="badge ${badgeClass} px-2 py-1">${data}</span>`;
+                    },
                 },
                 {
-                    targets: [1, 2, 3, 4, 5, 6, 7],
-                    className: 'align-middle',
-                },
-                {
-                    targets: [7],
-                    orderable: false,
-                },
+                    data: null, orderable: false, className: 'text-center align-middle',
+                    render: function (data, type, row) {
+                        // Botones de acción
+                        return `
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-info" onclick="fct_VerPedido(${row.id})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                        </div>`;
+                    }
+                }
             ],
+            order: [[1, 'desc']], // Ordenar por Numero descendente
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
             initComplete: function (data, row, cell, start, end, display) {
                 $('.dt-buttons button').addClass('m-1');
@@ -276,58 +275,48 @@
         });
     }
 
-    function fct_PedidoNuevo() {
-        window.location.href = '/PedCompra/Registrar';
-    }
+    // --- FUNCIÓN PARA CARGAR DETALLE EN MODAL ---
+    function fct_VerPedido(id) {
+        ShowSpinner();
+        $('#tbody_DetallePedido').html('<tr><td colspan="6">Cargando...</td></tr>');
 
-    function fct_EmpresaEditar(Id) {
-        window.location.href = `/Empresa/Editar/${Id}`;
-    }
-
-    function fct_EmpresaVer(Id) {
-        window.location.href = `/Empresa/Ver/${Id}`;
-    }
-
-    function fct_EmpresaEliminar(Id) {
-        Swal.fire({
-            title: "¿Estás seguro?",
-            text: "Esta acción eliminará a la empresa. ¿Deseas continuar?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar",
-            reverseButtons: true // Invertir el orden de los botones
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/Empresa/EliminarEmpresa/${Id}`,  // Pasamos el ID en la URL
-                    type: "POST",
-                    contentType: "application/json",
-                    success: function (response) {
-                        if (response.status === true) {
-                                toastr.success(response.message, "MENSAJE DE SISTEMA");
-                                window.location.href = "/Empresa";
-                        } else {
-                            toastr.warning(response.message, 'MENSAJE DE SISTEMA');
-                            return;
-                        }
-                    },
-                    error: function (xhr, Status, error) {
-                        toastr.error("Error en el servidor", "MENSAJE DE SISTEMA");
-                        console.error('Error en la solicitud Ajax. Status:', Status, 'Error:', error, 'XHR:', xhr);
+        $.ajax({
+            url: '/PedCompra/GetDetallePedido?id=' + id,
+            type: 'GET',
+            success: function (res) {
+                HideSpinner();
+                if (res.status) {
+                    let html = '';
+                    if(res.data && res.data.length > 0){
+                        res.data.forEach(d => {
+                            html += `<tr>
+                                <td class="font-weight-bold">${d.item}</td>
+                                <td class="text-left">
+                                    ${d.descripcionLibre}<br>
+                                    <small class="text-muted"><i>${d.observacionItem || ''}</i></small>
+                                </td>
+                                <td class="text-primary font-weight-bold">${d.centroCosto}</td>
+                                <td>${d.unidadMedida}</td>
+                                <td class="font-weight-bold">${d.cantidadAprobada.toFixed(2)}</td>
+                                <td><span class="badge badge-light border">${d.ref}</span></td>
+                            </tr>`;
+                        });
+                    } else {
+                        html = '<tr><td colspan="6">Sin detalles registrados.</td></tr>';
                     }
-                });
+                    $('#tbody_DetallePedido').html(html);
+                    $('#modalDetallePedido').modal('show');
+                } else {
+                    toastr.error(res.message);
+                }
+            },
+            error: function () {
+                HideSpinner();
+                toastr.error("Error de conexión al obtener detalles.");
             }
         });
     }
 
-    function ShowSpinner() {
-        $('#efec-cargando').removeClass('d-none');
-    }
-
-    function HideSpinner() {
-        $('#efec-cargando').addClass('d-none');
-    }
+    function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+    function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
 </script>

@@ -16,86 +16,142 @@ namespace ERPKardex.Controllers
             _context = context;
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public IActionResult Index() { return View(); }
+        public IActionResult Registrar() { return View(); }
 
-        public IActionResult Registrar()
-        {
-            return View();
-        }
-
+        // ==========================================
+        // 1. DATA PARA EL LISTADO (INDEX)
+        // ==========================================
         [HttpGet]
-        public JsonResult GetPedidosServicioData()
+        public async Task<JsonResult> GetPedidosServicioData()
         {
             try
             {
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+                int empresaUsuario = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                var data = (from p in _context.PedServicios
-                            join tdi in _context.TiposDocumentoInterno on p.TipoDocumentoInternoId equals tdi.Id
-                            join cc in _context.CentroCostos on p.CentroCostoId equals cc.Id
-                            join est in _context.Estados on p.EstadoId equals est.Id
-                            join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
-                            from u in joinUsu.DefaultIfEmpty()
-                            where (empresaId == 4 || p.EmpresaId == empresaId)
-                            orderby p.FechaRegistro descending
+                // 1. Consulta Base
+                var query = from p in _context.PedServicios
+                            join u in _context.Usuarios on p.UsuarioSolicitanteId equals u.Id
+                            join e in _context.Estados on p.EstadoId equals e.Id
+                            // NOTA: Sin join a CentroCosto en cabecera
                             select new
                             {
-                                Id = p.Id,
-                                Numero = p.Numero,
-                                TipoDocumento = tdi.Codigo,
-                                FechaEmision = p.FechaEmision.HasValue ? p.FechaEmision.Value.ToString("yyyy-MM-dd") : "-",
-                                FechaNecesaria = p.FechaNecesaria.HasValue ? p.FechaNecesaria.Value.ToString("yyyy-MM-dd") : "-",
-                                CentroCosto = cc.Nombre,
-                                Solicitante = u != null ? u.Nombre : "Sistema",
-                                Estado = est.Nombre,
-                                EstadoId = p.EstadoId,
-                                Observacion = p.Observacion
-                            }).ToList();
+                                p.Id,
+                                p.EmpresaId,
+                                p.Numero,
+                                p.FechaEmision,
+                                p.FechaNecesaria,
+                                Solicitante = u.Nombre,
+                                Estado = e.Nombre,
 
-                return Json(new { data = data, message = "Pedidos de servicio retornados exitosamente.", status = true });
+                                // 2. Subconsulta: Traer códigos de CC desde los detalles (dpedservicio)
+                                CentrosInvolucrados = (from d in _context.DPedidosServicio
+                                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                                       where d.PedidoServicioId == p.Id
+                                                       select cc.Codigo).Distinct().ToList()
+                            };
+
+                if (empresaUsuario != 4)
+                {
+                    query = query.Where(x => x.EmpresaId == empresaUsuario);
+                }
+
+                var listaRaw = await query.OrderByDescending(x => x.Numero).ToListAsync();
+
+                // 3. Formateo en memoria
+                var data = listaRaw.Select(x => new
+                {
+                    x.Id,
+                    x.Numero,
+                    x.FechaEmision,
+                    x.FechaNecesaria,
+                    // Concatenamos CCs (Ej: "ADM, LOG")
+                    CentroCosto = x.CentrosInvolucrados.Any() ? string.Join(", ", x.CentrosInvolucrados) : "N/A",
+                    x.Solicitante,
+                    x.Estado
+                });
+
+                return Json(new { status = true, data = data });
             }
-            catch (Exception ex)
-            {
-                return Json(new { data = Enumerable.Empty<object>(), message = ex.Message, status = false });
-            }
+            catch (Exception ex) { return Json(new { status = false, message = "Error: " + ex.Message }); }
         }
 
-        // ==========================================================
-        // NUEVOS MÉTODOS PARA JALAR REQUERIMIENTOS APROBADOS (MODAL)
-        // ==========================================================
-
         [HttpGet]
-        public JsonResult GetRequerimientosAprobados()
+        public JsonResult GetDetallePedido(int id)
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                // Detalle específico para el Modal (Ojito)
+                var detalles = (from d in _context.DPedidosServicio
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                where d.PedidoServicioId == id
+                                select new
+                                {
+                                    d.Item,
+                                    // En servicio usamos DescripcionServicio
+                                    Descripcion = d.DescripcionServicio,
+                                    d.UnidadMedida,
+                                    Cantidad = d.Cantidad,
+                                    CentroCosto = cc.Codigo,
+                                    Ref = d.TablaReferencia == "DREQSERVICIO" ? ("Req. " + d.ItemReferencia) : "-"
+                                }).OrderBy(x => x.Item).ToList();
 
-                // Buscamos requerimientos que estén en estado 'Aprobado' para la tabla 'REQ'
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // ==========================================
+        // 2. MÉTODOS PARA REGISTRAR (CARGA DE REQS)
+        // ==========================================
+        [HttpGet]
+        public JsonResult GetRequerimientosAprobados(int? empresaDestinoId)
+        {
+            try
+            {
+                var empresaUsuario = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                int idParaFiltrar = (empresaUsuario == 4) ? (empresaDestinoId ?? 0) : empresaUsuario;
+
+                if (idParaFiltrar == 0) return Json(new { status = false, message = "Seleccione una empresa." });
+
                 var data = (from r in _context.ReqServicios
                             join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
                             join e in _context.Estados on r.EstadoId equals e.Id
-                            join emp in _context.Empresas on r.EmpresaId equals emp.Id
-                            where (empresaId == 4 || r.EmpresaId == empresaId)
-                               && e.Nombre == "Aprobado"
-                               && e.Tabla == "REQ"
+                            where r.EmpresaId == idParaFiltrar
+                               && e.Nombre == "Aprobado" && e.Tabla == "REQ"
                             orderby r.FechaRegistro descending
                             select new
                             {
                                 r.Id,
                                 r.Numero,
-                                emp.Ruc,
-                                emp.RazonSocial,
                                 Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
                             }).ToList();
 
-                return Json(new { status = true, data = data });
+                return Json(new { status = true, data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public JsonResult GetDetallesDeUnReq(int reqId)
+        {
+            // Vista rápida en el buscador
+            try
+            {
+                var detalles = (from d in _context.DReqServicios
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                where d.ReqServicioId == reqId
+                                select new
+                                {
+                                    d.Item,
+                                    d.DescripcionServicio,
+                                    d.CantidadSolicitada,
+                                    CentroCosto = cc.Codigo
+                                }).ToList();
+                return Json(new { status = true, data = detalles });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
@@ -105,24 +161,29 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-
                 if (reqIds == null || reqIds.Count == 0)
-                    return Json(new { status = false, message = "No se seleccionaron requerimientos." });
+                    return Json(new { status = false, message = "Ningún requerimiento seleccionado" });
 
+                // Mapeo crucial: DREQSERVICIO -> DPEDSERVICIO
                 var detalles = (from d in _context.DReqServicios
+                                join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
                                 where reqIds.Contains(d.ReqServicioId)
-                                   && (empresaId == 4 || d.EmpresaId == empresaId)
                                 select new
                                 {
                                     ProductoId = d.ProductoId,
-                                    Descripcion = d.DescripcionServicio,
+                                    DescripcionServicio = d.DescripcionServicio,
                                     UnidadMedida = d.UnidadMedida ?? "UND",
                                     Cantidad = d.CantidadSolicitada,
-                                    ObservacionItem = d.ObservacionItem,
-                                    // Datos de Referencia (Para DPedServicio)
-                                    ReferenciaId = d.Id,
-                                    ReferenciaTabla = "DREQSERVICIO"
+                                    CentroCostoId = d.CentroCostoId, // Jalamos el ID para guardarlo
+
+                                    // Visuales
+                                    NombreCentroCosto = cc.Codigo + " - " + cc.Nombre,
+                                    Observacion = d.ObservacionItem,
+
+                                    // Referencias
+                                    ReqOrigenId = d.ReqServicioId,
+                                    IdReferencia = d.Id,
+                                    ItemReferencia = d.Item
                                 }).ToList();
 
                 return Json(new { status = true, data = detalles });
@@ -131,23 +192,15 @@ namespace ERPKardex.Controllers
         }
 
         // ==========================================
-        // MÉTODOS AUXILIARES (COMBOS)
+        // 3. GUARDAR
         // ==========================================
-
         [HttpGet]
-        public async Task<JsonResult> GetCentrosCosto()
+        public JsonResult GetEmpresaData()
         {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            var data = await _context.CentroCostos
-                .Where(x => (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true && x.EsImputable == true)
-                .Select(x => new { x.Id, x.Nombre, x.Codigo })
-                .ToListAsync();
+            var data = _context.Empresas.Where(x => x.Estado == true).Select(x => new { x.Id, x.Ruc, x.RazonSocial }).ToList();
             return Json(new { status = true, data });
         }
 
-        // ==========================================
-        // GUARDAR PEDIDO SERVICIO (TRANSACCIONAL)
-        // ==========================================
         [HttpPost]
         public JsonResult GuardarPedido(PedServicio cabecera, string detallesJson)
         {
@@ -155,43 +208,35 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                    int empresaId = cabecera.EmpresaId.GetValueOrDefault();
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+                    int empresaId = cabecera.EmpresaId.GetValueOrDefault();
 
-                    if (empresaId == 0) throw new Exception("Sesión no válida.");
+                    if (empresaId == 0) throw new Exception("Empresa inválida.");
 
-                    // 1. Obtener Estado 'Generado' o 'Pendiente' para Pedido
-                    var estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED");
-                    if (estadoInicial == null) estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
+                    // 1. CABECERA
+                    var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PS"); // PEDIDO SERVICIO
+                    if (tipoDoc == null) throw new Exception("Falta configurar documento PS.");
 
-                    // 2. Generar Correlativo (PS)
-                    var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PS");
-                    if (tipoDoc == null) throw new Exception("No existe configuración para el documento 'PS'.");
-
-                    var ultimoRegistro = _context.PedServicios
+                    var ultimo = _context.PedServicios
                         .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
                         .OrderByDescending(x => x.Numero)
-                        .Select(x => x.Numero)
-                        .FirstOrDefault();
+                        .Select(x => x.Numero).FirstOrDefault();
 
-                    int nuevoCorrelativo = 1;
-                    if (!string.IsNullOrEmpty(ultimoRegistro))
+                    int nro = 1;
+                    if (!string.IsNullOrEmpty(ultimo))
                     {
-                        var partes = ultimoRegistro.Split('-');
-                        if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
-                            nuevoCorrelativo = numeroActual + 1;
+                        var parts = ultimo.Split('-');
+                        if (parts.Length > 1 && int.TryParse(parts[1], out int val)) nro = val + 1;
                     }
 
-                    string numeroGenerado = $"PS-{nuevoCorrelativo.ToString("D10")}";
-
-                    // 3. Llenar Cabecera
+                    cabecera.Numero = $"PS-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
-                    cabecera.Numero = numeroGenerado;
                     cabecera.UsuarioSolicitanteId = usuarioId;
-                    cabecera.EmpresaId = empresaId;
-                    cabecera.EstadoId = estadoInicial?.Id ?? 1;
                     cabecera.FechaRegistro = DateTime.Now;
+
+                    var estadoGen = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED")
+                                 ?? _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
+                    cabecera.EstadoId = estadoGen?.Id;
 
                     if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now;
@@ -199,33 +244,56 @@ namespace ERPKardex.Controllers
                     _context.PedServicios.Add(cabecera);
                     _context.SaveChanges();
 
-                    // 4. Procesar Detalles
+                    // 2. DETALLES
+                    List<int> reqInvolucrados = new List<int>();
+
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
-                        var listaDetalles = JsonConvert.DeserializeObject<List<DPedServicio>>(detallesJson);
-                        int correlativoItem = 1;
+                        var lista = JsonConvert.DeserializeObject<List<DPedServicio>>(detallesJson);
+                        int item = 1;
 
-                        foreach (var det in listaDetalles)
+                        foreach (var det in lista)
                         {
                             det.Id = 0;
                             det.PedidoServicioId = cabecera.Id;
                             det.EmpresaId = empresaId;
-                            det.Item = correlativoItem.ToString("D3");
+                            det.Item = item.ToString("D3");
 
-                            // Aquí se guardan los campos ReferenciaId y ReferenciaTabla que vienen del batch
+                            // Referencias
+                            if (det.IdReferencia != null && det.IdReferencia > 0)
+                            {
+                                det.TablaReferencia = "DREQSERVICIO";
+                                var dReq = _context.DReqServicios.AsNoTracking().FirstOrDefault(x => x.Id == det.IdReferencia);
+                                if (dReq != null && !reqInvolucrados.Contains(dReq.ReqServicioId))
+                                {
+                                    reqInvolucrados.Add(dReq.ReqServicioId);
+                                }
+                            }
                             _context.DPedidosServicio.Add(det);
-                            correlativoItem++;
+                            item++;
                         }
                         _context.SaveChanges();
                     }
 
+                    // 3. ACTUALIZAR ESTADO DE REQS A 'ATENDIDO'
+                    if (reqInvolucrados.Count > 0)
+                    {
+                        var estAtendido = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido" && e.Tabla == "REQ");
+                        if (estAtendido != null)
+                        {
+                            var reqs = _context.ReqServicios.Where(r => reqInvolucrados.Contains(r.Id)).ToList();
+                            reqs.ForEach(r => r.EstadoId = estAtendido.Id);
+                            _context.SaveChanges();
+                        }
+                    }
+
                     transaction.Commit();
-                    return Json(new { status = true, message = $"Pedido de Servicio {numeroGenerado} registrado correctamente." });
+                    return Json(new { status = true, message = $"Pedido {cabecera.Numero} generado correctamente." });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
+                    return Json(new { status = false, message = "Error: " + ex.Message });
                 }
             }
         }

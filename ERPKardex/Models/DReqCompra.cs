@@ -20,6 +20,9 @@ namespace ERPKardex.Models
         [Column("producto_id")]
         public int ProductoId { get; set; }
 
+        [Column("centro_costo_id")]
+        public int? CentroCostoId { get; set; }
+
         [Column("descripcion_producto")]
         [StringLength(500)]
         public string? DescripcionProducto { get; set; }

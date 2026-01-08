@@ -12,12 +12,20 @@ namespace ERPKardex.Models
         public int? PedidoServicioId { get; set; }
         [Column("producto_id")]
         public int? ProductoId { get; set; }
+        [Column("centro_costo_id")]
+        public int? CentroCostoId { get; set; }
         public string? Item { get; set; }
         [Column("descripcion_servicio")]
         public string? DescripcionServicio { get; set; }
         public decimal? Cantidad { get; set; }
         [Column("unidad_medida")]
         public string? UnidadMedida { get; set; }
+        [Column("id_referencia")]
+        public int? IdReferencia { get; set; }
+        [Column("tabla_referencia")]
+        public string? TablaReferencia { get; set; }
+        [Column("item_referencia")]
+        public string? ItemReferencia { get; set; }
         [Column("observacion_item")]
         public string? ObservacionItem { get; set; }
         [Column("empresa_id")]

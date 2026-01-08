@@ -1,47 +1,75 @@
 ﻿@{
-    ViewData["Title"] = "Pedidos de Servicio";
+    ViewData["Title"] = "Bandeja de Pedidos de Servicio";
 }
+
 <div class="card d-none" id="efec-cargando">
-    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
         <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
     </div>
 </div>
+
 <div class="container-fluid p-4">
-    <div class="panel-heading">
-        <div class="row">
-            <div class="col-md-12">
-                <h1>Gestionar pedidos de servicio</h1>
-            </div>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-white">
+            <h5 class="m-0 font-weight-bold text-success"><i class="bi bi-tools"></i> Gestión de Pedidos de Servicio</h5>
         </div>
-    </div>
-    <div class="panel-body">
-        <div class="row">
-            <div class="col-12">
-                <table id="tbl_PedServicios" class="table table-bordered table-striped">
-                    <thead>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tbl_PedServicios" class="table table-bordered table-striped hover display nowrap" style="width:100%">
+                    <thead class="bg-dark text-white">
                         <tr>
-                            <th class="text-center">ID</th>
+                            <th class="text-center" style="width: 5%;">ID</th>
                             <th class="text-center">NÚMERO</th>
                             <th class="text-center">F. EMISIÓN</th>
                             <th class="text-center">F. NECESARIA</th>
-                            <th class="text-center">C. COSTO</th>
+                            <th class="text-center">CC (RESUMEN)</th>
                             <th class="text-center">SOLICITANTE</th>
                             <th class="text-center">ESTADO</th>
-                            <th class="text-center">ACCIÓN</th>
+                            <th class="text-center">ACCIONES</th>
                         </tr>
                     </thead>
-                    <tbody>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalDetallePedido" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-list-check"></i> Detalle del Servicio</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover text-center">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 50px;">Item</th>
+                                <th>Descripción del Servicio</th>
+                                <th style="width: 100px;">C. Costo</th>
+                                <th style="width: 80px;">U.M.</th>
+                                <th style="width: 80px;">Cant.</th>
+                                <th>Ref. Origen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody_DetallePedido"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     var dtPedidos;
 
     $(document).ready(function () {
-        // $('body').addClass('sidebar-collapse');
         var windowHeight = $('body > div.wrapper > div.content-wrapper').height() / 2;
         //CONFIGURACION POR DEFECTO DATATABLES
         $.extend($.fn.dataTable.defaults, {
@@ -104,12 +132,12 @@
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
         });
 
-        fct_IniciarTablaPedServicios('#tbl_PedServicios');
+        fct_IniciarTabla('#tbl_PedServicios');
     });
 
-    function fct_IniciarTablaPedServicios(IdTabla) {
-        // Inicializar DataTables con botones
+    function fct_IniciarTabla(IdTabla) {
         dtPedidos = $(IdTabla).DataTable({
+            // Botones estándar
             buttons: [
                 {
                     extend: 'copy',
@@ -163,99 +191,57 @@
                     columns: ':not(.noVis)',
                 },
                 {
-                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nuevo pedido',
-                    className: 'btn bg-success m-1',
+                    text: '<i class="bi bi-plus-circle mr-1"></i> Nuevo Pedido',
                     titleAttr: 'Nuevo',
-                    action: function (e, dt, node, config) {
-                        fct_PedidoNuevo();
-                    },
+                    className: 'btn btn-success',
+                    action: function () { 
+                        window.location.href = '/PedServicio/Registrar'; 
+                    }
                 },
             ],
             ajax: {
                 url: "/PedServicio/GetPedidosServicioData",
                 type: "GET",
                 datatype: "json",
-                data: function (d) {
-                },
                 dataSrc: function (json) {
-                    if (json.status === false) {
-                        toastr.error('Ocurrió un error inesperado al intentar listar la tabla');
-                        console.error(json.message);
-                        return [];
-                    }
+                    if (!json.status) { toastr.error(json.message); return []; }
                     return json.data;
-                },
-                error: function (xhr, Status, error) {
-                    toastr.error('Ocurrió un error inesperado al intentar listar la tabla');
-                    console.error('Error en la solicitud Ajax. Status:', Status, 'Error:', error, 'XHR:', xhr);
-                },
+                }
             },
             columns: [
-                    { data: "id", name: "id", className: "text-center align-middle" },
-                    { data: "numero", className: "align-middle font-weight-bold" }, // Color info para diferenciar visualmente
-                    {
-                        data: "fechaEmision",
-                        className: "text-center align-middle",
-                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
+                { data: "id", className: "text-center align-middle" },
+                { data: "numero", className: "align-middle font-weight-bold" },
+                {
+                    data: "fechaEmision", className: "text-center align-middle",
+                    render: function (data) { return data ? moment(data).format('DD/MM/YYYY') : '-'; }
+                },
+                {
+                    data: "fechaNecesaria", className: "text-center align-middle",
+                    render: function (data) { return data ? moment(data).format('DD/MM/YYYY') : '-'; }
+                },
+                {
+                    data: "centroCosto",
+                    className: "align-middle text-success font-weight-bold text-center",
+                    render: function(data) { return `<small>${data}</small>`; }
+                },
+                { data: "solicitante", className: "align-middle" },
+                {
+                    data: "estado", className: "text-center align-middle",
+                    render: function (data) {
+                        let badge = "badge-secondary";
+                        if(data === "Aprobado" || data === "Atendido" || data === "Generado") badge = "badge-success";
+                        else if(data === "Pendiente") badge = "badge-warning text-dark";
+                        return `<span class="badge ${badge} px-2 py-1">${data}</span>`;
                     },
-                    {
-                        data: "fechaNecesaria",
-                        className: "text-center align-middle",
-                        render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
-                    },
-                    { data: "centroCosto", className: "align-middle" },
-                    { data: "solicitante", className: "align-middle" },
-                    {
-                        data: "estado",
-                        name: "estado",
-                        className: "text-center align-middle",
-                        render: function (data) {
-                            let badgeClass = "";
-                            switch (data) {
-                                case "Aprobado": case "Atendido": case "Autorizado":
-                                    badgeClass = "badge-success";
-                                    break;
-                                case "Pendiente": case "En Proceso":
-                                    badgeClass = "badge-warning text-dark";
-                                    break;
-                                case "Rechazado": case "Anulado":
-                                    badgeClass = "badge-danger";
-                                    break;
-                                default:
-                                    badgeClass = "badge-secondary";
-                            }
-                            return `<span class="badge ${badgeClass}" style="font-size: 0.9rem;">${data}</span>`;
-                        },
-                    },
-                    {
-                        data: null,
-                        orderable: false,
-                        className: 'text-center align-middle',
-                        render: function (data) {
-                            return "";
-                            return `
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-info" onclick="fct_VerPedido(${data.id})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
-                                <button class="btn btn-sm btn-secondary" onclick="fct_Imprimir(${data.id})" title="Imprimir"><i class="bi bi-printer"></i></button>
-                                ${data.estado === 'Pendiente' ? `<button class="btn btn-sm btn-danger" onclick="fct_Anular(${data.id})" title="Anular"><i class="bi bi-x-circle"></i></button>` : ''}
-                            </div>`;
-                        }
+                },
+                {
+                    data: null, orderable: false, className: 'text-center align-middle',
+                    render: function (data, type, row) {
+                        return `<button class="btn btn-sm btn-info" onclick="fct_VerPedido(${row.id})"><i class="bi bi-eye"></i></button>`;
                     }
-                ],
-            columnDefs: [
-                {
-                    targets: [0],
-                    className: "text-center align-middle",
-                },
-                {
-                    targets: [1, 2, 3, 4, 5, 6, 7],
-                    className: 'align-middle',
-                },
-                {
-                    targets: [7],
-                    orderable: false,
-                },
+                }
             ],
+            order: [[1, 'desc']],
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
             initComplete: function (data, row, cell, start, end, display) {
                 $('.dt-buttons button').addClass('m-1');
@@ -273,58 +259,36 @@
         });
     }
 
-    function fct_PedidoNuevo() {
-        window.location.href = '/PedServicio/Registrar';
-    }
-
-    function fct_EmpresaEditar(Id) {
-        window.location.href = `/Empresa/Editar/${Id}`;
-    }
-
-    function fct_EmpresaVer(Id) {
-        window.location.href = `/Empresa/Ver/${Id}`;
-    }
-
-    function fct_EmpresaEliminar(Id) {
-        Swal.fire({
-            title: "¿Estás seguro?",
-            text: "Esta acción eliminará a la empresa. ¿Deseas continuar?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar",
-            reverseButtons: true // Invertir el orden de los botones
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `/Empresa/EliminarEmpresa/${Id}`,  // Pasamos el ID en la URL
-                    type: "POST",
-                    contentType: "application/json",
-                    success: function (response) {
-                        if (response.status === true) {
-                                toastr.success(response.message, "MENSAJE DE SISTEMA");
-                                window.location.href = "/Empresa";
-                        } else {
-                            toastr.warning(response.message, 'MENSAJE DE SISTEMA');
-                            return;
-                        }
-                    },
-                    error: function (xhr, Status, error) {
-                        toastr.error("Error en el servidor", "MENSAJE DE SISTEMA");
-                        console.error('Error en la solicitud Ajax. Status:', Status, 'Error:', error, 'XHR:', xhr);
-                    }
-                });
-            }
+    function fct_VerPedido(id) {
+        ShowSpinner();
+        $('#tbody_DetallePedido').html('<tr><td colspan="6">Cargando...</td></tr>');
+        $.ajax({
+            url: '/PedServicio/GetDetallePedido?id=' + id,
+            type: 'GET',
+            success: function (res) {
+                HideSpinner();
+                if (res.status) {
+                    let html = '';
+                    if(res.data && res.data.length > 0){
+                        res.data.forEach(d => {
+                            html += `<tr>
+                                <td class="font-weight-bold">${d.item}</td>
+                                <td class="text-left text-wrap" style="max-width:300px;">${d.descripcion}</td>
+                                <td class="text-success font-weight-bold">${d.centroCosto}</td>
+                                <td>${d.unidadMedida}</td>
+                                <td class="font-weight-bold">${d.cantidad.toFixed(2)}</td>
+                                <td><span class="badge badge-light border">${d.ref}</span></td>
+                            </tr>`;
+                        });
+                    } else html = '<tr><td colspan="6">Sin detalles.</td></tr>';
+                    $('#tbody_DetallePedido').html(html);
+                    $('#modalDetallePedido').modal('show');
+                } else toastr.error(res.message);
+            },
+            error: function () { HideSpinner(); toastr.error("Error al obtener detalle."); }
         });
     }
 
-    function ShowSpinner() {
-        $('#efec-cargando').removeClass('d-none');
-    }
-
-    function HideSpinner() {
-        $('#efec-cargando').addClass('d-none');
-    }
+    function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+    function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
 </script>

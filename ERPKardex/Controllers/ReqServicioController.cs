@@ -16,15 +16,13 @@ namespace ERPKardex.Controllers
             _context = context;
         }
 
-        // --- EN ReqServicioController.cs ---
-
         // 1. VISTA INDEX
         public IActionResult Index()
         {
             return View();
         }
 
-        // 2. LISTADO
+        // 2. LISTADO (Grilla Principal)
         [HttpGet]
         public JsonResult GetRequerimientosData()
         {
@@ -54,7 +52,7 @@ namespace ERPKardex.Controllers
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
-        // 3. DETALLE MODAL
+        // 3. DETALLE MODAL (Actualizado con Centro de Costo)
         [HttpGet]
         public async Task<JsonResult> GetDetalleReq(int id)
         {
@@ -65,38 +63,45 @@ namespace ERPKardex.Controllers
                     .Select(x => new { x.Numero, x.Observacion })
                     .FirstOrDefaultAsync();
 
-                var detalles = await _context.DReqServicios
-                    .Where(x => x.ReqServicioId == id)
-                    .Select(x => new
-                    {
-                        x.Item,
-                        x.DescripcionServicio, // Descripción del servicio
-                        x.CantidadSolicitada,
-                        x.ObservacionItem,
-                    })
-                    .ToListAsync();
+                // Hacemos Left Join con CentroCosto para mostrar el nombre en el modal
+                var detalles = await (from d in _context.DReqServicios
+                                      join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
+                                      from cc in ccJoin.DefaultIfEmpty() // Left join
+                                      where d.ReqServicioId == id
+                                      select new
+                                      {
+                                          d.Item,
+                                          d.DescripcionServicio,
+                                          d.CantidadSolicitada,
+                                          d.ObservacionItem,
+                                          // Jalamos el nombre para visualización
+                                          CentroCosto = cc != null ? cc.Nombre : "N/A"
+                                      })
+                                      .ToListAsync();
 
                 return Json(new { status = true, cabecera, detalles });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
+
         public IActionResult Registrar()
         {
             return View();
         }
 
-        // Listado de Servicios (Productos con código 6 o todo el catálogo según tu lógica)
+        // 4. LISTADO DE SERVICIOS (Para el combo de selección)
         [HttpGet]
         public async Task<JsonResult> GetServicios()
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                var empresaIdStr = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdStr) ? int.Parse(empresaIdStr) : 0;
 
-                // Traemos data para llenar el combo
                 var data = await _context.Productos
-                    .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                    // Si deseas filtrar solo servicios: && x.Codigo.StartsWith("6")
+                    .Where(x => (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true)
+                    // Filtro opcional si tienes un flag o código para servicios
+                    // .Where(x => x.Tipo == "SERVICIO") 
                     .Select(x => new
                     {
                         x.Id,
@@ -115,6 +120,35 @@ namespace ERPKardex.Controllers
             }
         }
 
+        // 5. NUEVO: OBTENER CENTROS DE COSTO (Igual que en Compras)
+        [HttpGet]
+        public async Task<JsonResult> GetCentrosCosto()
+        {
+            try
+            {
+                var empresaIdStr = User.FindFirst("EmpresaId")?.Value;
+                int empresaId = !string.IsNullOrEmpty(empresaIdStr) ? int.Parse(empresaIdStr) : 0;
+
+                var data = await _context.CentroCostos
+                    .Where(x => (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true && x.EsImputable == true)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Codigo,
+                        x.Nombre
+                    })
+                    .OrderBy(x => x.Codigo)
+                    .ToListAsync();
+
+                return Json(new { status = true, data });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
+
+        // 6. GUARDAR REQUERIMIENTO
         [HttpPost]
         public JsonResult Guardar(ReqServicio cabecera, string detallesJson)
         {
@@ -125,24 +159,29 @@ namespace ERPKardex.Controllers
                     var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
                     var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-                    // 1. Estado Pendiente
+                    // A. Estado Pendiente
                     var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "REQ");
                     if (estadoPendiente == null) throw new Exception("Estado Pendiente no configurado.");
 
-                    // 2. Tipo Doc RS
+                    // B. Tipo Doc RS (Requerimiento de Servicio)
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "RS");
                     if (tipoDoc == null) throw new Exception("Falta configurar documento RS.");
 
-                    // 3. Correlativo
+                    // C. Correlativo
                     var ultimo = _context.ReqServicios
                         .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
                         .OrderByDescending(x => x.Numero)
                         .Select(x => x.Numero).FirstOrDefault();
 
                     int nro = 1;
-                    if (!string.IsNullOrEmpty(ultimo)) nro = int.Parse(ultimo.Split('-')[1]) + 1;
+                    if (!string.IsNullOrEmpty(ultimo))
+                    {
+                        var partes = ultimo.Split('-');
+                        if (partes.Length > 1 && int.TryParse(partes[1], out int correlativo))
+                            nro = correlativo + 1;
+                    }
 
-                    // 4. Guardar Cabecera
+                    // D. Guardar Cabecera
                     cabecera.Numero = $"RS-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
                     cabecera.UsuarioSolicitanteId = usuarioId;
@@ -156,7 +195,7 @@ namespace ERPKardex.Controllers
                     _context.ReqServicios.Add(cabecera);
                     _context.SaveChanges();
 
-                    // 5. Guardar Detalles (TAL CUAL VIENEN DEL FRONT)
+                    // E. Guardar Detalles
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
                         var lista = JsonConvert.DeserializeObject<List<DReqServicio>>(detallesJson);
@@ -168,8 +207,8 @@ namespace ERPKardex.Controllers
                             det.EmpresaId = empresaId;
                             det.Item = item.ToString("D3");
 
-                            // IMPORTANTE: Aquí NO sobreescribimos descripciones. 
-                            // Se guarda lo que mandó el JS en 'DescripcionServicio' y 'ObservacionItem'
+                            // Aseguramos que se guarde el CentroCostoId que viene del JSON
+                            // det.CentroCostoId ya debe venir cargado.
 
                             _context.DReqServicios.Add(det);
                             item++;
@@ -188,19 +227,18 @@ namespace ERPKardex.Controllers
             }
         }
 
+        // 7. CAMBIAR ESTADO
         [HttpPost]
         public JsonResult CambiarEstado(int id, string nombreEstado)
         {
             try
             {
-                // 1. Buscar ID por nombre
                 var estadoDb = _context.Estados
                     .FirstOrDefault(e => e.Nombre == nombreEstado && e.Tabla == "REQ");
 
                 if (estadoDb == null)
                     return Json(new { status = false, message = $"Estado '{nombreEstado}' no encontrado." });
 
-                // 2. Actualizar
                 var req = _context.ReqServicios.Find(id);
                 if (req == null) return Json(new { status = false, message = "No encontrado" });
 

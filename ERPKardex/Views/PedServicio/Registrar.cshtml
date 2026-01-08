@@ -11,32 +11,27 @@
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-11">
-
-            <div class="card shadow mb-4 border-left-info">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <div class="card shadow mb-4 border-left-success">
+                <div class="card-header bg-success text-white">
                     <h5 class="mb-0"><i class="bi bi-tools"></i> Generar Pedido de Servicio</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label>Fecha Emisión</label>
-                            <input type="date" id="dtp_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="font-weight-bold text-danger">Fecha Necesaria (*)</label>
-                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(2).ToString("yyyy-MM-dd")">
-                        </div>
-                    </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label>Empresa (Solicitante) (*)</label>
                             <select id="cbx_Empresa" class="form-control select2-busqueda"></select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label>Centro de Costo (Solicitante) (*)</label>
-                            <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
+                            <label>Fecha Emisión</label>
+                            <input type="date" id="dtp_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly>
                         </div>
                         <div class="col-md-4 mb-3">
+                            <label class="font-weight-bold text-danger">Fecha Necesaria (*)</label>
+                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(5).ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
                             <label>Observación General</label>
                             <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Servicio de mantenimiento correctivo...">
                         </div>
@@ -48,20 +43,19 @@
                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Servicios Solicitados</h5>
                     <button type="button" class="btn btn-warning font-weight-bold text-dark" onclick="abrirModalReq()">
-                        <i class="bi bi-search"></i> BUSCAR REQUERIMIENTOS APROBADOS
+                        <i class="bi bi-search"></i> BUSCAR REQUERIMIENTOS
                     </button>
                 </div>
                 <div class="card-body bg-light">
-
                     <div class="table-responsive mt-3">
                         <table id="tbl_Detalle" class="table table-bordered table-hover text-center bg-white shadow-sm">
                             <thead class="thead-dark">
                                 <tr>
                                     <th style="width: 50px;">Item</th>
-                                    <th>Descripción Servicio</th>
-                                    <th style="width: 80px;">U.M.</th>
-                                    <th style="width: 100px;">Cant.</th>
-                                    <th>Observación Item</th>
+                                    <th>Descripción del Servicio</th>
+                                    <th>Centro Costo</th>
+                                    <th style="width: 80px;">Cant.</th>
+                                    <th style="width: 60px;">Ref.</th>
                                     <th style="width: 60px;"></th>
                                 </tr>
                             </thead>
@@ -72,8 +66,8 @@
             </div>
 
             <div class="text-right mb-5">
-                <a href="/PedServicio/Index" class="btn btn-danger btn-lg mr-2"><i class="bi bi-x-circle"></i> Cancelar</a>
-                <button id="btn_GuardarTodo" class="btn btn-info btn-lg"><i class="bi bi-save"></i> REGISTRAR PEDIDO</button>
+                <a href="/PedServicio/Index" class="btn btn-danger btn-lg mr-2">Cancelar</a>
+                <button id="btn_GuardarTodo" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> REGISTRAR PEDIDO</button>
             </div>
         </div>
     </div>
@@ -83,33 +77,51 @@
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title text-dark font-weight-bold">Seleccionar Requerimientos de Servicio</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title text-dark font-weight-bold">Requerimientos de Servicio (Aprobados)</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-info py-2">Empresa: <strong id="lbl_EmpresaSeleccionada">---</strong></div>
                 <div class="table-responsive">
-                    <table class="table table-striped table-bordered text-center">
+                    <table id="tbl_BusquedaReq" class="table table-striped table-bordered text-center w-100">
                         <thead class="thead-light">
                             <tr>
-                                <th style="width: 50px;">Sel.</th>
-                                <th>Empresa</th>
-                                <th>N° Requerimiento</th>
+                                <th style="width: 30px;">Sel.</th>
+                                <th style="width: 30px;">Ver</th>
+                                <th>Número</th>
                                 <th>Fecha</th>
                                 <th>Solicitante</th>
                                 <th>Observación</th>
                             </tr>
                         </thead>
-                        <tbody id="tblReqBody"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary font-weight-bold" onclick="cargarServiciosDeReq()">
-                    <i class="bi bi-download"></i> Cargar Servicios
+                <button type="button" class="btn btn-primary font-weight-bold" onclick="cargarProductosDeReq()">
+                    <i class="bi bi-download"></i> Agregar al Pedido
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVerDetalleReq" tabindex="-1" role="dialog" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white py-2">
+                <h6 class="modal-title">Vista Previa de Servicios</h6>
+                <button type="button" class="close text-white" onclick="$('#modalVerDetalleReq').modal('hide')">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-sm table-bordered mb-0 text-center">
+                    <thead class="bg-light">
+                        <tr><th>Item</th><th>Descripción</th><th>C. Costo</th><th>Cant.</th></tr>
+                    </thead>
+                    <tbody id="tblBodyVistaRapida"></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -117,178 +129,230 @@
 
 <script>
     var LISTA_DETALLE = [];
+    var IDS_AGREGADOS = [];
+    var tablaBuscador = null;
 
     $(document).ready(function () {
         $('.select2-busqueda').select2({ theme: 'bootstrap4', width: '100%', placeholder: '-- Seleccione --' });
         fct_InitCombos();
 
-        // Guardar
-        $("#btn_GuardarTodo").click(function () {
-            if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar servicios desde los requerimientos.", "error");
-            if (!$("#cbx_Empresa").val()) return toastr.warning("La empresa es obligatoria.");
-            if (!$("#cbx_CentroCosto").val()) return toastr.warning("El Centro de Costo es obligatorio.");
-            if (!$("#dtp_FechaNecesaria").val()) return toastr.warning("La fecha necesaria es obligatoria.");
-
-            let cabecera = {
-                EmpresaId: parseInt($('#cbx_Empresa').val()),
-                FechaEmision: $("#dtp_FechaEmision").val(),
-                FechaNecesaria: $("#dtp_FechaNecesaria").val(),
-                CentroCostoId: parseInt($("#cbx_CentroCosto").val()),
-                Observacion: $("#txt_Observacion").val()
-            };
-
-            Swal.fire({
-                title: "¿Registrar Pedido?",
-                text: "Se generará el pedido de servicio.",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Sí, Registrar"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    ShowSpinner();
-                    $.ajax({
-                        url: "/PedServicio/GuardarPedido",
-                        type: "POST",
-                        data: {
-                            cabecera: cabecera,
-                            detallesJson: JSON.stringify(LISTA_DETALLE)
-                        },
-                        success: function (res) {
-                            if (res.status) {
-                                Swal.fire("¡Registrado!", res.message, "success").then(() => {
-                                    window.location.href = "/PedServicio/Index";
-                                });
-                            } else {
-                                Swal.fire("Error", res.message, "error");
-                            }
-                            HideSpinner();
-                        },
-                        error: function () {
-                            toastr.error("Error de conexión.");
-                            HideSpinner();
-                        }
-                    });
+        tablaBuscador = $('#tbl_BusquedaReq').DataTable({
+            responsive: true,
+            language: {
+                processing: "Procesando...",
+                sSearch: "Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando del _START_ al _END_ de un total de _TOTAL_ registros",
+                infoEmpty: "Sin registros encontrados.",
+                infoFiltered: "(Total de _MAX_ registros filtrados)",
+                loadingRecords: "Cargando...",
+                zeroRecords: "No se encontraron registros",
+                emptyTable: "No hay datos disponibles en la tabla",
+                paginate: {
+                    previous: "Anterior",
+                    next: "Siguiente",
+                    first: "Primero",
+                    last: "Último",
+                },
+                aria: {
+                    sortAscending: ": Activar para ordenar la columna de manera ascendente",
+                    sortDescending: ": Activar para ordenar la columna de manera descendente"
+                },
+                select: {
+                    rows: {
+                        _: "%d filas seleccionadas",
+                        0: "Haz clic en una fila para seleccionarla",
+                        1: "1 fila seleccionada"
+                    }
+                },
+                buttons: {
+                    copyTitle: 'Copiado en el portapapeles',
+                    copyKeys: 'Presiona <i>ctrl</i> o <i>\u2318</i> + <i>C</i> para copiar los datos de la tabla a tu portapapeles. <br><br>Para cancelar, haga clic en este mensaje o presione Esc.',
+                    copySuccess: {
+                        _: '%d registros copiados correctamente',
+                        1: '1 registro copiado correctamente'
+                    }
                 }
-            });
+            },
+            order: [[2, "desc"]]
         });
+
+        $('#cbx_Empresa').on('select2:select', function (e) {
+            if(LISTA_DETALLE.length > 0) {
+                Swal.fire("Atención", "Se limpiará el detalle al cambiar de empresa.", "warning");
+                LISTA_DETALLE = [];
+                IDS_AGREGADOS = [];
+                fct_RenderDetalle();
+            }
+        });
+
+        $("#btn_GuardarTodo").click(function () { fct_Guardar(); });
     });
 
-    // --- LÓGICA MODAL ---
     function abrirModalReq() {
-        $('#tblReqBody').html('<tr><td colspan="5">Cargando...</td></tr>');
+        let idEmpresa = $('#cbx_Empresa').val();
+        let nomEmpresa = $("#cbx_Empresa option:selected").text();
+
+        if(!idEmpresa) return Swal.fire("Aviso", "Seleccione una empresa primero.", "warning");
+
+        $('#lbl_EmpresaSeleccionada').text(nomEmpresa);
         $('#modalReq').modal('show');
 
-        // URL apunta a PedServicio
-        $.get('/PedServicio/GetRequerimientosAprobados', function(res) {
+        ShowSpinner();
+        $.get('/PedServicio/GetRequerimientosAprobados?empresaDestinoId=' + idEmpresa, function(res) {
+            HideSpinner();
+            tablaBuscador.clear().draw();
             if(res.status) {
-                let html = '';
-                if(res.data.length === 0) {
-                    html = '<tr><td colspan="5" class="text-muted">No hay requerimientos aprobados.</td></tr>';
-                } else {
-                    res.data.forEach(r => {
-                        html += `
-                        <tr>
-                            <td><input type="checkbox" class="chk-req" value="${r.id}"></td>
-                            <td>${r.ruc} - ${r.razonSocial}</td>
-                            <td class="font-weight-bold">${r.numero}</td>
-                            <td>${r.fecha}</td>
-                            <td>${r.solicitante}</td>
-                            <td class="text-left small">${r.observacion || '-'}</td>
-                        </tr>`;
-                    });
-                }
-                $('#tblReqBody').html(html);
+                res.data.forEach(r => {
+                    tablaBuscador.row.add([
+                        `<input type="checkbox" class="chk-req big-checkbox" value="${r.id}">`,
+                        `<button class="btn btn-sm btn-info" onclick="verDetalleRapido(${r.id})"><i class="bi bi-eye"></i></button>`,
+                        `<span class="font-weight-bold">${r.numero}</span>`,
+                        r.fecha,
+                        r.solicitante,
+                        r.observacion || '-'
+                    ]).draw(false);
+                });
             }
         });
     }
 
-    function cargarServiciosDeReq() {
-        let ids = [];
-        $('.chk-req:checked').each(function() {
-            ids.push(parseInt($(this).val()));
+    function verDetalleRapido(reqId) {
+        $('#tblBodyVistaRapida').html('<tr><td colspan="4">Cargando...</td></tr>');
+        $('#modalVerDetalleReq').modal('show');
+        $.get('/PedServicio/GetDetallesDeUnReq?reqId=' + reqId, function(res) {
+            let html = '';
+            if(res.status && res.data) {
+                res.data.forEach(d => {
+                    html += `<tr>
+                        <td>${d.item}</td>
+                        <td class="text-left">${d.descripcionServicio}</td>
+                        <td>${d.centroCosto}</td>
+                        <td>${d.cantidadSolicitada}</td>
+                    </tr>`;
+                });
+            }
+            $('#tblBodyVistaRapida').html(html);
         });
+    }
 
-        if(ids.length === 0) return toastr.warning("Seleccione al menos un requerimiento.");
+    function cargarProductosDeReq() {
+        let reqIds = [];
+        $('.chk-req:checked').each(function() { reqIds.push(parseInt($(this).val())); });
+
+        if(reqIds.length === 0) return toastr.warning("Seleccione al menos un requerimiento.");
 
         ShowSpinner();
-
         $.ajax({
-            url: '/PedServicio/GetDetallesBatch', // API PedServicio
+            url: '/PedServicio/GetDetallesBatch',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(ids),
+            data: JSON.stringify(reqIds),
             success: function(res) {
                 if(res.status) {
+                    let count = 0;
                     res.data.forEach(d => {
-                        LISTA_DETALLE.push({
-                            Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
-                            ProductoId: d.productoId,
-                            Descripcion: d.descripcion, // El nombre del servicio
-                            UnidadMedida: d.unidadMedida,
-                            Cantidad: d.cantidad,
-                            ObservacionItem: d.observacionItem,
-                            ReferenciaId: d.referenciaId
-                        });
+                        if(!IDS_AGREGADOS.includes(d.idReferencia)) {
+                            IDS_AGREGADOS.push(d.idReferencia);
+                            LISTA_DETALLE.push({
+                                Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
+                                ProductoId: d.productoId,
+                                DescripcionServicio: d.descripcionServicio, // Campo específico de servicio
+                                CentroCostoId: d.centroCostoId,
+                                Cantidad: d.cantidad,
+                                NombreCentroCosto: d.nombreCentroCosto,
+                                IdReferencia: d.idReferencia,
+                                TablaReferencia: 'DREQSERVICIO',
+                                ItemReferencia: d.itemReferencia
+                            });
+                            count++;
+                        }
                     });
-
                     fct_RenderDetalle();
                     $('#modalReq').modal('hide');
-                    toastr.success("Servicios agregados.");
-                } else {
-                    toastr.error(res.message);
-                }
+                    if(count>0) toastr.success(`${count} servicios agregados.`);
+                    else toastr.info("Los servicios seleccionados ya estaban en lista.");
+                } else toastr.error(res.message);
                 HideSpinner();
             },
             error: function() { HideSpinner(); toastr.error("Error al cargar detalles."); }
         });
     }
 
-    // --- RENDER TABLA ---
     function fct_RenderDetalle() {
         let html = "";
         LISTA_DETALLE.forEach((d, index) => {
             html += `<tr>
                 <td class="align-middle font-weight-bold">${d.Item}</td>
-                <td class="align-middle text-left">${d.Descripcion}</td>
-                <td class="align-middle">${d.UnidadMedida}</td>
-                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.Cantidad.toFixed(2)}</td>
-                <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
+                <td class="align-middle text-left text-wrap" style="max-width: 300px;">${d.DescripcionServicio}</td>
+                <td class="align-middle text-primary small font-weight-bold">${d.NombreCentroCosto}</td>
+                <td class="align-middle font-weight-bold">${d.Cantidad.toFixed(2)}</td>
+                <td class="align-middle small text-muted">${d.ItemReferencia}</td>
                 <td class="align-middle">
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})" title="Quitar">
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})">
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 </td>
             </tr>`;
         });
-
-        if(LISTA_DETALLE.length === 0) html = '<tr><td colspan="6" class="text-center py-3 text-muted">Haga clic en "Buscar Requerimientos" para agregar servicios.</td></tr>';
-
+        if(LISTA_DETALLE.length === 0) html = '<tr><td colspan="6" class="text-center text-muted py-3">Sin servicios.</td></tr>';
         $("#tbl_Detalle tbody").html(html);
     }
 
     function fct_EliminarDetalle(index) {
+        let itemBorrar = LISTA_DETALLE[index];
+        let idxEnArrayIds = IDS_AGREGADOS.indexOf(itemBorrar.IdReferencia);
+        if (idxEnArrayIds > -1) IDS_AGREGADOS.splice(idxEnArrayIds, 1);
+
         LISTA_DETALLE.splice(index, 1);
         LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
         fct_RenderDetalle();
     }
 
-    function fct_InitCombos() {
-        // Cargar Centros de Costo (Apunta a PedCompraController o puedes duplicar el método en PedServicioController)
-        // Como es un combo genérico, usaremos la ruta que sabemos que existe:
-        $.getJSON('/PedServicio/GetCentrosCosto', function (res) {
-            let h = '<option value="">-- SELECCIONE --</option>';
-            if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.nombre}</option>`);
-            $('#cbx_CentroCosto').html(h);
-        });
+    function fct_Guardar() {
+        if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar servicios.", "error");
+        if (!$("#cbx_Empresa").val()) return toastr.warning("La empresa es obligatoria.");
 
-        $.getJSON('/PedCompra/GetEmpresaData', function(res) {
-            let h = '<option value="">-- SELECCIONE --</option>';
-            if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
-            $('#cbx_Empresa').html(h);
+        let cabecera = {
+            EmpresaId: parseInt($('#cbx_Empresa').val()),
+            FechaEmision: $("#dtp_FechaEmision").val(),
+            FechaNecesaria: $("#dtp_FechaNecesaria").val(),
+            Observacion: $("#txt_Observacion").val()
+        };
+
+        Swal.fire({
+            title: "¿Registrar Pedido de Servicio?",
+            text: "Se generará el documento PS y se atenderán los requerimientos.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sí, Registrar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                ShowSpinner();
+                $.ajax({
+                    url: "/PedServicio/GuardarPedido",
+                    type: "POST",
+                    data: { cabecera: cabecera, detallesJson: JSON.stringify(LISTA_DETALLE) },
+                    success: function (res) {
+                        if (res.status) {
+                            Swal.fire("¡Éxito!", res.message, "success").then(() => { window.location.href = "/PedServicio/Index"; });
+                        } else Swal.fire("Error", res.message, "error");
+                        HideSpinner();
+                    },
+                    error: function () { HideSpinner(); toastr.error("Error de conexión."); }
+                });
+            }
         });
+    }
+
+    function fct_InitCombos() {
+       $.getJSON('/PedServicio/GetEmpresaData', function(res) {
+           let h = '<option value="">-- SELECCIONE --</option>';
+           if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+           $('#cbx_Empresa').html(h);
+       });
     }
 
     function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
     function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
-
 </script>

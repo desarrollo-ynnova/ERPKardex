@@ -58,6 +58,7 @@
                     <thead class="thead-light">
                         <tr>
                             <th>Item</th>
+                            <th>Centro costo</th>
                             <th>Producto</th>
                             <th>U.M.</th>
                             <th class="text-center">Cantidad</th>
@@ -81,6 +82,42 @@
             $('#tblData').DataTable({
                 responsive: true,
                 autoWidth: false,
+                language: {
+                    processing: "Procesando...",
+                    sSearch: "Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando del _START_ al _END_ de un total de _TOTAL_ registros",
+                    infoEmpty: "Sin registros encontrados.",
+                    infoFiltered: "(Total de _MAX_ registros filtrados)",
+                    loadingRecords: "Cargando...",
+                    zeroRecords: "No se encontraron registros",
+                    emptyTable: "No hay datos disponibles en la tabla",
+                    paginate: {
+                        previous: "Anterior",
+                        next: "Siguiente",
+                        first: "Primero",
+                        last: "Último",
+                    },
+                    aria: {
+                        sortAscending: ": Activar para ordenar la columna de manera ascendente",
+                        sortDescending: ": Activar para ordenar la columna de manera descendente"
+                    },
+                    select: {
+                        rows: {
+                            _: "%d filas seleccionadas",
+                            0: "Haz clic en una fila para seleccionarla",
+                            1: "1 fila seleccionada"
+                        }
+                    },
+                    buttons: {
+                        copyTitle: 'Copiado en el portapapeles',
+                        copyKeys: 'Presiona <i>ctrl</i> o <i>\u2318</i> + <i>C</i> para copiar los datos de la tabla a tu portapapeles. <br><br>Para cancelar, haga clic en este mensaje o presione Esc.',
+                        copySuccess: {
+                            _: '%d registros copiados correctamente',
+                            1: '1 registro copiado correctamente'
+                        }
+                    }
+                },
                 ajax: {
                     url: '/ReqCompra/GetRequerimientosData',
                     type: 'GET',
@@ -97,6 +134,7 @@
                             if(data === 'Pendiente') color = 'warning';
                             if(data === 'Aprobado') color = 'success';
                             if(data === 'Rechazado') color = 'danger';
+                            if(data === 'Atendido') color = 'primary';
                             return `<span class="badge badge-${color}" style="font-size:0.9rem">${data}</span>`;
                         }
                     },
@@ -131,7 +169,7 @@
 
         // --- VER DETALLE (MODAL) ---
         function verDetalle(id) {
-            $('#tblModalBody').html('<tr><td colspan="4" class="text-center">Cargando...</td></tr>');
+            $('#tblModalBody').html('<tr><td colspan="5" class="text-center">Cargando...</td></tr>');
             $('#modalDetalle').modal('show');
 
             $.get('/ReqCompra/GetDetalleReq?id=' + id, function(res) {
@@ -143,6 +181,7 @@
                     res.detalles.forEach(d => {
                         html += `<tr>
                             <td>${d.item}</td>
+                            <td>${d.centroCosto}</td>
                             <td>${d.descripcionProducto}</td>
                             <td>${d.unidadMedida}</td>
                             <td class="text-center font-weight-bold">${d.cantidadSolicitada}</td>
