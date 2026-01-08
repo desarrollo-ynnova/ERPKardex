@@ -379,13 +379,16 @@ namespace ERPKardex.Controllers
                 // 2. TU LÓGICA DE MOVIMIENTOS (INTACTA)
                 // =================================================================================
 
+                var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "INGRESOSALIDAALM");
+                if (estadoAprobado == null) throw new Exception("Estado Aprobado no configurado.");
+
                 var movimientos = (from d in _context.DIngresoSalidaAlms
                                    join c in _context.IngresoSalidaAlms on d.IngresoSalidaAlmId equals c.Id
                                    join m in _context.Motivos on c.MotivoId equals m.Id
                                    join td in _context.TipoDocumentos on c.TipoDocumentoId equals td.Id into joinDoc
                                    from docRef in joinDoc.DefaultIfEmpty()
                                    where c.AlmacenId == almacenId && d.ProductoId == productoId
-                                           && c.Fecha <= fechaFin && c.EstadoId == 1
+                                           && c.Fecha <= fechaFin && c.EstadoId == estadoAprobado.Id
                                    orderby c.Fecha, c.FechaRegistro
                                    select new
                                    {

@@ -488,6 +488,9 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 ('PED',  'PEDIDO DE COMPRA', 0),
 ('PS',   'PEDIDO DE SERVICIO', 0);
 
+-- inserts de 'estado'
+INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
+
 -- Solo los estados que pediste para los REQUERIMIENTOS
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Pendiente', 'REQ'),
@@ -686,10 +689,6 @@ INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('34',0
 INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('36',0,'RETIRO PARA ENTREGA A TRABAJADORES',1);
 INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('37',0,'RETIRO POR CONVENIO COLECTIVO',1);
 INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('38',0,'RETIRO POR SUSTITUCIÓN DE BIEN SINIESTRADO',1);
-
-
--- inserts de 'estado'
-INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
 
 -- inserts de 'centro_costo'
 -- 1. NIVEL 1: Áreas Generales (Padres - No Imputables)
