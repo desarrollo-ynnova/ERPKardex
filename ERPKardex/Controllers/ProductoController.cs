@@ -152,14 +152,14 @@ namespace ERPKardex.Controllers
         }
 
         // GET GRUPOS FILTRADOS POR CUENTA
-        public JsonResult GetGruposByCuenta(int cuentaId)
+        public JsonResult GetGrupos()
         {
             try
             {
                 var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
                 int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 
-                var data = _context.Grupos.Where(g => g.CuentaId == cuentaId && g.EmpresaId == empresaId).ToList();
+                var data = _context.Grupos.Where(g => g.EmpresaId == empresaId).ToList();
                 return Json(new { data = data, status = true });
             }
             catch (Exception ex)
@@ -527,7 +527,7 @@ namespace ERPKardex.Controllers
 
                     // 1. Generación Automática del Código
                     // El prefijo es: CodGrupo + CodSubgrupo
-                    string prefijo = $"{producto.CodGrupo}{producto.CodSubgrupo}";
+                    string prefijo = $"{producto.CodSubgrupo}";
 
                     // Buscamos el último producto cuyo código inicie con ese prefijo
                     var ultimoProducto = _context.Productos

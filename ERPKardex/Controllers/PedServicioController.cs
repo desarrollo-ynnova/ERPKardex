@@ -36,15 +36,10 @@ namespace ERPKardex.Controllers
 
                 var data = (from p in _context.PedServicios
                             join tdi in _context.TiposDocumentoInterno on p.TipoDocumentoInternoId equals tdi.Id
-                            join suc in _context.Sucursales on p.SucursalId equals suc.Id
                             join cc in _context.CentroCostos on p.CentroCostoId equals cc.Id
                             join est in _context.Estados on p.EstadoId equals est.Id
 
-                            // Left Join con Actividad (Puede ser nulo)
-                            join act in _context.Actividades on p.ActividadId equals act.Id into joinAct
-                            from a in joinAct.DefaultIfEmpty()
-
-                                // Left Join con Usuario
+                            // Left Join con Usuario
                             join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
                             from u in joinUsu.DefaultIfEmpty()
 
@@ -59,9 +54,7 @@ namespace ERPKardex.Controllers
                                 FechaEmision = p.FechaEmision.HasValue ? p.FechaEmision.Value.ToString("yyyy-MM-dd") : "-",
                                 FechaNecesaria = p.FechaNecesaria.HasValue ? p.FechaNecesaria.Value.ToString("yyyy-MM-dd") : "-",
 
-                                Sucursal = suc.Nombre,
                                 CentroCosto = cc.Nombre,
-                                Actividad = a != null ? a.Nombre : "--", // Mostrar guion si no hay actividad
                                 Solicitante = u != null ? u.Nombre : "Sistema",
 
                                 Estado = est.Nombre,

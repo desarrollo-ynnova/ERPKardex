@@ -1,0 +1,41 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ERPKardex.Models
+{
+    [Table("dreqcompra")]
+    public class DReqCompra
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("reqcompra_id")]
+        public int ReqCompraId { get; set; }
+
+        [Column("item")]
+        [StringLength(3)]
+        public string Item { get; set; }
+
+        [Column("producto_id")]
+        public int ProductoId { get; set; }
+
+        [Column("descripcion_producto")]
+        [StringLength(500)]
+        public string? DescripcionProducto { get; set; }
+
+        [Column("unidad_medida")]
+        [StringLength(50)]
+        public string? UnidadMedida { get; set; }
+
+        [Column("cantidad_solicitada")]
+        public decimal CantidadSolicitada { get; set; }
+
+        [Column("observacion_item")]
+        [StringLength(255)]
+        public string? ObservacionItem { get; set; }
+
+        [Column("empresa_id")]
+        public int EmpresaId { get; set; }
+    }
+}

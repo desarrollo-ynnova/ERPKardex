@@ -47,38 +47,83 @@
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label for="cbx_Cuenta">Cuenta Contable</label>
-                            <div class="input-group">
-                                <select id="cbx_Cuenta" class="form-control"></select>
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-info" onclick="loadShortModal('/Producto/ObtenerVistaRegistroCuenta', 'Nueva Cuenta')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
                             <label for="cbx_Grupo">Grupo</label>
                             <div class="input-group">
                                 <select id="cbx_Grupo" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevoGrupo" type="button" class="btn btn-info" onclick="loadMediumModal('/Producto/ObtenerVistaRegistroGrupo', 'Nuevo Grupo')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="cbx_Subgrupo">Subgrupo</label>
                             <div class="input-group">
                                 <select id="cbx_Subgrupo" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevoSubgrupo" type="button" class="btn btn-info" onclick="loadMediumModal('/Producto/ObtenerVistaRegistroSubgrupo', 'Nuevo Subgrupo')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_UnidadMedida">U. Medida</label>
+                            <div class="input-group">
+                                <select id="cbx_UnidadMedida" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button id="btn_NuevaUnidad" type="button" class="btn btn-info"
+                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroUnidadMedida', 'Nueva Unidad de Medida')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Composición / Ingredientes Activos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-6 mb-3">
+                            <label for="cbx_IA_Busqueda">Ingrediente Activo</label>
+                            <div class="input-group">
+                                <select id="cbx_IA_Busqueda" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button type="button" class="btn btn-dark" onclick="loadShortModal('/Producto/ObtenerVistaRegistroIA', 'Nuevo Ingrediente')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="txt_IA_Porcentaje">Porcentaje</label>
+                            <input type="text" id="txt_IA_Porcentaje" class="form-control" placeholder="Ej: 40%">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <button id="btn_AgregarIA" type="button" class="btn btn-success btn-block">
+                                <i class="bi bi-plus-circle"></i> Añadir
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table id="tbl_DetalleIA" class="table table-bordered table-hover text-center">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Ingrediente</th>
+                                    <th>Porcentaje</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -89,44 +134,32 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="txt_Concentracion">Concentración (%)</label>
                             <input type="number" step="0.01" id="txt_Concentracion" class="form-control" placeholder="0.00">
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="cbx_UnidadMedida">U. Medida</label>
-                            <div class="input-group">
-                                <select id="cbx_UnidadMedida" class="form-control"></select>
-                                <div class="input-group-append">
-                                    <button id="btn_NuevaUnidad" type="button" class="btn btn-info"
-                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroUnidadMedida', 'Nueva Unidad de Medida')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="cbx_Formulacion">Formulación</label>
                             <div class="input-group">
                                 <select id="cbx_Formulacion" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevaFormulacion" type="button" class="btn btn-info"
                                             onclick="loadMediumModal('/Producto/ObtenerVistaRegistroFormulacion', 'Nueva Formulación')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="cbx_Peligrosidad">Peligrosidad</label>
                             <div class="input-group">
                                 <select id="cbx_Peligrosidad" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevaPeligrosidad" type="button" class="btn btn-info"
                                             onclick="loadMediumModal('/Producto/ObtenerVistaRegistroPeligrosidad', 'Nueva Peligrosidad')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
                     </div>
@@ -136,24 +169,24 @@
                             <label for="cbx_Marca">Marca</label>
                             <div class="input-group">
                                 <select id="cbx_Marca" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevaMarca" type="button" class="btn btn-info"
                                             onclick="loadShortModal('/Producto/ObtenerVistaRegistroMarca', 'Nueva Marca')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="cbx_Modelo">Modelo</label>
                             <div class="input-group">
                                 <select id="cbx_Modelo" class="form-control"></select>
-                                <div class="input-group-append">
+                                @* <div class="input-group-append">
                                     <button id="btn_NuevoModelo" type="button" class="btn btn-info"
                                             onclick="loadShortModal('/Producto/ObtenerVistaRegistroModelo', 'Nuevo Modelo')">
                                         <i class="bi bi-plus"></i>
                                     </button>
-                                </div>
+                                </div> *@
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
@@ -202,50 +235,6 @@
                 </div>
             </div>
 
-            <div class="card shadow mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">Composición / Ingredientes Activos</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row align-items-end">
-                        <div class="col-md-6 mb-3">
-                            <label for="cbx_IA_Busqueda">Ingrediente Activo</label>
-                            <div class="input-group">
-                                <select id="cbx_IA_Busqueda" class="form-control"></select>
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-dark" onclick="loadShortModal('/Producto/ObtenerVistaRegistroIA', 'Nuevo Ingrediente')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="txt_IA_Porcentaje">Porcentaje</label>
-                            <input type="text" id="txt_IA_Porcentaje" class="form-control" placeholder="Ej: 40%">
-                        </div>
-                        <div class="col-md-2 mb-3">
-                            <button id="btn_AgregarIA" type="button" class="btn btn-success btn-block">
-                                <i class="bi bi-plus-circle"></i> Añadir
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive mt-3">
-                        <table id="tbl_DetalleIA" class="table table-bordered table-hover text-center">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Ingrediente</th>
-                                    <th>Porcentaje</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             <div class="row mb-5">
                 <div class="col-md-12 text-right">
                     <button id="btn_Cancelar" type="button" class="btn btn-danger">Cancelar</button>
@@ -261,17 +250,6 @@
 
     $(document).ready(function () {
         fct_InitAllCombos();
-
-        // --- ENLACE CUENTA -> GRUPO ---
-        $('#cbx_Cuenta').on('change', function () {
-            let cuentaId = $(this).val();
-            $('#cbx_Subgrupo').html('<option value="">-- SELECCIONAR SUBGRUPO --</option>'); // Limpiar nieto
-            if (cuentaId) {
-                fct_FillCombo('/Producto/GetGruposByCuenta?cuentaId=' + cuentaId, '#cbx_Grupo', 'id', 'descripcion', '-- SELECCIONAR GRUPO --', 'codigo');
-            } else {
-                $('#cbx_Grupo').html('<option value="">-- SELECCIONAR GRUPO --</option>').trigger('change');
-            }
-        });
 
         // --- ENLACE GRUPO -> SUBGRUPO ---
         $('#cbx_Grupo').on('change', function () {
@@ -409,7 +387,7 @@
     
     function fct_InitAllCombos() {
         // 1. Cargar datos inicialmente
-        fct_FillCombo('/Producto/GetCuentaData', '#cbx_Cuenta', 'codigo', 'descripcion', '-- SELECCIONAR CUENTA --', 'codigo');
+        fct_FillCombo('/Producto/GetGrupos', '#cbx_Grupo', 'id', 'descripcion', '-- SELECCIONAR GRUPO --', 'codigo');
         fct_FillCombo('/Producto/GetMarcaData', '#cbx_Marca', 'id', 'nombre', '-- SELECCIONAR MARCA --', 'id');
         fct_FillCombo('/Producto/GetIngredienteActivoData', '#cbx_IA_Busqueda', 'id', 'descripcion', '-- SELECCIONAR INGREDIENTE --', 'id');
         fct_FillCombo('/Producto/GetUMedidaData', '#cbx_UnidadMedida', 'codigo', 'descripcion', '-- SELECCIONAR U. MEDIDA --', 'codigo');
@@ -423,7 +401,7 @@
 
         // 3. Convertir a Select2 (puedes usar una clase común o IDs específicos)
         // Agregamos el buscador a los campos más pesados
-        $('#cbx_Cuenta, #cbx_Grupo, #cbx_Subgrupo, #cbx_Marca, #cbx_Modelo, #cbx_IA_Busqueda, #cbx_UnidadMedida').select2({
+        $('#cbx_Grupo, #cbx_Subgrupo, #cbx_Marca, #cbx_Modelo, #cbx_IA_Busqueda, #cbx_UnidadMedida').select2({
             theme: 'bootstrap4', // O el tema que estés usando
             placeholder: "Buscar...",
             allowClear: true,

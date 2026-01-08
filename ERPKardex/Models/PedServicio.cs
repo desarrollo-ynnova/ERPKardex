@@ -15,12 +15,8 @@ namespace ERPKardex.Models
         public DateTime? FechaEmision { get; set; }
         [Column("fecha_necesaria")]
         public DateTime? FechaNecesaria { get; set; }
-        [Column("sucursal_id")]
-        public int? SucursalId { get; set; }
         [Column("centro_costo_id")]
         public int? CentroCostoId { get; set; }
-        [Column("actividad_id")]
-        public int? ActividadId { get; set; }
         [Column("usuario_solicitante_id")]
         public int? UsuarioSolicitanteId { get; set; }
         public string? Observacion { get; set; }

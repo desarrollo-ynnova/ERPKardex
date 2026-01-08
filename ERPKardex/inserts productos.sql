@@ -1382,11 +1382,10 @@ SET p.descripcion_comercial = LTRIM(RTRIM(
         p.descripcion_producto,
         ' ' + ma.nombre,
         ' ' + mo.nombre,
+        CASE WHEN p.serie IS NOT NULL THEN ' Serie: ' + p.serie ELSE '' END,
         CASE WHEN p.concentracion IS NOT NULL THEN ' Conc: ' + CAST(p.concentracion AS VARCHAR) ELSE '' END,
         ' ' + p.cod_formulacion_quimica,
-        CASE WHEN p.lote IS NOT NULL THEN ' Lote: ' + p.lote ELSE '' END,
-        CASE WHEN p.cod_peligrosidad IS NOT NULL THEN ' Peligro: ' + p.cod_peligrosidad ELSE '' END,
-        CASE WHEN p.serie IS NOT NULL THEN ' Serie: ' + p.serie ELSE '' END
+        CASE WHEN p.lote IS NOT NULL THEN ' Lote: ' + p.lote ELSE '' END
     )
 ))
 FROM producto p

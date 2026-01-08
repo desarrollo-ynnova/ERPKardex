@@ -36,7 +36,6 @@ namespace ERPKardex.Controllers
 
                 var data = (from p in _context.PedCompras
                             join tdi in _context.TiposDocumentoInterno on p.TipoDocumentoInternoId equals tdi.Id
-                            join suc in _context.Sucursales on p.SucursalId equals suc.Id
                             join cc in _context.CentroCostos on p.CentroCostoId equals cc.Id
                             join est in _context.Estados on p.EstadoId equals est.Id
 
@@ -55,7 +54,6 @@ namespace ERPKardex.Controllers
                                 FechaEmision = p.FechaEmision.HasValue ? p.FechaEmision.Value.ToString("yyyy-MM-dd") : "-",
                                 FechaNecesaria = p.FechaNecesaria.HasValue ? p.FechaNecesaria.Value.ToString("yyyy-MM-dd") : "-",
 
-                                Sucursal = suc.Nombre,
                                 CentroCosto = cc.Nombre,
                                 Solicitante = u != null ? u.Nombre : "Sistema",
 
@@ -204,6 +202,66 @@ namespace ERPKardex.Controllers
                     return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
                 }
             }
+        }
+        [HttpGet]
+        public JsonResult GetRequerimientosAprobados()
+        {
+            try
+            {
+                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+
+                // Consulta con JOIN explícito para filtrar por Estado "Aprobado"
+                var data = (from r in _context.ReqCompras
+                            join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
+                            join e in _context.Estados on r.EstadoId equals e.Id
+                            where r.EmpresaId == empresaId
+                               && e.Nombre == "Aprobado"
+                               && e.Tabla == "REQ"
+                            // Opcional: Filtrar si ya fue atendido, pero por ahora mostramos todos los aprobados
+                            orderby r.FechaRegistro descending
+                            select new
+                            {
+                                r.Id,
+                                r.Numero,
+                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                Solicitante = u.Nombre,
+                                r.Observacion
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // --- 2. OBTENER PRODUCTOS DE LOS REQUERIMIENTOS SELECCIONADOS ---
+        [HttpPost]
+        public JsonResult GetDetallesBatch([FromBody] List<int> reqIds)
+        {
+            try
+            {
+                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+
+                if (reqIds == null || reqIds.Count == 0)
+                    return Json(new { status = false, message = "Ningún requerimiento seleccionado" });
+
+                // Consulta directa a DReqCompra (Ya tiene el snapshot del producto)
+                var detalles = (from d in _context.DReqCompras
+                                where reqIds.Contains(d.ReqCompraId)
+                                   && d.EmpresaId == empresaId
+                                select new
+                                {
+                                    ProductoId = d.ProductoId,
+                                    Descripcion = d.DescripcionProducto, // Snapshot
+                                    UnidadMedida = d.UnidadMedida,       // Snapshot
+                                    Cantidad = d.CantidadSolicitada,
+                                    Observacion = d.ObservacionItem,
+                                    // Guardamos el ID origen para saber de qué requerimiento vino
+                                    ReferenciaId = d.Id
+                                }).ToList();
+
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
     }
 }

@@ -34,6 +34,10 @@ drop table if exists pedservicio;
 drop table if exists dpedcompra;
 drop table if exists pedcompra;
 drop table if exists tipo_documento_interno;
+drop table if exists dreqservicio;
+drop table if exists reqservicio;
+drop table if exists dreqcompra;
+drop table if exists reqcompra;
 
 GO
 
@@ -323,9 +327,73 @@ CREATE TABLE stock_almacen (
     CONSTRAINT UQ_Stock_Almacen UNIQUE (almacen_id, producto_id, empresa_id)
 );
 
--- ==========================================
--- 3. PEDIDOS (REQUERIMIENTOS)
--- ==========================================
+-- 3.1 REQUERIMIENTO DE COMPRA
+CREATE TABLE reqcompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, 
+    numero VARCHAR(20),
+    fecha_emision DATE,
+    fecha_necesaria DATE,
+    
+    usuario_solicitante_id INT, -- Solo quién pide
+    observacion VARCHAR(500),
+    estado_id INT,              -- Solo: Pendiente, Aprobado, Rechazado
+    
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dreqcompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    reqcompra_id INT,
+    item CHAR(3),                  
+    
+    producto_id INT,
+    descripcion_producto VARCHAR(500), -- Snapshot nombre
+    unidad_medida VARCHAR(50),         -- Snapshot unidad
+    
+    cantidad_solicitada DECIMAL(12,2),
+    
+    observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+-- 3.2 REQUERIMIENTO DE SERVICIO
+CREATE TABLE reqservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, 
+    numero VARCHAR(20),
+    fecha_emision DATE,
+    fecha_necesaria DATE,
+    
+    usuario_solicitante_id INT,
+    observacion VARCHAR(500),
+    estado_id INT,              -- Solo: Pendiente, Aprobado, Rechazado
+    
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dreqservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    reqservicio_id INT,
+    item CHAR(3),
+    
+    producto_id INT,                   
+    descripcion_servicio VARCHAR(MAX),
+    unidad_medida VARCHAR(50),
+    
+    cantidad_solicitada DECIMAL(12,2) DEFAULT 1,
+    
+    observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+-- =========================================================================
+-- 4. TABLAS MODIFICADAS: PEDIDOS (EL CONSOLIDADOR)
+-- =========================================================================
+
+-- 4.1 PEDIDO DE COMPRA (PED) - ATIENDE REQ
 CREATE TABLE pedcompra (
     id INT IDENTITY(1,1) PRIMARY KEY,
     tipo_documento_interno_id INT, -- Referencia a 'PED'
@@ -334,9 +402,11 @@ CREATE TABLE pedcompra (
     fecha_emision DATE,
     fecha_necesaria DATE,
     
-    sucursal_id INT,
-    centro_costo_id INT,
-    usuario_solicitante_id INT,
+    -- Eliminé Prioridad y Sucursal que no querías
+    -- Eliminé Proveedores y Monedas (respetando tu script base, aunque usualmente van)
+    centro_costo_id INT,           -- Opcional, ya que viene del REQ
+    usuario_solicitante_id INT,    -- Quien procesa el pedido
+    
     observacion VARCHAR(500),
     estado_id INT,
     
@@ -347,16 +417,25 @@ CREATE TABLE pedcompra (
 CREATE TABLE dpedcompra (
     id INT IDENTITY(1,1) PRIMARY KEY,
     pedcompra_id INT,
-    item CHAR(3),                  -- '001', '002'
+    item CHAR(3),
+    
     producto_id INT,
     descripcion_libre VARCHAR(500), 
     unidad_medida VARCHAR(50),
-    cantidad_solicitada DECIMAL(12,2),
-    cantidad_aprobada DECIMAL(12,2),
+    
+    cantidad_solicitada DECIMAL(12,2), -- Cantidad que se está pidiendo/atendiendo ahora
+    cantidad_aprobada DECIMAL(12,2),   -- Si hubiera flujo de aprobación de la orden
+    
+    -- COLUMNAS DE REFERENCIA (LO QUE PEDISTE)
+    referencia_id INT,             -- ID del detalle origen (dreqcompra.id)
+    referencia_tabla VARCHAR(50),  -- 'DREQCOMPRA'
+    referencia_item VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
+    
     observacion_item VARCHAR(255),
     empresa_id INT
 );
 
+-- 4.2 PEDIDO DE SERVICIO (PS) - ATIENDE RS
 CREATE TABLE pedservicio (
     id INT IDENTITY(1,1) PRIMARY KEY,
     tipo_documento_interno_id INT, -- Referencia a 'PS'
@@ -364,9 +443,8 @@ CREATE TABLE pedservicio (
     
     fecha_emision DATE,
     fecha_necesaria DATE,
-    sucursal_id INT,
+    
     centro_costo_id INT,
-    actividad_id INT,
     usuario_solicitante_id INT,
     observacion VARCHAR(500),
     estado_id INT,
@@ -378,11 +456,18 @@ CREATE TABLE pedservicio (
 CREATE TABLE dpedservicio (
     id INT IDENTITY(1,1) PRIMARY KEY,
     pedservicio_id INT,
-	producto_id INT,
     item CHAR(3),
+    producto_id INT,
+    
     descripcion_servicio VARCHAR(MAX),
     cantidad DECIMAL(12,2) DEFAULT 1,
     unidad_medida VARCHAR(50),
+    
+    -- COLUMNAS DE REFERENCIA
+    referencia_id INT,             -- ID del detalle origen (dreqservicio.id)
+    referencia_tabla VARCHAR(50),  -- 'DREQSERVICIO'
+    referencia_item VARCHAR(10),
+    
     observacion_item VARCHAR(255),
     empresa_id INT
 );
@@ -390,13 +475,27 @@ CREATE TABLE dpedservicio (
 GO
 
 -- ==========================================
--- 4. INSERTAR DATOS INICIALES (GLOBALES)
+-- 5. DATOS DE CONFIGURACIÓN INICIAL
 -- ==========================================
+
 INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
 ('IALM', 'NOTA DE INGRESO ALMACEN', 0),
 ('SALM', 'NOTA DE SALIDA ALMACEN', 0),
+('REQ',  'REQUERIMIENTO DE COMPRA', 0),
+('RS',   'REQUERIMIENTO DE SERVICIO', 0),
 ('PED',  'PEDIDO DE COMPRA', 0),
 ('PS',   'PEDIDO DE SERVICIO', 0);
+
+-- Solo los estados que pediste para los REQUERIMIENTOS
+INSERT INTO estado (nombre, tabla) VALUES 
+('Pendiente', 'REQ'),
+('Aprobado', 'REQ'),
+('Rechazado', 'REQ');
+
+-- Estados para el Pedido (Operativos)
+INSERT INTO estado (nombre, tabla) VALUES 
+('Generado', 'PED'),
+('Anulado', 'PED');
 GO
 
 -- inserts de 'unidad_medida'

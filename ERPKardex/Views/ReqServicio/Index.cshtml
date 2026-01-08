@@ -1,0 +1,176 @@
+﻿@{
+    ViewData["Title"] = "Bandeja de Requerimientos de Servicio";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0"><i class="bi bi-tools"></i> Requerimientos de Servicio</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="/ReqServicio/Registrar" class="btn btn-info btn-lg">
+                    <i class="bi bi-plus-circle"></i> Nuevo Servicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card shadow border-left-info">
+            <div class="card-body">
+                <table id="tblDataServ" class="table table-bordered table-hover w-100">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th>N° REQ</th>
+                            <th>F. EMISIÓN</th>
+                            <th>SOLICITANTE</th>
+                            <th>OBSERVACIÓN</th>
+                            <th>ESTADO</th>
+                            <th style="width: 150px;">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="lblTituloModal">Detalle del Servicio</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light border">
+                    <strong>Observación:</strong> <span id="lblObservacion"></span>
+                </div>
+                <h6 class="font-weight-bold text-secondary">Servicios Solicitados:</h6>
+                <table class="table table-sm table-striped border">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 50px;">Item</th>
+                            <th>Descripción del Servicio</th>
+                            <th class="text-center" style="width: 80px;">Cant.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblModalBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            $('#tblDataServ').DataTable({
+                responsive: true,
+                autoWidth: false,
+                ajax: {
+                    url: '/ReqServicio/GetRequerimientosData',
+                    type: 'GET',
+                    datatype: 'json'
+                },
+                columns: [
+                    { data: "numero", className: "font-weight-bold align-middle" },
+                    { data: "fechaEmision", className: "align-middle" },
+                    { data: "solicitante", className: "align-middle" },
+                    { data: "observacion", className: "align-middle small" },
+                    {
+                        data: "estado", className: "text-center align-middle",
+                        render: function (data) {
+                            let color = 'secondary';
+                            if(data === 'Pendiente') color = 'warning';
+                            if(data === 'Aprobado') color = 'success';
+                            if(data === 'Rechazado') color = 'danger';
+                            return `<span class="badge badge-${color}" style="font-size:0.9rem">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: null, className: "text-center",
+                        render: function (data) {
+                            let botonesGestion = '';
+                            if(data.estadoId === 1) {
+                                botonesGestion = `
+                                <button class="btn btn-sm btn-success" title="Aprobar" onclick="cambiarEstado(${data.id}, 'Aprobado')">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" title="Rechazar" onclick="cambiarEstado(${data.id}, 'Rechazado')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>`;
+                            }
+                            return `
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-info" title="Ver Detalle" onclick="verDetalle(${data.id})">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                                ${botonesGestion}
+                            </div>`;
+                        }
+                    }
+                ],
+                order: [[0, "desc"]]
+            });
+        });
+
+        function verDetalle(id) {
+            $('#tblModalBody').html('<tr><td colspan="3" class="text-center">Cargando...</td></tr>');
+            $('#modalDetalle').modal('show');
+
+            $.get('/ReqServicio/GetDetalleReq?id=' + id, function(res) {
+                if(res.status) {
+                    $('#lblTituloModal').text("Solicitud: " + res.cabecera.numero);
+                    $('#lblObservacion').text(res.cabecera.observacion || "Sin observaciones");
+
+                    let html = '';
+                    res.detalles.forEach(d => {
+                        html += `<tr>
+                            <td>${d.item}</td>
+                            <td>${d.descripcionServicio}</td>
+                            <td class="text-center font-weight-bold">${d.cantidadSolicitada}</td>
+                        </tr>`;
+                    });
+                    $('#tblModalBody').html(html);
+                }
+            });
+        }
+
+        function cambiarEstado(id, nuevoEstadoNombre) {
+            let accion = nuevoEstadoNombre === "Aprobado" ? "Aprobar" : "Rechazar";
+            let color = nuevoEstadoNombre === "Aprobado" ? "#28a745" : "#dc3545";
+
+            Swal.fire({
+                title: `¿${accion} Servicio?`,
+                icon: "warning",
+                showCancelButton: true,
+                reverseButtons: true,
+                confirmButtonColor: color,
+                confirmButtonText: `Sí, ${accion}`,
+                cancelButtonText: "Revisar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/ReqServicio/CambiarEstado', { id: id, nombreEstado: nuevoEstadoNombre }, function(res) {
+                        if(res.status) {
+                            Swal.fire("Éxito", res.message, "success");
+                            $('#tblDataServ').DataTable().ajax.reload();
+                        } else {
+                            Swal.fire("Error", res.message, "error");
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
