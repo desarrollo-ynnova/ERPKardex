@@ -204,7 +204,7 @@
             if (res.status) {
                 SERVICIOS_TEMP = res.data;
                 let h = '<option value="">-- BUSCAR SERVICIO --</option>';
-                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionProducto}</option>`);
+                res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.descripcionComercial}</option>`);
                 $('#cbx_ProductoBusqueda').html(h);
             }
         });

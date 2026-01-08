@@ -29,10 +29,14 @@
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
+                            <label>Empresa (Solicitante) (*)</label>
+                            <select id="cbx_Empresa" class="form-control select2-busqueda"></select>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label>Centro de Costo (Solicitante) (*)</label>
                             <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
                         </div>
-                        <div class="col-md-8 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label>Observación General</label>
                             <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Servicio de mantenimiento correctivo...">
                         </div>
@@ -90,6 +94,7 @@
                         <thead class="thead-light">
                             <tr>
                                 <th style="width: 50px;">Sel.</th>
+                                <th>Empresa</th>
                                 <th>N° Requerimiento</th>
                                 <th>Fecha</th>
                                 <th>Solicitante</th>
@@ -120,10 +125,12 @@
         // Guardar
         $("#btn_GuardarTodo").click(function () {
             if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar servicios desde los requerimientos.", "error");
+            if (!$("#cbx_Empresa").val()) return toastr.warning("La empresa es obligatoria.");
             if (!$("#cbx_CentroCosto").val()) return toastr.warning("El Centro de Costo es obligatorio.");
             if (!$("#dtp_FechaNecesaria").val()) return toastr.warning("La fecha necesaria es obligatoria.");
 
             let cabecera = {
+                EmpresaId: parseInt($('#cbx_Empresa').val()),
                 FechaEmision: $("#dtp_FechaEmision").val(),
                 FechaNecesaria: $("#dtp_FechaNecesaria").val(),
                 CentroCostoId: parseInt($("#cbx_CentroCosto").val()),
@@ -182,6 +189,7 @@
                         html += `
                         <tr>
                             <td><input type="checkbox" class="chk-req" value="${r.id}"></td>
+                            <td>${r.ruc} - ${r.razonSocial}</td>
                             <td class="font-weight-bold">${r.numero}</td>
                             <td>${r.fecha}</td>
                             <td>${r.solicitante}</td>
@@ -217,7 +225,7 @@
                             ProductoId: d.productoId,
                             Descripcion: d.descripcion, // El nombre del servicio
                             UnidadMedida: d.unidadMedida,
-                            CantidadSolicitada: d.cantidad,
+                            Cantidad: d.cantidad,
                             ObservacionItem: d.observacionItem,
                             ReferenciaId: d.referenciaId
                         });
@@ -243,7 +251,7 @@
                 <td class="align-middle font-weight-bold">${d.Item}</td>
                 <td class="align-middle text-left">${d.Descripcion}</td>
                 <td class="align-middle">${d.UnidadMedida}</td>
-                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.CantidadSolicitada.toFixed(2)}</td>
+                <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.Cantidad.toFixed(2)}</td>
                 <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
                 <td class="align-middle">
                     <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})" title="Quitar">
@@ -271,6 +279,12 @@
             let h = '<option value="">-- SELECCIONE --</option>';
             if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.codigo} - ${x.nombre}</option>`);
             $('#cbx_CentroCosto').html(h);
+        });
+
+        $.getJSON('/PedCompra/GetEmpresaData', function(res) {
+            let h = '<option value="">-- SELECCIONE --</option>';
+            if(res.status) res.data.forEach(x => h += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+            $('#cbx_Empresa').html(h);
         });
     }
 

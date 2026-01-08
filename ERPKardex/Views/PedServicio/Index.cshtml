@@ -24,9 +24,7 @@
                             <th class="text-center">NÚMERO</th>
                             <th class="text-center">F. EMISIÓN</th>
                             <th class="text-center">F. NECESARIA</th>
-                            <th class="text-center">SUCURSAL</th>
                             <th class="text-center">C. COSTO</th>
-                            <th class="text-center">ACTIVIDAD / PROY.</th>
                             <th class="text-center">SOLICITANTE</th>
                             <th class="text-center">ESTADO</th>
                             <th class="text-center">ACCIÓN</th>
@@ -205,16 +203,7 @@
                         className: "text-center align-middle",
                         render: function (data) { return data && data !== "-" ? moment(data).format('DD/MM/YYYY') : '-'; }
                     },
-                    { data: "sucursal", className: "align-middle" },
                     { data: "centroCosto", className: "align-middle" },
-                    {
-                        data: "actividad",
-                        className: "align-middle",
-                        render: function(data) {
-                            // Si no hay actividad, mostrar guion suave
-                            return data === '--' ? '<span class="text-muted text-center d-block">-</span>' : data;
-                        }
-                    },
                     { data: "solicitante", className: "align-middle" },
                     {
                         data: "estado",
@@ -259,11 +248,11 @@
                     className: "text-center align-middle",
                 },
                 {
-                    targets: [1, 2, 3, 4, 5, 6, 7, 8],
+                    targets: [1, 2, 3, 4, 5, 6, 7],
                     className: 'align-middle',
                 },
                 {
-                    targets: [8],
+                    targets: [7],
                     orderable: false,
                 },
             ],

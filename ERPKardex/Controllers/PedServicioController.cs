@@ -40,7 +40,7 @@ namespace ERPKardex.Controllers
                             join est in _context.Estados on p.EstadoId equals est.Id
                             join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
                             from u in joinUsu.DefaultIfEmpty()
-                            where p.EmpresaId == empresaId
+                            where (empresaId == 4 || p.EmpresaId == empresaId)
                             orderby p.FechaRegistro descending
                             select new
                             {
@@ -79,7 +79,8 @@ namespace ERPKardex.Controllers
                 var data = (from r in _context.ReqServicios
                             join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
                             join e in _context.Estados on r.EstadoId equals e.Id
-                            where r.EmpresaId == empresaId
+                            join emp in _context.Empresas on r.EmpresaId equals emp.Id
+                            where (empresaId == 4 || r.EmpresaId == empresaId)
                                && e.Nombre == "Aprobado"
                                && e.Tabla == "REQ"
                             orderby r.FechaRegistro descending
@@ -87,6 +88,8 @@ namespace ERPKardex.Controllers
                             {
                                 r.Id,
                                 r.Numero,
+                                emp.Ruc,
+                                emp.RazonSocial,
                                 Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
@@ -109,7 +112,7 @@ namespace ERPKardex.Controllers
 
                 var detalles = (from d in _context.DReqServicios
                                 where reqIds.Contains(d.ReqServicioId)
-                                   && d.EmpresaId == empresaId
+                                   && (empresaId == 4 || d.EmpresaId == empresaId)
                                 select new
                                 {
                                     ProductoId = d.ProductoId,
@@ -136,7 +139,7 @@ namespace ERPKardex.Controllers
         {
             var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
             var data = await _context.CentroCostos
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
+                .Where(x => (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true && x.EsImputable == true)
                 .Select(x => new { x.Id, x.Nombre, x.Codigo })
                 .ToListAsync();
             return Json(new { status = true, data });
@@ -153,7 +156,7 @@ namespace ERPKardex.Controllers
                 try
                 {
                     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+                    int empresaId = cabecera.EmpresaId.GetValueOrDefault();
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
                     if (empresaId == 0) throw new Exception("Sesión no válida.");

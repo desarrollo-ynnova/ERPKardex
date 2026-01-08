@@ -35,7 +35,7 @@ namespace ERPKardex.Controllers
                 var data = (from r in _context.ReqServicios
                             join usu in _context.Usuarios on r.UsuarioSolicitanteId equals usu.Id
                             join est in _context.Estados on r.EstadoId equals est.Id
-                            where r.EmpresaId == empresaId
+                            where (empresaId == 4 || r.EmpresaId == empresaId)
                             orderby r.Id descending
                             select new
                             {

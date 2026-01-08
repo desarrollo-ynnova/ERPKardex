@@ -26,6 +26,20 @@ namespace ERPKardex.Controllers
             return View();
         }
 
+        // GET EMPRESAS
+        public JsonResult GetEmpresaData()
+        {
+            try
+            {
+                var empresaData = _context.Empresas.ToList();
+                return Json(new { data = empresaData, message = "Empresas retornadas exitosamente.", status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+            }
+        }
+
         [HttpGet]
         public JsonResult GetPedidosCompraData()
         {
@@ -43,7 +57,7 @@ namespace ERPKardex.Controllers
                             join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
                             from u in joinUsu.DefaultIfEmpty()
 
-                            where p.EmpresaId == empresaId
+                            where (empresaId == 4 || p.EmpresaId == empresaId)
                             orderby p.FechaRegistro descending // Ordenar por fecha reciente
 
                             select new
@@ -90,7 +104,7 @@ namespace ERPKardex.Controllers
             var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
             // Filtramos solo los imputables (último nivel)
             var data = await _context.CentroCostos
-                .Where(x => x.EsImputable == true && x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
+                .Where(x => x.EsImputable == true && (empresaId == 4 || x.EmpresaId == empresaId) && x.Estado == true && x.EsImputable == true)
                 .Select(x => new { x.Id, x.Nombre, x.Codigo })
                 .ToListAsync();
             return Json(new { status = true, data });
@@ -118,11 +132,13 @@ namespace ERPKardex.Controllers
                 try
                 {
                     // 1. Datos de Sesión
-                    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+                    int empresaId = cabecera.EmpresaId.GetValueOrDefault(); // Ahora se envía por combo box
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
                     if (empresaId == 0) throw new Exception("Sesión no válida.");
+
+                    var estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED");
+                    if (estadoInicial == null) estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
 
                     // 2. Generar Correlativo (Lógica PED)
                     // Buscamos el documento interno 'PED'
@@ -154,7 +170,7 @@ namespace ERPKardex.Controllers
                     cabecera.Numero = numeroGenerado;
                     cabecera.UsuarioSolicitanteId = usuarioId;
                     cabecera.EmpresaId = empresaId;
-                    cabecera.EstadoId = 1; // 1: Pendiente
+                    cabecera.EstadoId = estadoInicial?.Id ?? 1;
                     cabecera.FechaRegistro = DateTime.Now;
 
                     // Si la fecha necesaria no viene, ponemos la misma de emisión (o validamos)
@@ -214,7 +230,8 @@ namespace ERPKardex.Controllers
                 var data = (from r in _context.ReqCompras
                             join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
                             join e in _context.Estados on r.EstadoId equals e.Id
-                            where r.EmpresaId == empresaId
+                            join emp in _context.Empresas on r.EmpresaId equals emp.Id
+                            where (empresaId == 4 || r.EmpresaId == empresaId)
                                && e.Nombre == "Aprobado"
                                && e.Tabla == "REQ"
                             // Opcional: Filtrar si ya fue atendido, pero por ahora mostramos todos los aprobados
@@ -223,6 +240,8 @@ namespace ERPKardex.Controllers
                             {
                                 r.Id,
                                 r.Numero,
+                                emp.Ruc,
+                                emp.RazonSocial,
                                 Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
@@ -247,7 +266,7 @@ namespace ERPKardex.Controllers
                 // Consulta directa a DReqCompra (Ya tiene el snapshot del producto)
                 var detalles = (from d in _context.DReqCompras
                                 where reqIds.Contains(d.ReqCompraId)
-                                   && d.EmpresaId == empresaId
+                                   && (empresaId == 4 || d.EmpresaId == empresaId)
                                 select new
                                 {
                                     ProductoId = d.ProductoId,

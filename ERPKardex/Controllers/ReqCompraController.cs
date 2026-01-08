@@ -34,7 +34,7 @@ namespace ERPKardex.Controllers
                 var data = (from r in _context.ReqCompras
                             join usu in _context.Usuarios on r.UsuarioSolicitanteId equals usu.Id
                             join est in _context.Estados on r.EstadoId equals est.Id
-                            where r.EmpresaId == empresaId
+                            where (empresaId == 4 || r.EmpresaId == empresaId)
                             orderby r.Id descending // Lo más reciente primero
                             select new
                             {
@@ -181,7 +181,7 @@ namespace ERPKardex.Controllers
                             var prod = _context.Productos.Find(det.ProductoId);
                             if (prod != null)
                             {
-                                det.DescripcionProducto = prod.DescripcionProducto;
+                                det.DescripcionProducto = prod.DescripcionComercial;
                                 det.UnidadMedida = prod.CodUnidadMedida;
                             }
                             _context.DReqCompras.Add(det);
