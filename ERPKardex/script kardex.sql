@@ -802,9 +802,9 @@ INSERT INTO actividad (codigo, nombre, estado, empresa_id) VALUES
 
 PRINT '>> Insertando Roles...';
 INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DEL SISTEMA', 1); -- ID 1
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DE EMPRESA', 1);  -- ID 2
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('OPERADOR DE ALMACEN', 1);       -- ID 3
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('CONTADOR', 1);                   -- ID 4
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('LOGISTICO', 1);  -- ID 2
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('APROBADOR', 1);  -- ID 3
+INSERT INTO tipo_usuario (nombre, estado) VALUES ('USUARIO', 1);       -- ID 4
 
 INSERT INTO tipo_existencia (codigo, nombre, estado) 
 VALUES 
@@ -824,17 +824,13 @@ PRINT '>> Asignando Alexis a la Empresa 1...';
 DECLARE @NewUsuarioID INT = SCOPE_IDENTITY();
 
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, @NewUsuarioID, 2, 1); -- Empresa 1, Rol 2 (Admin Empresa)
+VALUES (1, @NewUsuarioID, 3, 1); -- Empresa 1, Rol 3 (Aprobador)
 
 PRINT '>> Proceso de tablas de usuario finalizado.';
 GO
 
 USE erp_kardex_dev;
 GO
-
-PRINT '>> Insertando Rol: USUARIO...';
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('USUARIO', 1);
-DECLARE @RolUsuarioID INT = SCOPE_IDENTITY();
 
 -- ======================================================
 -- 1. USUARIOS PARA EMPRESA_ID = 1 (CONTROL SCIENCE)
@@ -845,19 +841,19 @@ PRINT '>> Insertando usuarios para Empresa 1...';
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('74814548', 'James de la Cruz Calopino', 'jproduccion@agrosayans.com', '910467055', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (1, SCOPE_IDENTITY(), 4, 1);
 
 -- Lilyan Lozada Diaz
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('73138239', 'Lilyan Lozada Diaz', 'llozada@agrosayans.com', '930939954', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (1, SCOPE_IDENTITY(), 4, 1);
 
 -- Katherin Espinal Vasquez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('75185380', 'Katherin Espinal Vasquez', 'kespinal@agrosayans.com', '977796697', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (1, SCOPE_IDENTITY(), 4, 1);
 
 -- ======================================================
 -- 2. USUARIOS PARA EMPRESA_ID = 2 (MAQSA)
@@ -868,21 +864,40 @@ PRINT '>> Insertando usuario para Empresa 2...';
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('42642076', 'Edwin Roy Suárez Sánchez', 'almacen@maqsa.pe', '983059270', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (2, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (2, SCOPE_IDENTITY(), 4, 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (3, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (3, SCOPE_IDENTITY(), 4, 1);
 
 -- Magno Martínez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('43115775', 'Socrates Magno Martinez Terrones', 'mmartinez@sblworldperu.com', '913097873', 'password123', 1); 
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (4, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (4, SCOPE_IDENTITY(), 2, 1);
 
 -- Mario Sánchez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('46643608', 'Mario Miguel Sanchez Vera', 'msanchez@sblworldperu.com', '986341713', 'password123', 1); 
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (4, SCOPE_IDENTITY(), @RolUsuarioID, 1);
+VALUES (4, SCOPE_IDENTITY(), 2, 1);
 
 PRINT '>> Proceso de inserción finalizado correctamente.';
+GO
+
+PRINT '>> Listado de usuarios.';
+SELECT 
+    e.razon_social AS Empresa,
+    e.ruc AS RUC,
+    u.dni AS DNI,
+    u.nombre AS Usuario,
+    u.email AS Email,
+    tu.nombre AS Rol,
+    eu.estado AS RelacionActiva
+FROM empresa_usuario eu
+INNER JOIN empresa e ON eu.empresa_id = e.id
+INNER JOIN usuario u ON eu.usuario_id = u.id
+INNER JOIN tipo_usuario tu ON eu.tipo_usuario_id = tu.id
+-- Opcional: Para ver solo los que están activos en la empresa
+WHERE eu.estado = 1 AND e.estado = 1
+ORDER BY e.razon_social, u.nombre;
+
 GO

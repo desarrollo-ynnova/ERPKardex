@@ -40,7 +40,7 @@
         </div>
     </div>
 
-    <div class="row mb-2">
+    <div id="DivBotonesExportar" class="row mb-2 d-none">
         <div class="col-12 text-right">
             <button class="btn btn-success" onclick="exportarExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
             <button class="btn btn-danger" onclick="exportarPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
@@ -228,6 +228,7 @@
                     $('#tbl_Kardex tbody').html('');
                 }
                 HideSpinner();
+                $('#DivBotonesExportar').removeClass('d-none');
             });
         });
     });

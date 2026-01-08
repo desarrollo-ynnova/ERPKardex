@@ -1,7 +1,9 @@
-﻿@{
+﻿@using System.Security.Claims
+@{
     // Obtenemos el nombre del controlador y la acción que se está ejecutando
     var controllerName = ViewContext.RouteData.Values["controller"].ToString();
     var actionName = ViewContext.RouteData.Values["action"].ToString();
+    var role = User.FindFirst(ClaimTypes.Role)?.Value;
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -183,9 +185,7 @@
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-
                         <li class="nav-header font-weight-bold">GESTIÓN DE INVENTARIOS</li>
-
                         <li class="nav-item @(new[] { "Producto", "IngresoSalidaAlm" }.Contains(controllerName) ? "menu-open" : "")">
                             <a href="#" class="nav-link @(new[] { "Producto", "IngresoSalidaAlm" }.Contains(controllerName) ? "active" : "")">
                                 <i class="nav-icon fas fa-warehouse"></i>
@@ -225,7 +225,6 @@
                                 </li>
                             </ul>
                         </li>
-
                         <li class="nav-header font-weight-bold">OPERACIONES LOGÍSTICAS</li>
 
                         <li class="nav-item @(new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio" }.Contains(controllerName) ? "menu-open" : "")">
@@ -251,20 +250,23 @@
                                         <p>Requerimientos de Servicio</p>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a href="/PedCompra/Index"
-                                       class="nav-link @((controllerName == "PedCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                        <i class="fas fa-shopping-cart nav-icon"></i>
-                                        <p>Pedidos de Compra</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="/PedServicio/Index"
-                                       class="nav-link @((controllerName == "PedServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                        <i class="fas fa-concierge-bell nav-icon"></i>
-                                        <p>Pedidos de Servicio</p>
-                                    </a>
-                                </li>
+                                @if (new[] { "1", "2", }.Contains(role))
+                                {
+                                    <li class="nav-item">
+                                        <a href="/PedCompra/Index"
+                                           class="nav-link @((controllerName == "PedCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                            <i class="fas fa-shopping-cart nav-icon"></i>
+                                            <p>Pedidos de Compra</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="/PedServicio/Index"
+                                           class="nav-link @((controllerName == "PedServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                            <i class="fas fa-concierge-bell nav-icon"></i>
+                                            <p>Pedidos de Servicio</p>
+                                        </a>
+                                    </li>
+                                }
                             </ul>
                         </li>
                     </ul>
