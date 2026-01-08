@@ -1393,5 +1393,16 @@ LEFT JOIN marca ma ON p.marca_id = ma.id
 LEFT JOIN modelo mo ON p.modelo_id = mo.id
 WHERE p.descripcion_comercial IS NULL;
 
+UPDATE m
+SET m.marca_id = data.nueva_marca
+FROM modelo AS m
+INNER JOIN (
+    VALUES 
+        (32, 2), (26, 3), (26, 12), (16, 7), 
+        (16, 8), (16, 4), (28, 17), (34, 11), 
+        (7, 15), (27, 13), (12, 14), (1, 16)
+) AS data(id_modelo, nueva_marca)
+ON m.id = data.id_modelo; -- Asumiendo que tu columna de ID en la tabla modelo se llama 'id'
+
 PRINT '>> CARGA MASIVA COMPLETADA EXITOSAMENTE.';
 GO

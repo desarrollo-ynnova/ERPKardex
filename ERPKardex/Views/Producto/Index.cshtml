@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Gestionar Productos";
+    ViewData["Title"] = "Gestionar stock de productos";
     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
     int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 }
@@ -12,7 +12,7 @@
     <div class="panel-heading">
         <div class="row">
             <div class="col-md-12">
-                <h1>Gestionar productos</h1>
+                <h1>Gestionar stock de productos</h1>
             </div>
             <div class="col-md-4 mb-3"><label>Sucursal</label><select id="cbx_Sucursal" class="form-control select2-busqueda"></select></div>
             <div class="col-md-4 mb-3"><label>Almacén</label><select id="cbx_Almacen" class="form-control select2-busqueda"><option value="">-- SELECCIONE --</option></select></div>

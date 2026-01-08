@@ -38,25 +38,19 @@ namespace ERPKardex.Controllers
                             join tdi in _context.TiposDocumentoInterno on p.TipoDocumentoInternoId equals tdi.Id
                             join cc in _context.CentroCostos on p.CentroCostoId equals cc.Id
                             join est in _context.Estados on p.EstadoId equals est.Id
-
-                            // Left Join con Usuario
                             join usu in _context.Usuarios on p.UsuarioSolicitanteId equals usu.Id into joinUsu
                             from u in joinUsu.DefaultIfEmpty()
-
                             where p.EmpresaId == empresaId
                             orderby p.FechaRegistro descending
-
                             select new
                             {
                                 Id = p.Id,
                                 Numero = p.Numero,
-                                TipoDocumento = tdi.Codigo, // "PS"
+                                TipoDocumento = tdi.Codigo,
                                 FechaEmision = p.FechaEmision.HasValue ? p.FechaEmision.Value.ToString("yyyy-MM-dd") : "-",
                                 FechaNecesaria = p.FechaNecesaria.HasValue ? p.FechaNecesaria.Value.ToString("yyyy-MM-dd") : "-",
-
                                 CentroCosto = cc.Nombre,
                                 Solicitante = u != null ? u.Nombre : "Sistema",
-
                                 Estado = est.Nombre,
                                 EstadoId = p.EstadoId,
                                 Observacion = p.Observacion
@@ -70,52 +64,80 @@ namespace ERPKardex.Controllers
             }
         }
 
+        // ==========================================================
+        // NUEVOS MÉTODOS PARA JALAR REQUERIMIENTOS APROBADOS (MODAL)
+        // ==========================================================
+
+        [HttpGet]
+        public JsonResult GetRequerimientosAprobados()
+        {
+            try
+            {
+                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+
+                // Buscamos requerimientos que estén en estado 'Aprobado' para la tabla 'REQ'
+                var data = (from r in _context.ReqServicios
+                            join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
+                            join e in _context.Estados on r.EstadoId equals e.Id
+                            where r.EmpresaId == empresaId
+                               && e.Nombre == "Aprobado"
+                               && e.Tabla == "REQ"
+                            orderby r.FechaRegistro descending
+                            select new
+                            {
+                                r.Id,
+                                r.Numero,
+                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                Solicitante = u.Nombre,
+                                r.Observacion
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpPost]
+        public JsonResult GetDetallesBatch([FromBody] List<int> reqIds)
+        {
+            try
+            {
+                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+
+                if (reqIds == null || reqIds.Count == 0)
+                    return Json(new { status = false, message = "No se seleccionaron requerimientos." });
+
+                var detalles = (from d in _context.DReqServicios
+                                where reqIds.Contains(d.ReqServicioId)
+                                   && d.EmpresaId == empresaId
+                                select new
+                                {
+                                    ProductoId = d.ProductoId,
+                                    Descripcion = d.DescripcionServicio,
+                                    UnidadMedida = d.UnidadMedida ?? "UND",
+                                    Cantidad = d.CantidadSolicitada,
+                                    ObservacionItem = d.ObservacionItem,
+                                    // Datos de Referencia (Para DPedServicio)
+                                    ReferenciaId = d.Id,
+                                    ReferenciaTabla = "DREQSERVICIO"
+                                }).ToList();
+
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
         // ==========================================
         // MÉTODOS AUXILIARES (COMBOS)
         // ==========================================
-        [HttpGet]
-        public async Task<JsonResult> GetSucursales()
-        {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            var data = await _context.Sucursales
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.Nombre })
-                .ToListAsync();
-            return Json(new { status = true, data });
-        }
 
         [HttpGet]
         public async Task<JsonResult> GetCentrosCosto()
         {
             var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
             var data = await _context.CentroCostos
-                .Where(x => x.EsImputable == true && x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
+                .Where(x => x.EmpresaId == empresaId && x.Estado == true && x.EsImputable == true)
                 .Select(x => new { x.Id, x.Nombre, x.Codigo })
-                .ToListAsync();
-            return Json(new { status = true, data });
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetActividades()
-        {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-            var data = await _context.Actividades
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.Nombre, x.Codigo })
-                .ToListAsync();
-            return Json(new { status = true, data });
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetProductosServicio()
-        {
-            var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-
-            // NOTA: Aquí podrías filtrar por .StartsWith("6") si quisieras ser estricto,
-            // pero como pediste "listar todos", traemos todo el catálogo.
-            var data = await _context.Productos
-                .Where(x => x.EmpresaId == empresaId && x.Estado == true)
-                .Select(x => new { x.Id, x.DescripcionProducto, x.DescripcionComercial, x.Codigo, x.CodUnidadMedida })
                 .ToListAsync();
             return Json(new { status = true, data });
         }
@@ -130,12 +152,15 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    // 1. Datos de Sesión
                     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
                     int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
                     int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
                     if (empresaId == 0) throw new Exception("Sesión no válida.");
+
+                    // 1. Obtener Estado 'Generado' o 'Pendiente' para Pedido
+                    var estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "PED");
+                    if (estadoInicial == null) estadoInicial = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "PED");
 
                     // 2. Generar Correlativo (PS)
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PS");
@@ -152,21 +177,20 @@ namespace ERPKardex.Controllers
                     {
                         var partes = ultimoRegistro.Split('-');
                         if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
-                        {
                             nuevoCorrelativo = numeroActual + 1;
-                        }
                     }
 
                     string numeroGenerado = $"PS-{nuevoCorrelativo.ToString("D10")}";
 
-                    // 3. Llenar Cabecera (Sin lugar ni proveedor sugerido)
+                    // 3. Llenar Cabecera
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
                     cabecera.Numero = numeroGenerado;
                     cabecera.UsuarioSolicitanteId = usuarioId;
                     cabecera.EmpresaId = empresaId;
-                    cabecera.EstadoId = 1; // Pendiente
+                    cabecera.EstadoId = estadoInicial?.Id ?? 1;
                     cabecera.FechaRegistro = DateTime.Now;
 
+                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now;
 
                     _context.PedServicios.Add(cabecera);
@@ -185,10 +209,7 @@ namespace ERPKardex.Controllers
                             det.EmpresaId = empresaId;
                             det.Item = correlativoItem.ToString("D3");
 
-                            // Aseguramos guardar el nombre del servicio/producto como snapshot
-                            // (Aunque ya venga del front, es bueno validarlo o dejarlo como viene)
-                            // det.DescripcionServicio viene lleno desde la vista con el nombre del producto
-
+                            // Aquí se guardan los campos ReferenciaId y ReferenciaTabla que vienen del batch
                             _context.DPedidosServicio.Add(det);
                             correlativoItem++;
                         }
@@ -196,7 +217,7 @@ namespace ERPKardex.Controllers
                     }
 
                     transaction.Commit();
-                    return Json(new { status = true, message = $"Solicitud de Servicio {numeroGenerado} registrada correctamente." });
+                    return Json(new { status = true, message = $"Pedido de Servicio {numeroGenerado} registrado correctamente." });
                 }
                 catch (Exception ex)
                 {
