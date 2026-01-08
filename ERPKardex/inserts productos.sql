@@ -714,8 +714,8 @@ END
 
 
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'CHICLAYO', 1, 3);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 3);
-INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','CONSIGNACIÓN STALNO',1,'001', 1, 0, 3);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 3, 1, 3);
+INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','CONSIGNACIÓN STALNO',3,'001', 1, 0, 3);
 
 GO
 
