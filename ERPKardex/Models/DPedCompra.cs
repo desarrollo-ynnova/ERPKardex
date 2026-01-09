@@ -23,6 +23,8 @@ namespace ERPKardex.Models
         public decimal? CantidadSolicitada { get; set; }
         [Column("cantidad_aprobada")]
         public decimal? CantidadAprobada { get; set; }
+        [Column("cantidad_atendida")]
+        public decimal? CantidadAtendida { get; set; }
         [Column("id_referencia")]
         public int? IdReferencia { get; set; }
         [Column("tabla_referencia")]

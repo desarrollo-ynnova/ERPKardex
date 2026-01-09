@@ -46,5 +46,9 @@ namespace ERPKardex.Data
         public DbSet<DPedCompra> DPedidoCompras { get; set; }
         public DbSet<PedServicio> PedServicios { get; set; }
         public DbSet<DPedServicio> DPedidosServicio { get; set; }
+        public DbSet<OrdenCompra> OrdenCompras { get; set; }
+        public DbSet<DOrdenCompra> DOrdenCompras { get; set; }
+        public DbSet<OrdenServicio> OrdenServicios { get; set; }
+        public DbSet<DOrdenServicio> DOrdenServicios { get; set; }
     }
 }

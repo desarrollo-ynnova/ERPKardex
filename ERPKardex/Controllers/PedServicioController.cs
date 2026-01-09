@@ -297,5 +297,52 @@ namespace ERPKardex.Controllers
                 }
             }
         }
+        // ==========================================
+        // 5. API PARA OBTENER SUCURSAL/ALMACÉN POR DEFECTO
+        // ==========================================
+        [HttpGet]
+        public JsonResult GetDatosDefaultEmpresa(int empresaIdSeleccionada)
+        {
+            try
+            {
+                // 1. Buscamos la Sucursal Principal (Por código '001' o nombre)
+                var sucursal = _context.Sucursales
+                    .FirstOrDefault(s => s.EmpresaId == empresaIdSeleccionada
+                                      && s.Estado == true
+                                      && (s.Codigo == "001" || s.Nombre.Contains("PRINCIPAL")));
+
+                int? sucursalId = sucursal?.Id;
+                string sucursalNombre = sucursal?.Nombre ?? "";
+
+                int? almacenId = null;
+                string almacenNombre = "";
+
+                // 2. Si encontramos sucursal, buscamos su Almacén Principal
+                if (sucursalId != null)
+                {
+                    var almacen = _context.Almacenes
+                        .FirstOrDefault(a => a.EmpresaId == empresaIdSeleccionada
+                                          && a.SucursalId == sucursalId
+                                          && a.Estado == true
+                                          && (a.Codigo == "01" || a.Nombre.Contains("PRINCIPAL")));
+
+                    almacenId = almacen?.Id;
+                    almacenNombre = almacen?.Nombre ?? "";
+                }
+
+                return Json(new
+                {
+                    status = true,
+                    sucursalId,
+                    sucursalNombre,
+                    almacenId,
+                    almacenNombre
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
     }
 }

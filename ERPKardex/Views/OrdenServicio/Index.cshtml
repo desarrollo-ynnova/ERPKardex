@@ -1,0 +1,148 @@
+﻿@{
+    ViewData["Title"] = "Órdenes de Servicio";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Bandeja de Órdenes de Servicio</h5>
+            <a href="/OrdenServicio/Registrar" class="btn btn-light text-info font-weight-bold">
+                <i class="fas fa-plus"></i> NUEVA OS
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered" id="tbl_Ordenes" width="100%">
+                    <thead class="thead-light text-center">
+                        <tr>
+                            <th>Número</th>
+                            <th>F. Emisión</th>
+                            <th>Proveedor</th>
+                            <th>Moneda</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white py-2">
+                <h6 class="modal-title">Detalle del Servicio</h6>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-sm table-striped mb-0 text-center">
+                    <thead class="bg-light"><tr><th>Item</th><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead>
+                    <tbody id="tblBodyDetalle"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        cargarOrdenes();
+    });
+
+    function cargarOrdenes() {
+        $('#tbl_Ordenes').DataTable({
+            destroy: true,
+            ajax: { url: '/OrdenServicio/GetOrdenesData', type: 'GET' },
+            columns: [
+                { data: 'numero', className: 'font-weight-bold' },
+                { data: 'fecha' },
+                {
+                    data: 'proveedor',
+                    render: function(data, type, row) {
+                        return `<div style="line-height:1.2"><small class="text-muted">${row.ruc}</small><br>${data}</div>`;
+                    }
+                },
+                { data: 'moneda' },
+                {
+                    data: 'total', className: 'text-right',
+                    render: $.fn.dataTable.render.number(',', '.', 2, '')
+                },
+                {
+                    data: 'estado', className: 'text-center',
+                    render: function(data) {
+                        let color = data === 'Generado' ? 'warning' : (data === 'Aprobado' ? 'success' : 'danger');
+                        return `<span class="badge badge-${color}">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'id', className: 'text-center',
+                    render: function(data, type, row) {
+                        let btns = `<button class="btn btn-sm btn-info mr-1" onclick="verDetalle(${data})" title="Ver"><i class="fas fa-eye"></i></button>`;
+
+                        if(row.estado === 'Generado') {
+                            btns += `<button class="btn btn-sm btn-success mr-1" onclick="aprobar(${data})" title="Aprobar"><i class="fas fa-check"></i></button>`;
+                            btns += `<button class="btn btn-sm btn-danger" onclick="anular(${data})" title="Anular"><i class="fas fa-times"></i></button>`;
+                        }
+                        return btns;
+                    }
+                }
+            ],
+            order: [[0, "desc"]]
+        });
+    }
+
+    function verDetalle(id) {
+        $.get('/OrdenServicio/GetDetalleOrden?id=' + id, function(res) {
+            let html = '';
+            res.data.forEach(d => {
+                html += `<tr>
+                    <td>${d.item}</td>
+                    <td class="text-left"><small>${d.producto}</small></td>
+                    <td>${d.cantidad} ${d.unidadMedida}</td>
+                    <td>${d.precioUnitario.toFixed(2)}</td>
+                    <td>${d.total.toFixed(2)}</td>
+                </tr>`;
+            });
+            $('#tblBodyDetalle').html(html);
+            $('#modalDetalle').modal('show');
+        });
+    }
+
+    function aprobar(id) {
+        Swal.fire({
+            title: "¿Aprobar OS?",
+            text: "Se actualizará el saldo de los pedidos.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sí, Aprobar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/OrdenServicio/AprobarOrden', { id: id }, function(res) {
+                    if(res.status) { Swal.fire("Aprobado", res.message, "success"); cargarOrdenes(); }
+                    else { Swal.fire("Error", res.message, "error"); }
+                });
+            }
+        });
+    }
+
+    function anular(id) {
+        Swal.fire({
+            title: "¿Anular OS?",
+            icon: "error",
+            showCancelButton: true,
+            confirmButtonText: "Sí, Anular",
+            confirmButtonColor: "#dc3545"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post('/OrdenServicio/RechazarOrden', { id: id }, function(res) {
+                    if(res.status) { Swal.fire("Anulado", res.message, "success"); cargarOrdenes(); }
+                    else { Swal.fire("Error", res.message, "error"); }
+                });
+            }
+        });
+    }
+</script>

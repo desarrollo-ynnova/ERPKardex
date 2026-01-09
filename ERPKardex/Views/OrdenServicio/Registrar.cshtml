@@ -1,0 +1,453 @@
+﻿@{
+    ViewData["Title"] = "Nueva Orden de Servicio";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4 border-left-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between">
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-file-signature"></i> Generar Orden de Servicio</h5>
+                    <span class="badge badge-light text-dark align-self-center">Estado: GENERADO</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="font-weight-bold text-primary">1. Empresa (Contratante)</label>
+                            <select id="cbx_Empresa" class="form-control select2-basic"></select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="font-weight-bold text-success">2. Proveedor (Servicio) (*)</label>
+                            <select id="cbx_Proveedor" class="form-control select2-basic">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-warning btn-block font-weight-bold" onclick="abrirModalPedidos()">
+                                <i class="fas fa-search"></i> 3. JALAR PEDIDO (OS)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 bg-light p-2 rounded">
+                        <div class="col-md-2">
+                            <label>Fecha Emisión</label>
+                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Inicio Servicio</label>
+                            <input type="date" id="txt_FechaInicio" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-2">
+                            <label>Fin Servicio</label>
+                            <input type="date" id="txt_FechaFin" class="form-control" value="@DateTime.Now.AddDays(15).ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Moneda</label>
+                            <select id="cbx_Moneda" class="form-control form-control-sm"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>T. Cambio</label>
+                            <input type="number" id="txt_TipoCambio" class="form-control" value="1.000" step="0.001">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                            <div class="custom-control custom-switch mt-4">
+                                <input type="checkbox" class="custom-control-input" id="chk_IncluyeIgv" checked onchange="recalcularTodo()">
+                                <label class="custom-control-label font-weight-bold" for="chk_IncluyeIgv">Precios + IGV</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label class="d-block mb-1 font-weight-bold text-primary">Condición de Pago</label>
+                            <div class="d-flex align-items-center">
+                                <div class="custom-control custom-switch mr-3">
+                                    <input type="checkbox" class="custom-control-input" id="chk_EsCredito" onchange="toggleCondicionPago()">
+                                    <label class="custom-control-label" for="chk_EsCredito">Crédito</label>
+                                </div>
+                                <div class="input-group input-group-sm" id="div_DiasCredito" style="display: none;">
+                                    <input type="number" id="txt_DiasCredito" class="form-control text-center" placeholder="Días" min="1">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">días</span>
+                                    </div>
+                                </div>
+                                <span id="lbl_Contado" class="badge badge-success p-2 ml-2">CONTADO</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="small text-muted">Sucursal Administrativa</label>
+                            <input type="hidden" id="hdn_SucursalId">
+                            <input type="text" id="txt_SucursalNombre" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">Lugar del Servicio (Destino)</label>
+                            <input type="text" id="txt_LugarDestino" class="form-control bg-light" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Observaciones o alcance del servicio...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-5">
+                <div class="card-header py-2 bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold">Detalle de Servicios (Jalados del Pedido)</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped mb-0 text-center" id="tbl_Detalle">
+                            <thead class="thead-dark small">
+                                <tr>
+                                    <th width="3%">#</th>
+                                    <th width="35%">Descripción del Servicio</th>
+                                    <th width="5%">U.M.</th>
+                                    <th width="10%">C. Costo</th>
+                                    <th width="10%">Saldo Ped.</th>
+                                    <th width="10%" class="bg-warning text-dark">Cantidad</th>
+                                    <th width="10%" class="bg-warning text-dark">P. Unit</th>
+                                    <th width="10%">Total</th>
+                                    <th width="5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_Body">
+                                <tr><td colspan="9" class="text-muted py-4">Utilice el botón "Jalar Pedido (OS)" para cargar servicios.</td></tr>
+                            </tbody>
+                            <tfoot class="bg-light font-weight-bold">
+                                <tr>
+                                    <td colspan="6"></td>
+                                    <td class="text-right">Subtotal:</td>
+                                    <td class="text-right" id="lbl_Subtotal">0.00</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="6"></td>
+                                    <td class="text-right">IGV (18%):</td>
+                                    <td class="text-right" id="lbl_Igv">0.00</td>
+                                    <td></td>
+                                </tr>
+                                <tr class="h5 text-success">
+                                    <td colspan="6"></td>
+                                    <td class="text-right">TOTAL:</td>
+                                    <td class="text-right" id="lbl_Total">0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fixed-bottom bg-white border-top p-3 text-right shadow" style="opacity: 0.95;">
+                <a href="/OrdenServicio/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                <button class="btn btn-info px-5 font-weight-bold" onclick="guardarOrden()">
+                    <i class="fas fa-save"></i> GUARDAR OS
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPedidos" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold">Pedidos de Servicio Pendientes</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="tbl_BusquedaPedidos">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Ver</th>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Observación</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    let LISTA_PRODUCTOS = [];
+    let IGV_TASA = 0.18;
+
+    $(document).ready(function() {
+        $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' });
+        initCombos();
+
+        $('#cbx_Empresa').on('select2:select', function(){
+            LISTA_PRODUCTOS = [];
+            renderTabla();
+            limpiarInputsHeredados();
+        });
+    });
+
+    function initCombos() {
+        $.get('/PedCompra/GetEmpresaData', function(res) {
+            if(res.status) {
+                let html = '<option value="">-- SELECCIONE --</option>';
+                res.data.forEach(x => html += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+                $('#cbx_Empresa').html(html);
+            }
+        });
+
+        $.get('/OrdenServicio/GetCombosRegistro', function(res) {
+            if(res.status) {
+                let htmlProv = '<option value="">-- SELECCIONE --</option>';
+                res.proveedores.forEach(x => htmlProv += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+                $('#cbx_Proveedor').html(htmlProv);
+
+                let htmlMon = '';
+                res.monedas.forEach(x => htmlMon += `<option value="${x.id}">${x.nombre}</option>`);
+                $('#cbx_Moneda').html(htmlMon);
+            }
+        });
+    }
+
+    function toggleCondicionPago() {
+        if($('#chk_EsCredito').is(':checked')) {
+            $('#div_DiasCredito').show();
+            $('#lbl_Contado').hide();
+            $('#txt_DiasCredito').focus();
+        } else {
+            $('#div_DiasCredito').hide();
+            $('#lbl_Contado').show();
+            $('#txt_DiasCredito').val('');
+        }
+    }
+
+    function abrirModalPedidos() {
+        let empId = $('#cbx_Empresa').val();
+        if(!empId) return Swal.fire("Aviso", "Seleccione la Empresa Contratante.", "warning");
+
+        $('#efec-cargando').removeClass('d-none');
+        $.get('/OrdenServicio/GetPedidosPendientes?empresaFiltroId=' + empId, function(res) {
+            $('#efec-cargando').addClass('d-none');
+            let html = '';
+            if(res.status && res.data.length > 0) {
+                res.data.forEach(p => {
+                    html += `<tr>
+                        <td><button class="btn btn-sm btn-info" onclick="seleccionarPedido(${p.id})"><i class="fas fa-check"></i></button></td>
+                        <td class="font-weight-bold">${p.numero}</td>
+                        <td>${p.fecha}</td>
+                        <td><small>${p.observacion || '-'}</small></td>
+                    </tr>`;
+                });
+            } else {
+                html = '<tr><td colspan="4" class="text-center">No hay pedidos pendientes.</td></tr>';
+            }
+            $('#tbl_BusquedaPedidos tbody').html(html);
+            $('#modalPedidos').modal('show');
+        });
+    }
+
+    function seleccionarPedido(pedId) {
+        $('#modalPedidos').modal('hide');
+        $('#efec-cargando').removeClass('d-none');
+
+        $.get('/OrdenServicio/GetCabeceraPedido?pedidoId=' + pedId, function(res) {
+            if(res.status && res.data) {
+                let d = res.data;
+                $('#hdn_SucursalId').val(d.sucursalId);
+                $('#txt_SucursalNombre').val(d.sucursalNombre);
+                $('#txt_LugarDestino').val(d.lugarDestino);
+            }
+        });
+
+        $.get('/OrdenServicio/GetDetallesPedidoParaOrden?pedidoId=' + pedId, function(res) {
+            $('#efec-cargando').addClass('d-none');
+            if(res.status) {
+                LISTA_PRODUCTOS = res.data.map(d => ({
+                    IdReferencia: d.id,
+                    ProductoId: d.productoId,
+                    Descripcion: d.descripcion,
+                    UnidadMedida: d.unidadMedida,
+                    CentroCostoId: d.centroCostoId,
+                    CentroCostoNombre: d.centroCostoNombre,
+                    SaldoMaximo: d.saldoDisponible,
+                    Cantidad: d.saldoDisponible,
+                    PrecioUnitario: 0
+                }));
+                renderTabla();
+                toastr.success("Servicios cargados. Ingrese precios.");
+            }
+        });
+    }
+
+    function renderTabla() {
+        let html = '';
+        LISTA_PRODUCTOS.forEach((item, idx) => {
+            html += `<tr>
+                <td class="align-middle">${idx + 1}</td>
+                <td class="text-left align-middle"><small>${item.Descripcion}</small></td>
+                <td class="align-middle">${item.UnidadMedida}</td>
+                <td class="align-middle small">${item.CentroCostoNombre}</td>
+                <td class="align-middle text-muted font-weight-bold">${item.SaldoMaximo.toFixed(2)}</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm text-center font-weight-bold"
+                           value="${item.Cantidad}" min="0.01" max="${item.SaldoMaximo}" step="0.01"
+                           onchange="actualizarLinea(${idx}, 'cant', this.value)">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm text-center"
+                           value="${item.PrecioUnitario}" min="0" step="0.01"
+                           onchange="actualizarLinea(${idx}, 'precio', this.value)">
+                </td>
+                <td class="align-middle font-weight-bold" id="td_total_${idx}">
+                    ${(item.Cantidad * item.PrecioUnitario).toFixed(2)}
+                </td>
+                <td class="align-middle">
+                    <button class="btn btn-xs btn-danger" onclick="eliminarLinea(${idx})">X</button>
+                </td>
+            </tr>`;
+        });
+
+        if(LISTA_PRODUCTOS.length === 0) html = '<tr><td colspan="9" class="text-muted py-4">Sin servicios.</td></tr>';
+
+        $('#tbl_Body').html(html);
+        recalcularGlobales();
+    }
+
+    function actualizarLinea(idx, tipo, valor) {
+        let val = parseFloat(valor) || 0;
+        let item = LISTA_PRODUCTOS[idx];
+
+        if(tipo === 'cant') {
+            if(val > item.SaldoMaximo) {
+                Swal.fire("Error", `Excede saldo (${item.SaldoMaximo})`, "error");
+                val = item.SaldoMaximo;
+            }
+            item.Cantidad = val;
+        } else {
+            item.PrecioUnitario = val;
+        }
+        $(`#td_total_${idx}`).text((item.Cantidad * item.PrecioUnitario).toFixed(2));
+        recalcularGlobales();
+    }
+
+    function eliminarLinea(idx) {
+        LISTA_PRODUCTOS.splice(idx, 1);
+        renderTabla();
+    }
+
+    function recalcularGlobales() {
+        let incluyeIgv = $('#chk_IncluyeIgv').is(':checked');
+        let sumaTotal = 0;
+        LISTA_PRODUCTOS.forEach(x => sumaTotal += (x.Cantidad * x.PrecioUnitario));
+
+        let subtotal = 0, igv = 0, total = 0;
+
+        if(incluyeIgv) {
+            total = sumaTotal;
+            subtotal = total / (1 + IGV_TASA);
+            igv = total - subtotal;
+        } else {
+            subtotal = sumaTotal;
+            igv = subtotal * IGV_TASA;
+            total = subtotal + igv;
+        }
+
+        $('#lbl_Subtotal').text(subtotal.toFixed(2));
+        $('#lbl_Igv').text(igv.toFixed(2));
+        $('#lbl_Total').text(total.toFixed(2));
+    }
+
+    function recalcularTodo() { recalcularGlobales(); }
+
+    function limpiarInputsHeredados() {
+        $('#hdn_SucursalId, #txt_SucursalNombre, #txt_LugarDestino').val('');
+    }
+
+    function guardarOrden() {
+        if(LISTA_PRODUCTOS.length === 0) return Swal.fire("Error", "No hay servicios.", "error");
+        if(!$('#cbx_Empresa').val()) return toastr.warning("Seleccione Empresa");
+        if(!$('#cbx_Proveedor').val()) return toastr.warning("Seleccione Proveedor");
+
+        // Condición Pago Inteligente
+        let condPagoFinal = "CONTADO";
+        if($('#chk_EsCredito').is(':checked')) {
+            let dias = $('#txt_DiasCredito').val();
+            if(!dias || dias <= 0) return toastr.warning("Ingrese los días de crédito.");
+            condPagoFinal = `CRÉDITO A ${dias} DÍAS`;
+        }
+
+        let cabecera = {
+            EmpresaId: parseInt($('#cbx_Empresa').val()),
+            EntidadId: parseInt($('#cbx_Proveedor').val()),
+            FechaEmision: $('#txt_FechaEmision').val(),
+            FechaInicioServicio: $('#txt_FechaInicio').val(),
+            FechaFinServicio: $('#txt_FechaFin').val(),
+            MonedaId: parseInt($('#cbx_Moneda').val()),
+            TipoCambio: parseFloat($('#txt_TipoCambio').val()),
+            CondicionPago: condPagoFinal, // Variable calculada
+            IncluyeIgv: $('#chk_IncluyeIgv').is(':checked'),
+            Observacion: $('#txt_Observacion').val(),
+            SucursalId: $('#hdn_SucursalId').val() ? parseInt($('#hdn_SucursalId').val()) : null,
+            LugarDestino: $('#txt_LugarDestino').val(),
+
+            Total: parseFloat($('#lbl_Total').text()),
+            IgvTotal: parseFloat($('#lbl_Igv').text()),
+            TotalAfecto: $('#chk_IncluyeIgv').is(':checked') ? parseFloat($('#lbl_Subtotal').text()) : 0,
+            TotalInafecto: $('#chk_IncluyeIgv').is(':checked') ? 0 : parseFloat($('#lbl_Total').text())
+        };
+
+        let detalles = LISTA_PRODUCTOS.map(x => {
+            return {
+                TablaReferencia: 'DPEDSERVICIO',
+                IdReferencia: x.IdReferencia,
+                ProductoId: x.ProductoId,
+                Descripcion: x.Descripcion,
+                UnidadMedida: x.UnidadMedida,
+                CentroCostoId: x.CentroCostoId,
+                Cantidad: x.Cantidad,
+                PrecioUnitario: x.PrecioUnitario,
+                Total: x.Cantidad * x.PrecioUnitario
+            };
+        });
+
+        $('#efec-cargando').removeClass('d-none');
+        $.ajax({
+            url: '/OrdenServicio/Guardar',
+            type: 'POST',
+            data: {
+                cabecera: cabecera,
+                detallesJson: JSON.stringify(detalles)
+            },
+            success: function(res) {
+                $('#efec-cargando').addClass('d-none');
+                if(res.status) {
+                    Swal.fire("Éxito", res.message, "success").then(() => {
+                        window.location.href = '/OrdenServicio/Index';
+                    });
+                } else {
+                    Swal.fire("Error", res.message, "error");
+                }
+            },
+            error: function() {
+                $('#efec-cargando').addClass('d-none');
+                toastr.error("Error de conexión");
+            }
+        });
+    }
+</script>

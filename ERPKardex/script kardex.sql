@@ -38,6 +38,10 @@ drop table if exists dreqservicio;
 drop table if exists reqservicio;
 drop table if exists dreqcompra;
 drop table if exists reqcompra;
+drop table if exists ordencompra;
+drop table if exists dordencompra;
+drop table if exists ordenservicio;
+drop table if exists dordenservicio;
 
 GO
 
@@ -404,8 +408,10 @@ CREATE TABLE pedcompra (
     fecha_emision DATE,
     fecha_necesaria DATE,
     
-    -- Eliminé Prioridad y Sucursal que no querías
-    -- Eliminé Proveedores y Monedas (respetando tu script base, aunque usualmente van)
+    lugar_destino VARCHAR(255),
+	sucursal_id INT,
+	almacen_id INT,
+
     usuario_solicitante_id INT,    -- Quien procesa el pedido
     
     observacion VARCHAR(500),
@@ -427,6 +433,7 @@ CREATE TABLE dpedcompra (
     
     cantidad_solicitada DECIMAL(12,2), -- Cantidad que se está pidiendo/atendiendo ahora
     cantidad_aprobada DECIMAL(12,2),   -- Si hubiera flujo de aprobación de la orden
+	cantidad_atendida DECIMAL(12,2) DEFAULT 0,
     
     -- COLUMNAS DE REFERENCIA (LO QUE PEDISTE)
     id_referencia INT,             -- ID del detalle origen (dreqcompra.id)
@@ -445,6 +452,11 @@ CREATE TABLE pedservicio (
     
     fecha_emision DATE,
     fecha_necesaria DATE,
+
+	lugar_destino VARCHAR(255),
+	sucursal_id INT,
+	almacen_id INT,
+
     
     usuario_solicitante_id INT,
     observacion VARCHAR(500),
@@ -463,6 +475,7 @@ CREATE TABLE dpedservicio (
     
     descripcion_servicio VARCHAR(MAX),
     cantidad DECIMAL(12,2) DEFAULT 1,
+	cantidad_atendida DECIMAL(12,2) DEFAULT 0,
     unidad_medida VARCHAR(50),
     
     -- COLUMNAS DE REFERENCIA (LO QUE PEDISTE)
@@ -471,6 +484,136 @@ CREATE TABLE dpedservicio (
     item_referencia VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
     
     observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+CREATE TABLE ordencompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, -- 'OCO'
+    numero VARCHAR(20),            -- Ej: OCO-0000001
+    
+    -- Datos del Proveedor (Vital para la Orden)
+    entidad_id INT,                -- Proveedor seleccionado
+    
+    fecha_emision DATE,
+    fecha_entrega DATE,            -- NISIRA: Plazo de Entrega
+    
+    moneda_id INT,                 -- NISIRA: Moneda
+    tipo_cambio DECIMAL(12,6),     -- NISIRA: T.Cambio
+    
+    condicion_pago VARCHAR(255),   -- NISIRA: Condiciones (Ej: Crédito 30 días)
+    lugar_destino VARCHAR(255),    -- NISIRA: Lugar Entrega
+    
+    sucursal_id INT,               -- Para recepción de mercadería
+    almacen_id INT,
+    
+    observacion VARCHAR(500),
+    incluye_igv BIT DEFAULT 1,     -- Para cálculo de impuestos
+    
+    -- Importes Totales
+    total_afecto DECIMAL(18,2) DEFAULT 0,
+    total_inafecto DECIMAL(18,2) DEFAULT 0,
+    igv_total DECIMAL(18,2) DEFAULT 0,
+    total DECIMAL(18,2) DEFAULT 0,
+
+    estado_id INT,
+    usuario_creacion_id INT,
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+-- 3. TABLA: DETALLE ORDEN DE COMPRA
+-- Basado en NISIRA Pág. 82 (Items, Cantidad, Precio, Descuentos)
+CREATE TABLE dordencompra (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    ordencompra_id INT,
+    
+    item CHAR(3),
+    producto_id INT,
+    
+    -- Snapshots (Datos copiados del maestro al momento de la orden)
+    descripcion VARCHAR(500),
+    unidad_medida VARCHAR(50),
+    
+    -- Cantidades
+    cantidad DECIMAL(12,2),        -- La cantidad que FINALMENTE se compra
+    
+    -- Valores Monetarios (Lo que negociaste con el proveedor)
+    precio_unitario DECIMAL(18,6), -- NISIRA: P.Unitario
+    porc_descuento DECIMAL(12,2) DEFAULT 0, -- NISIRA: %Dscto
+    
+    valor_venta DECIMAL(18,2),     -- Subtotal sin impuestos
+    impuesto DECIMAL(18,2),        -- IGV del ítem
+    total DECIMAL(18,2),           -- Total con impuestos
+    
+    centro_costo_id INT,           -- NISIRA: Destino/Centro de Costo
+    
+    -- TRAZABILIDAD (La clave para no "rayarse" con los pedidos)
+    id_referencia INT,             -- ID de dpedcompra
+    tabla_referencia VARCHAR(50) DEFAULT 'DPEDCOMPRA',
+    
+    observacion_item VARCHAR(255),
+    empresa_id INT
+);
+
+-- 4. TABLA: ORDEN DE SERVICIO (CABECERA)
+-- Basado en NISIRA Pág. 89 (Similar a Compra, pero orientado a servicios)
+CREATE TABLE ordenservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo_documento_interno_id INT, -- 'OS'
+    numero VARCHAR(20),
+    
+    entidad_id INT,                -- Proveedor del Servicio
+    
+    fecha_emision DATE,
+    fecha_inicio_servicio DATE,    -- NISIRA: Fecha Inicio
+    fecha_fin_servicio DATE,       -- NISIRA: Fecha Fin
+    
+    moneda_id INT,
+    tipo_cambio DECIMAL(12,6),
+    
+    condicion_pago VARCHAR(255),
+    lugar_destino VARCHAR(255),    -- Lugar donde se realiza el servicio
+    sucursal_id INT,               -- Sucursal contable/administrativa
+    
+    observacion VARCHAR(500),
+    incluye_igv BIT DEFAULT 1,
+    
+    total_afecto DECIMAL(18,2) DEFAULT 0,
+    total_inafecto DECIMAL(18,2) DEFAULT 0,
+    igv_total DECIMAL(18,2) DEFAULT 0,
+    total DECIMAL(18,2) DEFAULT 0, -- NISIRA: Total Servicio
+
+    estado_id INT,
+    usuario_creacion_id INT,
+    empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+-- 5. TABLA: DETALLE ORDEN DE SERVICIO
+CREATE TABLE dordenservicio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    ordenservicio_id INT,
+    
+    item CHAR(3),
+    producto_id INT,               -- Servicio catalogado
+    
+    descripcion VARCHAR(MAX),      -- Descripción detallada del trabajo
+    unidad_medida VARCHAR(50),
+    
+    cantidad DECIMAL(12,2),
+    precio_unitario DECIMAL(18,6),
+    
+    valor_venta DECIMAL(18,2),
+    impuesto DECIMAL(18,2),
+    total DECIMAL(18,2),
+    
+    centro_costo_id INT,
+    
+    -- TRAZABILIDAD
+    id_referencia INT,             -- ID de dpedservicio
+    tabla_referencia VARCHAR(50) DEFAULT 'DPEDSERVICIO',
+    
     empresa_id INT
 );
 
@@ -486,7 +629,9 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 ('REQ',  'REQUERIMIENTO DE COMPRA', 0),
 ('RS',   'REQUERIMIENTO DE SERVICIO', 0),
 ('PED',  'PEDIDO DE COMPRA', 0),
-('PS',   'PEDIDO DE SERVICIO', 0);
+('PS',   'PEDIDO DE SERVICIO', 0),
+('OCO',  'ORDEN DE COMPRA', 0),
+('OS',  'ORDEN DE SERVICIO', 0);
 
 -- inserts de 'estado'
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
@@ -501,7 +646,14 @@ INSERT INTO estado (nombre, tabla) VALUES
 -- Estados para el Pedido (Operativos)
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Generado', 'PED'),
-('Anulado', 'PED');
+('Anulado', 'PED'),
+('Atendido Parcial', 'PED'),
+('Atendido Total', 'PED');
+
+INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
+INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
+
 GO
 
 -- inserts de 'unidad_medida'
@@ -596,36 +748,10 @@ INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20615184153', 'SUPPLY B
 
 -- inserts de 'sucursal'
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCIPAL - POMALCA', 1, 1);
---INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 1);
---INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'PRINCIPAL - CHICLAYO', 1, 2);
---INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('002', 'SUCURSAL - MORROPE', 1, 2);
 
 -- inserts de 'almacen'
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 1);
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','TERCEROS',1,'001', 1, 1, 1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'001',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'001',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'001',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'001',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','PRODUCTO TERMIANDO',1,'002',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','MERMAS Y DESPERDICIOS',1,'002',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','ENVASES Y EMBALAJES',1,'002',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MATERIALES Y AUXILIARES',1,'002',1);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'001',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('01','PRINCIPAL',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('02','MERCADERIAS',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('03','REPUESTOS',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('04','SISTEMA DE RIEGO',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('05','MAQUINARIA',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('06','MATERIALES DE CONSTRUCCION',1,'002',2);
---INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, empresa_id) VALUES ('07','EQUIPOS DE PROTECCION',1,'002',2);
 
 -- inserts de 'tipo_documento'
 INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('01','Factura',1);

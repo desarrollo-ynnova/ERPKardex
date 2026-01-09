@@ -20,6 +20,7 @@
                         <div class="col-md-4 mb-3">
                             <label>Empresa (Solicitante) (*)</label>
                             <select id="cbx_Empresa" class="form-control select2-busqueda"></select>
+                            <small class="text-muted">Filtrará los requerimientos y cargará defaults.</small>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label>Fecha Emisión</label>
@@ -27,13 +28,31 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="font-weight-bold text-danger">Fecha Necesaria (*)</label>
-                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(5).ToString("yyyy-MM-dd")">
+                            <input type="date" id="dtp_FechaNecesaria" class="form-control" value="@DateTime.Now.AddDays(3).ToString("yyyy-MM-dd")">
                         </div>
                     </div>
+
+                    <div class="row bg-light p-2 rounded mb-3 border">
+                        <div class="col-md-4 mb-2">
+                            <label class="small font-weight-bold text-primary">Sucursal Origen (*)</label>
+                            <input type="hidden" id="hdn_SucursalId">
+                            <input type="text" id="txt_SucursalNombre" class="form-control bg-white" readonly placeholder="Se carga al elegir empresa...">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="small font-weight-bold text-primary">Almacén Origen (*)</label>
+                            <input type="hidden" id="hdn_AlmacenId">
+                            <input type="text" id="txt_AlmacenNombre" class="form-control bg-white" readonly placeholder="Se carga al elegir empresa...">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="small font-weight-bold text-primary">Lugar de Destino (Texto) (*)</label>
+                            <input type="text" id="txt_LugarDestino" class="form-control" placeholder="Ej: Obra Pomalca / Almacén Central">
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label>Observación General</label>
-                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Servicio de mantenimiento correctivo...">
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ej: Pedido consolidado mensual...">
                         </div>
                     </div>
                 </div>
@@ -176,13 +195,42 @@
             },
             order: [[2, "desc"]]
         });
-
+        
         $('#cbx_Empresa').on('select2:select', function (e) {
+            let idEmpresa = $(this).val();
+
+            // 1. Limpiar detalle si ya había datos (Tu lógica original)
             if(LISTA_DETALLE.length > 0) {
                 Swal.fire("Atención", "Se limpiará el detalle al cambiar de empresa.", "warning");
                 LISTA_DETALLE = [];
                 IDS_AGREGADOS = [];
                 fct_RenderDetalle();
+            }
+
+            // 2. NUEVO: Cargar Sucursal y Almacén por defecto
+            if(idEmpresa) {
+                ShowSpinner();
+                $.get('/PedServicio/GetDatosDefaultEmpresa?empresaIdSeleccionada=' + idEmpresa, function(res) {
+                    HideSpinner();
+                    if(res.status) {
+                        // Llenamos los inputs ocultos y visibles
+                        $('#hdn_SucursalId').val(res.sucursalId);
+                        $('#txt_SucursalNombre').val(res.sucursalNombre);
+
+                        $('#hdn_AlmacenId').val(res.almacenId);
+                        $('#txt_AlmacenNombre').val(res.almacenNombre);
+
+                        // Opcional: Si el lugar destino está vacío, sugerimos la sucursal
+                        if(!$('#txt_LugarDestino').val()) {
+                            $('#txt_LugarDestino').val(res.sucursalNombre);
+                        }
+                    } else {
+                        toastr.warning("No se encontraron sucursales por defecto para esta empresa.");
+                    }
+                });
+            } else {
+                // Limpiar si deseleccionan
+                $('#hdn_SucursalId, #hdn_AlmacenId, #txt_SucursalNombre, #txt_AlmacenNombre').val('');
             }
         });
 
@@ -258,6 +306,7 @@
                                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
                                 ProductoId: d.productoId,
                                 DescripcionServicio: d.descripcionServicio, // Campo específico de servicio
+                                UnidadMedida: d.unidadMedida,
                                 CentroCostoId: d.centroCostoId,
                                 Cantidad: d.cantidad,
                                 NombreCentroCosto: d.nombreCentroCosto,
@@ -312,12 +361,19 @@
     function fct_Guardar() {
         if (LISTA_DETALLE.length === 0) return Swal.fire("Error", "Debe agregar servicios.", "error");
         if (!$("#cbx_Empresa").val()) return toastr.warning("La empresa es obligatoria.");
+        // Validaciones de nuevos campos
+        if (!$("#hdn_SucursalId").val()) return toastr.warning("No se ha detectado una Sucursal válida.");
+        if (!$("#txt_LugarDestino").val().trim()) return toastr.warning("Ingrese el Lugar de Destino.");
 
         let cabecera = {
             EmpresaId: parseInt($('#cbx_Empresa').val()),
             FechaEmision: $("#dtp_FechaEmision").val(),
             FechaNecesaria: $("#dtp_FechaNecesaria").val(),
-            Observacion: $("#txt_Observacion").val()
+            Observacion: $("#txt_Observacion").val(),
+            // NUEVOS CAMPOS
+            SucursalId: parseInt($("#hdn_SucursalId").val()),
+            AlmacenId: $("#hdn_AlmacenId").val() ? parseInt($("#hdn_AlmacenId").val()) : null, // Almacén puede ser nulo en servicios
+            LugarDestino: $("#txt_LugarDestino").val()
         };
 
         Swal.fire({

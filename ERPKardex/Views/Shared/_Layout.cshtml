@@ -227,8 +227,8 @@
                         </li>
                         <li class="nav-header font-weight-bold">OPERACIONES LOGÍSTICAS</li>
 
-                        <li class="nav-item @(new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio" }.Contains(controllerName) ? "menu-open" : "")">
-                            <a href="#" class="nav-link @(new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio" }.Contains(controllerName) ? "active" : "")">
+                        <li class="nav-item @(new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio", "OrdenCompra", "OrdenServicio" }.Contains(controllerName) ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio", "OrdenCompra", "OrdenServicio" }.Contains(controllerName) ? "active" : "")">
                                 <i class="nav-icon fas fa-truck-loading"></i>
                                 <p>
                                     Logística
@@ -267,6 +267,20 @@
                                         </a>
                                     </li>
                                 }
+                                <li class="nav-item">
+                                    <a href="/OrdenCompra/Index"
+                                       class="nav-link @((controllerName == "OrdenCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="fas fa-file-invoice-dollar nav-icon"></i>
+                                        <p>Órdenes de Compra</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="/OrdenServicio/Index"
+                                       class="nav-link @((controllerName == "OrdenServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                        <i class="fas fa-file-signature nav-icon"></i>
+                                        <p>Órdenes de Servicio</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     </ul>
