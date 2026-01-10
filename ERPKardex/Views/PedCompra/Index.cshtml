@@ -52,6 +52,7 @@
                                 <th style="width: 50px;">Item</th>
                                 <th>Descripción</th>
                                 <th style="width: 100px;">C. Costo</th>
+                                <th>Lugar</th>
                                 <th style="width: 80px;">U.M.</th>
                                 <th style="width: 80px;">Cant.</th>
                                 <th style="width: 80px;">Cant. Atendida</th>
@@ -289,7 +290,7 @@
     // --- FUNCIÓN PARA CARGAR DETALLE EN MODAL ---
     function fct_VerPedido(id) {
         ShowSpinner();
-        $('#tbody_DetallePedido').html('<tr><td colspan="6">Cargando...</td></tr>');
+        $('#tbody_DetallePedido').html('<tr><td colspan="8">Cargando...</td></tr>');
 
         $.ajax({
             url: '/PedCompra/GetDetallePedido?id=' + id,
@@ -307,6 +308,7 @@
                                     <small class="text-muted"><i>${d.observacionItem || ''}</i></small>
                                 </td>
                                 <td class="text-primary font-weight-bold">${d.centroCosto}</td>
+                                <td class="font-weight-bold">${d.lugar}</td>
                                 <td>${d.unidadMedida}</td>
                                 <td class="font-weight-bold">${d.cantidadAprobada.toFixed(2)}</td>
                                 <td class="font-weight-bold">${d.cantidadAtendida.toFixed(2)}</td>

@@ -39,6 +39,7 @@ namespace ERPKardex.Models
 
         [Column("centro_costo_id")]
         public int? CentroCostoId { get; set; }
+        public string? Lugar { get; set; }
 
         // Trazabilidad con el Pedido
         [Column("id_referencia")]

@@ -118,6 +118,7 @@
                                     <th width="30%">Descripción</th>
                                     <th width="5%">U.M.</th>
                                     <th width="10%">C. Costo</th>
+                                    <th width="7%">Lugar</th>
                                     <th width="10%">Saldo Ped.</th>
                                     <th width="10%" class="bg-warning text-dark">Cantidad</th>
                                     <th width="10%" class="bg-warning text-dark">P. Unit</th>
@@ -301,6 +302,7 @@
                     UnidadMedida: d.unidadMedida,
                     CentroCostoId: d.centroCostoId,
                     CentroCostoNombre: d.centroCostoNombre,
+                    Lugar: d.lugar,
 
                     // Lógica de Saldo
                     SaldoMaximo: d.saldoDisponible,
@@ -323,6 +325,7 @@
                 <td class="text-left align-middle"><small>${item.Descripcion}</small></td>
                 <td class="align-middle">${item.UnidadMedida}</td>
                 <td class="align-middle small">${item.CentroCostoNombre}</td>
+                <td class="align-middle small">${item.Lugar}</td>
                 <td class="align-middle text-muted font-weight-bold">${item.SaldoMaximo.toFixed(2)}</td>
 
                 <td>
@@ -468,6 +471,7 @@
                 Descripcion: x.Descripcion,
                 UnidadMedida: x.UnidadMedida,
                 CentroCostoId: x.CentroCostoId,
+                Lugar: x.Lugar,
 
                 Cantidad: x.Cantidad,
                 PrecioUnitario: x.PrecioUnitario,

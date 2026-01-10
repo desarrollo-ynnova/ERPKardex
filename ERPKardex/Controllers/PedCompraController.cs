@@ -107,6 +107,7 @@ namespace ERPKardex.Controllers
                                     CantidadAtendida = d.CantidadAtendida ?? 0, // O CantidadSolicitada según tu lógica de visualización
                                     d.ObservacionItem,
                                     CentroCosto = cc.Codigo, // Código del CC específico
+                                    Lugar = d.Lugar,
                                     Ref = d.TablaReferencia == "DREQCOMPRA" ? ("Req. " + d.ItemReferencia) : "-"
                                 }).OrderBy(x => x.Item).ToList();
 

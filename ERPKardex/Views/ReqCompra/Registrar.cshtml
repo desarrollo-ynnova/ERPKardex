@@ -68,7 +68,7 @@
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label>Lugar</label>
+                            <label>Lugar de entrega (*)</label>
                             <input type="text" id="txt_DetLugar" class="form-control form-control-sm" placeholder="Lugar específico para este ítem">
                         </div>
                     </div>
@@ -137,6 +137,7 @@
             if (!idProd) return toastr.warning("Debe seleccionar un producto.");
             if (!idCC) return toastr.warning("Debe seleccionar un Centro de Costo."); // Validación Nueva
             if (isNaN(can) || can <= 0) return toastr.warning("La cantidad debe ser mayor a 0.");
+            if (!lugarItem) return toastr.warning("Ingrese un lugar de destino.")
 
             // Limpieza visual del nombre producto
             let codProd = "";

@@ -442,6 +442,7 @@ CREATE TABLE dpedcompra (
     tabla_referencia VARCHAR(50),  -- 'DREQCOMPRA'
     item_referencia VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
     
+    lugar VARCHAR(255),
     observacion_item VARCHAR(255),
     empresa_id INT
 );
@@ -485,6 +486,7 @@ CREATE TABLE dpedservicio (
     tabla_referencia VARCHAR(50),  -- 'DREQSERVICIO'
     item_referencia VARCHAR(10),   -- Item del requerimiento origen (ej: '001')
     
+    lugar VARCHAR(255),
     observacion_item VARCHAR(255),
     empresa_id INT
 );
@@ -549,7 +551,7 @@ CREATE TABLE dordencompra (
     total DECIMAL(18,2),           -- Total con impuestos
     
     centro_costo_id INT,           -- NISIRA: Destino/Centro de Costo
-    
+    lugar VARCHAR(255),
     -- TRAZABILIDAD (La clave para no "rayarse" con los pedidos)
     id_referencia INT,             -- ID de dpedcompra
     tabla_referencia VARCHAR(50) DEFAULT 'DPEDCOMPRA',
@@ -611,7 +613,8 @@ CREATE TABLE dordenservicio (
     total DECIMAL(18,2),
     
     centro_costo_id INT,
-    
+    lugar VARCHAR(255),
+
     -- TRAZABILIDAD
     id_referencia INT,             -- ID de dpedservicio
     tabla_referencia VARCHAR(50) DEFAULT 'DPEDSERVICIO',

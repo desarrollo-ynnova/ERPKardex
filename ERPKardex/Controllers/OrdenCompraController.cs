@@ -67,6 +67,7 @@ namespace ERPKardex.Controllers
                                 {
                                     d.Item,
                                     Producto = d.Descripcion, // Usamos la descripción snapshot
+                                    d.Lugar,
                                     d.UnidadMedida,
                                     d.Cantidad,
                                     d.PrecioUnitario,
@@ -185,6 +186,7 @@ namespace ERPKardex.Controllers
                                        d.CantidadAtendida, // Lo que ya está APROBADO en otras OCOs
                                        d.CentroCostoId,
                                        CentroCostoNombre = cc != null ? cc.Codigo : "-",
+                                       d.Lugar,
                                        d.Item
                                    }).ToList();
 
@@ -217,6 +219,7 @@ namespace ERPKardex.Controllers
                         ip.UnidadMedida,
                         ip.CentroCostoId,
                         ip.CentroCostoNombre,
+                        ip.Lugar,
                         CantidadPedido = ip.CantidadSolicitada,
                         SaldoDisponible = saldoDisponible > 0 ? saldoDisponible : 0 // Si es negativo, 0
                     };

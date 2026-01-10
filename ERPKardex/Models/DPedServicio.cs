@@ -28,6 +28,7 @@ namespace ERPKardex.Models
         public string? TablaReferencia { get; set; }
         [Column("item_referencia")]
         public string? ItemReferencia { get; set; }
+        public string? Lugar { get; set; }
         [Column("observacion_item")]
         public string? ObservacionItem { get; set; }
         [Column("empresa_id")]

@@ -73,6 +73,7 @@
                                     <th style="width: 50px;">Item</th>
                                     <th>Descripción (Libre)</th>
                                     <th>Centro Costo</th>
+                                    <th>Lugar</th>
                                     <th style="width: 80px;">U.M.</th>
                                     <th style="width: 100px;">Cant.</th>
                                     <th style="width: 60px;">Ref.</th>
@@ -337,6 +338,7 @@
                                 ProductoId: d.productoId,
                                 DescripcionLibre: d.descripcionLibre, // Mapeo correcto para BD
                                 CentroCostoId: d.centroCostoId,       // Mapeo correcto para BD
+                                Lugar: d.lugar,
                                 UnidadMedida: d.unidadMedida,
                                 CantidadSolicitada: d.cantidad,
                                 
@@ -374,6 +376,7 @@
                 <td class="align-middle font-weight-bold">${d.Item}</td>
                 <td class="align-middle text-left">${d.DescripcionLibre}</td>
                 <td class="align-middle text-primary small font-weight-bold">${d.NombreCentroCosto}</td>
+                <td class="align-middle text-left">${d.Lugar}</td>
                 <td class="align-middle">${d.UnidadMedida}</td>
                 <td class="align-middle font-weight-bold">${d.CantidadSolicitada.toFixed(2)}</td>
                 <td class="align-middle small text-muted">${d.ItemReferencia}</td>
