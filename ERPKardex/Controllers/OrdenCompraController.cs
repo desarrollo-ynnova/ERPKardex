@@ -127,12 +127,13 @@ namespace ERPKardex.Controllers
                                where p.EmpresaId == idEmpresa
                                      && estadosValidos.Contains(p.EstadoId ?? 0)
                                      && d.CantidadSolicitada > (d.CantidadAtendida ?? 0) // Filtro básico de BD
-                               group p by new { p.Id, p.Numero, p.FechaEmision, p.Observacion } into g
+                               group p by new { p.Id, p.Numero, p.FechaEmision, p.FechaNecesaria, p.Observacion } into g
                                select new
                                {
                                    g.Key.Id,
                                    g.Key.Numero,
                                    Fecha = g.Key.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
+                                   FechaNecesaria = g.Key.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                    g.Key.Observacion
                                }).ToList();
 

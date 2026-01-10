@@ -104,6 +104,7 @@ namespace ERPKardex.Controllers
                                     d.DescripcionLibre, // Usamos el campo correcto según tu script
                                     d.UnidadMedida,
                                     d.CantidadAprobada, // O CantidadSolicitada según tu lógica de visualización
+                                    CantidadAtendida = d.CantidadAtendida ?? 0, // O CantidadSolicitada según tu lógica de visualización
                                     d.ObservacionItem,
                                     CentroCosto = cc.Codigo, // Código del CC específico
                                     Ref = d.TablaReferencia == "DREQCOMPRA" ? ("Req. " + d.ItemReferencia) : "-"
@@ -160,6 +161,7 @@ namespace ERPKardex.Controllers
                                 r.Id,
                                 r.Numero,
                                 Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
                             }).ToList();
@@ -184,6 +186,7 @@ namespace ERPKardex.Controllers
                                     d.DescripcionProducto,
                                     d.CantidadSolicitada,
                                     d.UnidadMedida,
+                                    d.Lugar,
                                     CentroCosto = cc.Codigo // Mostramos el CC en la vista previa
                                 }).ToList();
                 return Json(new { status = true, data = detalles });
@@ -218,7 +221,7 @@ namespace ERPKardex.Controllers
 
                                     // Datos visuales extra
                                     NombreCentroCosto = cc.Codigo + " - " + cc.Nombre,
-                                    Observacion = d.ObservacionItem,
+                                    Lugar = d.Lugar,
 
                                     // Datos de Referencia (Para saber de dónde vino y validación)
                                     ReqOrigenId = d.ReqCompraId,

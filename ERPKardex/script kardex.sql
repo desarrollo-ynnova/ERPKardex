@@ -361,7 +361,7 @@ CREATE TABLE dreqcompra (
     
     cantidad_solicitada DECIMAL(12,2),
     
-    observacion_item VARCHAR(255),
+    lugar VARCHAR(255),
     empresa_id INT
 );
 
@@ -393,7 +393,7 @@ CREATE TABLE dreqservicio (
     
     cantidad_solicitada DECIMAL(12,2) DEFAULT 1,
     
-    observacion_item VARCHAR(255),
+    lugar VARCHAR(255),
     empresa_id INT
 );
 

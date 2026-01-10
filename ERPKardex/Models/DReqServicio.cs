@@ -34,7 +34,7 @@ namespace ERPKardex.Models
 
         [Column("observacion_item")]
         [StringLength(255)]
-        public string? ObservacionItem { get; set; }
+        public string? Lugar { get; set; }
 
         [Column("empresa_id")]
         public int EmpresaId { get; set; }

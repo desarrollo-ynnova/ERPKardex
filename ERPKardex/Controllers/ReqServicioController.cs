@@ -73,7 +73,7 @@ namespace ERPKardex.Controllers
                                           d.Item,
                                           d.DescripcionServicio,
                                           d.CantidadSolicitada,
-                                          d.ObservacionItem,
+                                          d.Lugar,
                                           // Jalamos el nombre para visualización
                                           CentroCosto = cc != null ? cc.Nombre : "N/A"
                                       })

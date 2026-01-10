@@ -109,6 +109,7 @@
                                 <th style="width: 30px;">Ver</th>
                                 <th>Número</th>
                                 <th>Fecha</th>
+                                <th>Fecha Necesaria</th>
                                 <th>Solicitante</th>
                                 <th>Observación</th>
                             </tr>
@@ -137,7 +138,13 @@
             <div class="modal-body p-0">
                 <table class="table table-sm table-bordered mb-0 text-center">
                     <thead class="bg-light">
-                        <tr><th>Item</th><th>Descripción</th><th>C. Costo</th><th>Cant.</th></tr>
+                        <tr>
+                            <th>Item</th>
+                            <th>Descripción</th>
+                            <th>C. Costo</th>
+                            <th>Cant.</th>
+                            <th>Lugar</th>
+                        </tr>
                     </thead>
                     <tbody id="tblBodyVistaRapida"></tbody>
                 </table>
@@ -257,6 +264,7 @@
                         `<button class="btn btn-sm btn-info" onclick="verDetalleRapido(${r.id})"><i class="bi bi-eye"></i></button>`,
                         `<span class="font-weight-bold">${r.numero}</span>`,
                         r.fecha,
+                        r.fechaNecesaria,
                         r.solicitante,
                         r.observacion || '-'
                     ]).draw(false);
@@ -277,6 +285,7 @@
                         <td class="text-left">${d.descripcionServicio}</td>
                         <td>${d.centroCosto}</td>
                         <td>${d.cantidadSolicitada}</td>
+                        <td>${d.lugar}</td>
                     </tr>`;
                 });
             }

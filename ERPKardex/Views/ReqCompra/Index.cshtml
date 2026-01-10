@@ -28,6 +28,7 @@
                         <tr>
                             <th>N° REQ</th>
                             <th>F. EMISIÓN</th>
+                            <th>F. NECESARIA</th>
                             <th>SOLICITANTE</th>
                             <th>ESTADO</th>
                             <th style="width: 150px;">ACCIONES</th>
@@ -61,6 +62,7 @@
                             <th>Centro costo</th>
                             <th>Producto</th>
                             <th>U.M.</th>
+                            <th>Lugar</th>
                             <th class="text-center">Cantidad</th>
                         </tr>
                     </thead>
@@ -126,6 +128,7 @@
                 columns: [
                     { data: "numero", className: "font-weight-bold align-middle" },
                     { data: "fechaEmision", className: "align-middle" },
+                    { data: "fechaNecesaria", className: "align-middle" },
                     { data: "solicitante", className: "align-middle" },
                     {
                         data: "estado", className: "text-center align-middle",
@@ -184,6 +187,7 @@
                             <td>${d.centroCosto}</td>
                             <td>${d.descripcionProducto}</td>
                             <td>${d.unidadMedida}</td>
+                            <td>${d.lugar}</td>
                             <td class="text-center font-weight-bold">${d.cantidadSolicitada}</td>
                         </tr>`;
                     });

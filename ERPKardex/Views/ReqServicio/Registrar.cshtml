@@ -68,7 +68,7 @@
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Detalle específico del servicio (Ej: Oficina Gerencia)">
+                            <input type="text" id="txt_DetLugar" class="form-control form-control-sm" placeholder="Lugar específico del servicio">
                         </div>
                     </div>
 
@@ -80,7 +80,7 @@
                                     <th>Servicio / Descripción</th>
                                     <th style="width: 200px;">Centro Costo</th>
                                     <th style="width: 100px;">Cant.</th>
-                                    <th>Detalle Adicional</th>
+                                    <th>Lugar</th>
                                     <th style="width: 60px;"></th>
                                 </tr>
                             </thead>
@@ -127,7 +127,7 @@
             let txtCC = $("#cbx_CentroCosto option:selected").text();
 
             let can = parseFloat($("#txt_DetCantidad").val());
-            let obsItem = $("#txt_DetObservacion").val();
+            let lugarItem = $("#txt_DetLugar").val();
 
             if (!idServ) return toastr.warning("Seleccione un servicio.");
             if (!idCC) return toastr.warning("Seleccione un Centro de Costo.");
@@ -146,7 +146,7 @@
                 DescripcionServicio: nomServ,
                 NombreCentroCosto: txtCC,
                 CantidadSolicitada: can,
-                ObservacionItem: obsItem
+                Lugar: lugarItem
             });
 
             fct_RenderDetalle();
@@ -226,7 +226,7 @@
                 <td class="align-middle text-left">${d.DescripcionServicio}</td>
                 <td class="align-middle text-info small font-weight-bold">${d.NombreCentroCosto}</td>
                 <td class="align-middle font-weight-bold">${d.CantidadSolicitada.toFixed(2)}</td>
-                <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
+                <td class="align-middle text-left small text-muted">${d.Lugar || '-'}</td>
                 <td class="align-middle">
                     <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_Eliminar(${index})"><i class="bi bi-trash-fill"></i></button>
                 </td>
@@ -245,7 +245,7 @@
     function fct_LimpiarInputs() {
         $("#cbx_ServicioBusqueda").val("").trigger("change");
         $("#txt_DetCantidad").val("1.00");
-        $("#txt_DetObservacion").val("");
+        $("#txt_DetLugar").val("");
         $("#cbx_ServicioBusqueda").select2('open');
     }
 

@@ -74,6 +74,7 @@ namespace ERPKardex.Controllers
                                           d.Item,
                                           d.DescripcionProducto,
                                           d.UnidadMedida,
+                                          d.Lugar,
                                           d.CantidadSolicitada,
                                           // Aquí jalamos el nombre del CC para mostrarlo
                                           CentroCosto = cc != null ? cc.Nombre : "N/A"

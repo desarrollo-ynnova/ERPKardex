@@ -93,6 +93,7 @@ namespace ERPKardex.Controllers
                                     Descripcion = d.DescripcionServicio,
                                     d.UnidadMedida,
                                     Cantidad = d.Cantidad,
+                                    CantidadAtendida = d.CantidadAtendida ?? 0,
                                     CentroCosto = cc.Codigo,
                                     Ref = d.TablaReferencia == "DREQSERVICIO" ? ("Req. " + d.ItemReferencia) : "-"
                                 }).OrderBy(x => x.Item).ToList();
@@ -126,6 +127,7 @@ namespace ERPKardex.Controllers
                                 r.Id,
                                 r.Numero,
                                 Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
                             }).ToList();
@@ -149,6 +151,7 @@ namespace ERPKardex.Controllers
                                     d.Item,
                                     d.DescripcionServicio,
                                     d.CantidadSolicitada,
+                                    d.Lugar,
                                     CentroCosto = cc.Codigo
                                 }).ToList();
                 return Json(new { status = true, data = detalles });
@@ -178,7 +181,7 @@ namespace ERPKardex.Controllers
 
                                     // Visuales
                                     NombreCentroCosto = cc.Codigo + " - " + cc.Nombre,
-                                    Observacion = d.ObservacionItem,
+                                    Lugar = d.Lugar,
 
                                     // Referencias
                                     ReqOrigenId = d.ReqServicioId,

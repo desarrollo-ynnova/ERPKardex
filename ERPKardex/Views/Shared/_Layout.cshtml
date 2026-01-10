@@ -236,55 +236,65 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+
+                                <li class="nav-header pl-3 text-uppercase text-secondary small font-weight-bold mt-2">Maestros</li>
+
+                                <li class="nav-item">
+                                    <a href="/Entidad/Index"
+                                       class="nav-link pl-4 @((controllerName == "Entidad") ? "active" : "")">
+                                        <i class="fas fa-address-book nav-icon text-info"></i>
+                                        <p>Proveedores / Clientes</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-header pl-3 text-uppercase text-secondary small font-weight-bold mt-2">Solicitudes</li>
+
                                 <li class="nav-item">
                                     <a href="/ReqCompra/Index"
-                                       class="nav-link @((controllerName == "ReqCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                        <i class="fas fa-file-alt nav-icon"></i>
-                                        <p>Requerimientos de Compra</p>
+                                       class="nav-link pl-4 @((controllerName == "ReqCompra") ? "active" : "")">
+                                        <i class="fas fa-cart-plus nav-icon"></i>
+                                        <p>Req. de Compra</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="/ReqServicio/Index"
-                                       class="nav-link @((controllerName == "ReqServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
+                                       class="nav-link pl-4 @((controllerName == "ReqServicio") ? "active" : "")">
                                         <i class="fas fa-tools nav-icon"></i>
-                                        <p>Requerimientos de Servicio</p>
+                                        <p>Req. de Servicio</p>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a href="/Entidad/Index"
-                                       class="nav-link @((controllerName == "Entidad" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                        <i class="fas fa-building nav-icon"></i>
-                                        <p>Proveedores/Clientes</p>
-                                    </a>
-                                </li>
-                                @if (new[] { "1", "2", }.Contains(role))
+
+                                @if (new[] { "1", "2" }.Contains(role))
                                 {
+                                    <li class="nav-header pl-3 text-uppercase text-secondary small font-weight-bold mt-2">Proceso de Compras</li>
+
                                     <li class="nav-item">
                                         <a href="/PedCompra/Index"
-                                        class="nav-link @((controllerName == "PedCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                            <i class="fas fa-shopping-cart nav-icon"></i>
-                                            <p>Pedidos de Compra</p>
+                                           class="nav-link pl-4 @((controllerName == "PedCompra") ? "active" : "")">
+                                            <i class="fas fa-shopping-cart nav-icon text-warning"></i>
+                                            <p>Pedidos Compra</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="/PedServicio/Index"
-                                        class="nav-link @((controllerName == "PedServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                            <i class="fas fa-concierge-bell nav-icon"></i>
-                                            <p>Pedidos de Servicio</p>
+                                           class="nav-link pl-4 @((controllerName == "PedServicio") ? "active" : "")">
+                                            <i class="fas fa-concierge-bell nav-icon text-warning"></i>
+                                            <p>Pedidos Servicio</p>
                                         </a>
                                     </li>
+
                                     <li class="nav-item">
                                         <a href="/OrdenCompra/Index"
-                                        class="nav-link @((controllerName == "OrdenCompra" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                            <i class="fas fa-file-invoice-dollar nav-icon"></i>
-                                            <p>Órdenes de Compra</p>
+                                           class="nav-link pl-4 @((controllerName == "OrdenCompra") ? "active" : "")">
+                                            <i class="fas fa-file-invoice-dollar nav-icon text-success"></i>
+                                            <p>Órdenes Compra</p>
                                         </a>
                                     </li>
-                                    <li class="nav-item">
+                                    <li class="nav-item mb-2">
                                         <a href="/OrdenServicio/Index"
-                                        class="nav-link @((controllerName == "OrdenServicio" && new[] { "Index", "Registrar" }.Contains(actionName)) ? "active" : "")">
-                                            <i class="fas fa-file-signature nav-icon"></i>
-                                            <p>Órdenes de Servicio</p>
+                                           class="nav-link pl-4 @((controllerName == "OrdenServicio") ? "active" : "")">
+                                            <i class="fas fa-file-signature nav-icon text-success"></i>
+                                            <p>Órdenes Servicio</p>
                                         </a>
                                     </li>
                                 }

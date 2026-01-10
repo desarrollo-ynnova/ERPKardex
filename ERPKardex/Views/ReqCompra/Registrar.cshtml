@@ -68,7 +68,7 @@
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <input type="text" id="txt_DetObservacion" class="form-control form-control-sm" placeholder="Observación específica para este ítem (Opcional)">
+                            <input type="text" id="txt_DetLugar" class="form-control form-control-sm" placeholder="Lugar específico para este ítem">
                         </div>
                     </div>
 
@@ -81,7 +81,7 @@
                                     <th style="width: 200px;">Centro Costo</th>
                                     <th style="width: 80px;">U.M.</th>
                                     <th style="width: 100px;">Cant.</th>
-                                    <th>Observación Item</th>
+                                    <th>Lugar</th>
                                     <th style="width: 60px;"></th>
                                 </tr>
                             </thead>
@@ -130,7 +130,7 @@
 
             let um = $("#txt_DetUnidad").val();
             let can = parseFloat($("#txt_DetCantidad").val());
-            let obsItem = $("#txt_DetObservacion").val();
+            let lugarItem = $("#txt_DetLugar").val();
 
             // Validaciones
             if (!idProd) return toastr.warning("Debe seleccionar un producto.");
@@ -158,7 +158,7 @@
                 NombreCentroCosto: txtCC, // Para pintar tabla JS
                 UnidadMedida: um,
                 CantidadSolicitada: can,
-                ObservacionItem: obsItem
+                Lugar: lugarItem
             });
 
             fct_RenderDetalle();
@@ -253,7 +253,7 @@
 
                 <td class="align-middle">${d.UnidadMedida}</td>
                 <td class="align-middle font-weight-bold" style="font-size: 1.1rem;">${d.CantidadSolicitada.toFixed(2)}</td>
-                <td class="align-middle text-left small text-muted">${d.ObservacionItem || '-'}</td>
+                <td class="align-middle text-left small text-muted">${d.Lugar || '-'}</td>
                 <td class="align-middle">
                     <button class="btn btn-sm btn-outline-danger border-0" onclick="fct_EliminarDetalle(${index})" title="Quitar">
                         <i class="bi bi-trash-fill"></i>
@@ -279,7 +279,7 @@
         // $("#cbx_CentroCosto").val("").trigger("change");
 
         $("#txt_DetCantidad").val("1.00");
-        $("#txt_DetObservacion").val("");
+        $("#txt_DetLugar").val("");
         $("#cbx_ProductoBusqueda").select2('open'); // Foco al producto de nuevo
     }
 

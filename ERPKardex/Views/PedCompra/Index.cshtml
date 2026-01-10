@@ -54,6 +54,7 @@
                                 <th style="width: 100px;">C. Costo</th>
                                 <th style="width: 80px;">U.M.</th>
                                 <th style="width: 80px;">Cant.</th>
+                                <th style="width: 80px;">Cant. Atendida</th>
                                 <th>Ref. Origen</th>
                             </tr>
                         </thead>
@@ -238,10 +239,20 @@
                 {
                     data: "estado", className: "text-center align-middle",
                     render: function (data) {
-                        let badgeClass = "badge-secondary";
-                        if(data === "Aprobado" || data === "Atendido" || data === "Generado") badgeClass = "badge-success";
-                        else if(data === "Pendiente" || data === "En Proceso") badgeClass = "badge-warning text-dark";
-                        else if(data === "Anulado" || data === "Rechazado") badgeClass = "badge-danger";
+                        let badgeClass = "badge-secondary"; // Color por defecto (Gris)
+
+                        if (data === "Generado") {
+                            badgeClass = "badge-info"; // Azul
+                        }
+                        else if (data === "Atendido Parcial") {
+                            badgeClass = "badge-warning text-dark"; // Amarillo
+                        }
+                        else if (data === "Atendido Total") {
+                            badgeClass = "badge-success"; // Verde
+                        }
+                        else if (data === "Anulado") {
+                            badgeClass = "badge-danger"; // Rojo
+                        }
 
                         return `<span class="badge ${badgeClass} px-2 py-1">${data}</span>`;
                     },
@@ -298,6 +309,7 @@
                                 <td class="text-primary font-weight-bold">${d.centroCosto}</td>
                                 <td>${d.unidadMedida}</td>
                                 <td class="font-weight-bold">${d.cantidadAprobada.toFixed(2)}</td>
+                                <td class="font-weight-bold">${d.cantidadAtendida.toFixed(2)}</td>
                                 <td><span class="badge badge-light border">${d.ref}</span></td>
                             </tr>`;
                         });
