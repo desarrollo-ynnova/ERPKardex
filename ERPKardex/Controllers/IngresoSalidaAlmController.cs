@@ -81,7 +81,37 @@ namespace ERPKardex.Controllers
                 return Json(new ApiResponse { data = null, message = ex.Message, status = false });
             }
         }
-        [HttpPost]
+        // GET: Obtener detalles para el modal (Ojito)
+        [HttpGet]
+        public JsonResult GetDetalleMovimiento(int id)
+        {
+            try
+            {
+                // Consultamos directamente la tabla de detalles
+                // Aprovechamos que ya guardaste los snapshots (descripción, unidad) al momento del registro
+                var detalles = _context.DIngresoSalidaAlms
+                    .Where(d => d.IngresoSalidaAlmId == id)
+                    .Select(d => new
+                    {
+                        d.Item,
+                        Codigo = d.CodProducto,
+                        Producto = d.DescripcionProducto,
+                        Unidad = d.CodUnidadMedida,
+                        d.Cantidad,
+                        // Si quieres mostrar costos, inclúyelos; si es solo logístico, puedes quitarlos
+                        d.Precio,
+                        d.Total
+                    })
+                    .OrderBy(d => d.Item)
+                    .ToList();
+
+                return Json(new { status = true, data = detalles });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = "Error al obtener detalles: " + ex.Message });
+            }
+        }
         [HttpPost]
         public JsonResult GuardarMovimiento(IngresoSalidaAlm cabecera, string detallesJson)
         {

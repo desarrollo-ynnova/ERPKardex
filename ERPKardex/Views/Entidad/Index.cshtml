@@ -1,24 +1,23 @@
 ﻿@{
-    ViewData["Title"] = "Órdenes de Compra";
+    ViewData["Title"] = "Gestión de Entidades";
 }
 
 <div class="container-fluid py-4">
-    <div class="card shadow">
+    <div class="card shadow mb-4">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Bandeja de Órdenes de Compra</h5>
+            <h5 class="m-0 font-weight-bold">Directorio de Entidades (Proveedores / Clientes)</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-bordered" id="tbl_Ordenes" width="100%">
+                <table class="table table-bordered table-hover" id="tbl_Entidades" width="100%" cellspacing="0">
                     <thead class="thead-light text-center">
                         <tr>
-                            <th>Número</th>
-                            <th>Fecha</th>
-                            <th>Proveedor</th>
-                            <th>Moneda</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
+                            <th style="width: 15%;">RUC</th>
+                            <th>Razón Social</th>
+                            <th style="width: 15%;">Teléfono</th>
+                            <th style="width: 15%;">Email</th>
+                            <th style="width: 10%;">Estado</th>
+                            <th style="width: 10%;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -28,25 +27,9 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalDetalle" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white py-2">
-                <h6 class="modal-title">Detalle de la Orden</h6>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-            </div>
-            <div class="modal-body p-0">
-                <table class="table table-sm table-striped mb-0 text-center">
-                    <thead class="bg-light"><tr><th>Item</th><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead>
-                    <tbody id="tblBodyDetalle"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
     $(document).ready(function() {
+        // $('body').addClass('sidebar-collapse');
         var windowHeight = $('body > div.wrapper > div.content-wrapper').height() / 2;
         //CONFIGURACION POR DEFECTO DATATABLES
         $.extend($.fn.dataTable.defaults, {
@@ -109,11 +92,11 @@
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
         });
 
-        cargarOrdenes();
+        cargarTabla();
     });
 
-    function cargarOrdenes() {
-        $('#tbl_Ordenes').DataTable({
+    function cargarTabla() {
+        $('#tbl_Entidades').DataTable({
             buttons: [
                 {
                     extend: 'copy',
@@ -126,7 +109,7 @@
                     text: '<i class="bi bi-file-earmark-excel"></i>',
                     titleAttr: 'Exportar a Excel',
                     className: 'btn btn-success',
-                    filename: 'Órdenes de Compra ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Entidades ' + moment().format('DD-MM-YYYY HH_mm'),
                     footer: true,
                     exportOptions:
                     {
@@ -139,7 +122,7 @@
                     text: '<i class="bi bi-file-earmark-pdf"></i>',
                     titleAttr: 'Exportar a PDF',
                     className: 'btn btn-danger',
-                    filename: 'Órdenes de Compra ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Entidades ' + moment().format('DD-MM-YYYY HH_mm'),
                     exportOptions:
                     {
                         stripHtml: true,
@@ -167,52 +150,43 @@
                     columns: ':not(.noVis)',
                 },
                 {
-                    text: ' <i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nueva OCO',
+                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nueva entidad',
                     className: 'btn bg-success m-1',
                     titleAttr: 'Nuevo',
                     action: function (e, dt, node, config) {
-                        window.location.href = '/OrdenCompra/Registrar';
+                        window.location.href = '/Entidad/Registrar';
                     },
                 },
             ],
-            ajax: { url: '/OrdenCompra/GetOrdenesData', type: 'GET' },
+            ajax: {
+                url: '/Entidad/GetData',
+                type: 'GET'
+            },
             columns: [
-                { data: 'numero', className: 'font-weight-bold' },
-                { data: 'fecha' },
+                { data: 'ruc', className: 'font-weight-bold' },
+                { data: 'razonSocial' },
+                { data: 'telefono', defaultContent: '-' },
+                { data: 'email', defaultContent: '-' },
                 {
-                    data: 'proveedor',
-                    render: function(data, type, row) {
-                        return `<div style="line-height:1.2"><small class="text-muted">${row.ruc}</small><br>${data}</div>`;
-                    }
-                },
-                { data: 'moneda' },
-                {
-                    data: 'total', className: 'text-right',
-                    render: $.fn.dataTable.render.number(',', '.', 2, '')
-                },
-                {
-                    data: 'estado', className: 'text-center',
+                    data: 'estado',
+                    className: 'text-center',
                     render: function(data) {
-                        // CAMBIO AQUÍ: "Generado" es el estado amarillo (warning)
-                        let color = data === 'Generado' ? 'warning' : (data === 'Aprobado' ? 'success' : 'danger');
-                        return `<span class="badge badge-${color}">${data}</span>`;
+                        return data
+                            ? '<span class="badge badge-success">ACTIVO</span>'
+                            : '<span class="badge badge-secondary">INACTIVO</span>';
                     }
                 },
                 {
-                    data: 'id', className: 'text-center',
+                    data: 'id',
+                    className: 'text-center',
                     render: function(data, type, row) {
-                        let btns = `<button class="btn btn-sm btn-info mr-1" onclick="verDetalle(${data})" title="Ver"><i class="fas fa-eye"></i></button>`;
-
-                        // CAMBIO AQUÍ: Solo mostrar botones de acción si dice "Generado"
-                        if(row.estado === 'Generado') {
-                            btns += `<button class="btn btn-sm btn-success mr-1" onclick="aprobar(${data})" title="Aprobar"><i class="fas fa-check"></i></button>`;
-                            btns += `<button class="btn btn-sm btn-danger" onclick="anular(${data})" title="Anular"><i class="fas fa-times"></i></button>`;
-                        }
-                        return btns;
+                        return `
+                            <a href="/Entidad/Registrar?id=${data}" class="btn btn-sm btn-warning" title="Editar / Dar de Baja"><i class="fas fa-edit"></i></a>
+                            <button class="btn btn-sm btn-danger" onclick="eliminar(${data})" title="Eliminar Físicamente"><i class="fas fa-trash"></i></button>
+                        `;
                     }
                 }
             ],
-            order: [[0, "desc"]],
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
             initComplete: function (data, row, cell, start, end, display) {
                 $('.dt-buttons button').addClass('m-1');
@@ -230,64 +204,27 @@
         });
     }
 
-    function verDetalle(id) {
-        $.get('/OrdenCompra/GetDetalleOrden?id=' + id, function(res) {
-            let html = '';
-            res.data.forEach(d => {
-                html += `<tr>
-                    <td>${d.item}</td>
-                    <td class="text-left">${d.producto}</td>
-                    <td>${d.cantidad} ${d.unidadMedida}</td>
-                    <td>${d.precioUnitario.toFixed(2)}</td>
-                    <td>${d.total.toFixed(2)}</td>
-                </tr>`;
-            });
-            $('#tblBodyDetalle').html(html);
-            $('#modalDetalle').modal('show');
-        });
-    }
-
-    function aprobar(id) {
+    function eliminar(id) {
         Swal.fire({
-            title: "¿Aprobar Orden?",
-            text: "Esto actualizará los saldos de los pedidos y no se podrá deshacer.",
-            icon: "warning",
+            title: '¿Eliminar registro?',
+            text: "El sistema validará si tiene historial antes de borrarlo.",
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: "Sí, Aprobar",
-            confirmButtonColor: "#28a745"
+            reverseButtons: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, intentar eliminar'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/OrdenCompra/AprobarOrden', { id: id }, function(res) {
-                    if(res.status) {
-                        Swal.fire("Aprobado", res.message, "success");
-                        cargarOrdenes();
+                $.post('/Entidad/Eliminar', { id: id }, function(res) {
+                    if (res.status) {
+                        Swal.fire('Eliminado', res.message, 'success');
+                        cargarTabla();
                     } else {
-                        Swal.fire("Error", res.message, "error");
+                        // Aquí mostramos el mensaje de error si tiene historial
+                        Swal.fire('No se pudo eliminar', res.message, 'error');
                     }
                 });
             }
-        });
-    }
-
-    function anular(id) {
-        Swal.fire({
-            title: "¿Anular Orden?",
-            text: "La orden pasará a estado Anulado.",
-            icon: "error",
-            showCancelButton: true,
-            confirmButtonText: "Sí, Anular",
-            confirmButtonColor: "#dc3545"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('/OrdenCompra/RechazarOrden', { id: id }, function(res) {
-                    if(res.status) {
-                        Swal.fire("Anulado", res.message, "success");
-                        cargarOrdenes();
-                    } else {
-                        Swal.fire("Error", res.message, "error");
-                    }
-                });
-            }
-        });
+        })
     }
 </script>

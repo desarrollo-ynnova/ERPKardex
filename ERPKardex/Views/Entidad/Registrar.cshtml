@@ -1,0 +1,120 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Id == 0 ? "Nueva Entidad" : "Editar Entidad";
+    int idEntidad = ViewBag.Id;
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="m-0 font-weight-bold">
+                        <i class="fas fa-user-tag"></i> @(idEntidad == 0 ? "Registro de Entidad" : "Edición de Entidad")
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <input type="hidden" id="hdn_Id" value="@idEntidad" />
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">RUC (*)</label>
+                            <input type="text" id="txt_Ruc" class="form-control" placeholder="Ingrese 11 dígitos" maxlength="11" onkeypress="return /[0-9]/i.test(event.key)">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Teléfono</label>
+                            <input type="text" id="txt_Telefono" class="form-control" placeholder="Celular o Fijo">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Razón Social (*)</label>
+                        <input type="text" id="txt_RazonSocial" class="form-control" placeholder="Nombre de la empresa o persona">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Correo Electrónico</label>
+                            <input type="email" id="txt_Email" class="form-control" placeholder="contacto@empresa.com">
+                        </div>
+
+                        <div class="form-group col-md-6">
+                            <label class="font-weight-bold">Estado</label>
+                            <select id="cbo_Estado" class="form-control">
+                                <option value="1">ACTIVO</option>
+                                <option value="0">INACTIVO (DE BAJA)</option>
+                            </select>
+                            <small class="text-muted">Utilice "INACTIVO" para dar de baja si ya tiene historial.</small>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <div class="text-right">
+                        <a href="/Entidad/Index" class="btn btn-secondary mr-2">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                        <button class="btn btn-success px-4" onclick="guardar()">
+                            <i class="fas fa-save"></i> GUARDAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        let id = $('#hdn_Id').val();
+        if(id > 0) {
+            cargarDatos(id);
+        } else {
+            // Si es nuevo, Estado Activo por defecto
+            $('#cbo_Estado').val("1");
+        }
+    });
+
+    function cargarDatos(id) {
+        $.get('/Entidad/Obtener?id=' + id, function(res) {
+            if(res.status) {
+                $('#txt_Ruc').val(res.data.ruc);
+                $('#txt_RazonSocial').val(res.data.razonSocial);
+                $('#txt_Telefono').val(res.data.telefono);
+                $('#txt_Email').val(res.data.email);
+
+                // Mapear boolean a value del select (true->"1", false->"0")
+                $('#cbo_Estado').val(res.data.estado ? "1" : "0");
+            } else {
+                Swal.fire("Error", "No se pudo cargar la información.", "error");
+            }
+        });
+    }
+
+    function guardar() {
+        // Validaciones simples
+        let ruc = $('#txt_Ruc').val().trim();
+        let razon = $('#txt_RazonSocial').val().trim();
+
+        if(!ruc || ruc.length < 11) return Swal.fire("Aviso", "El RUC debe tener 11 dígitos.", "warning");
+        if(!razon) return Swal.fire("Aviso", "Ingrese la Razón Social.", "warning");
+
+        let modelo = {
+            Id: $('#hdn_Id').val(),
+            Ruc: ruc,
+            RazonSocial: razon,
+            Telefono: $('#txt_Telefono').val(),
+            Email: $('#txt_Email').val(),
+            // Enviamos el estado seleccionado (true si es "1", false si es "0")
+            Estado: $('#cbo_Estado').val() === "1"
+        };
+
+        $.post('/Entidad/Guardar', { modelo: modelo }, function(res) {
+            if(res.status) {
+                Swal.fire("Éxito", res.message, "success").then(() => {
+                    window.location.href = '/Entidad/Index';
+                });
+            } else {
+                Swal.fire("Error", res.message, "error");
+            }
+        });
+    }
+</script>

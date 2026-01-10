@@ -36,32 +36,31 @@
                     </div>
 
                     <div class="row mb-3 bg-light p-2 rounded">
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label>Fecha Emisión</label>
                             <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
                         </div>
-
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label>Inicio Servicio</label>
                             <input type="date" id="txt_FechaInicio" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label>Fin Servicio</label>
                             <input type="date" id="txt_FechaFin" class="form-control" value="@DateTime.Now.AddDays(15).ToString("yyyy-MM-dd")">
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label>Moneda</label>
-                            <select id="cbx_Moneda" class="form-control form-control-sm"></select>
+                            <select id="cbx_Moneda" class="form-control form-control"></select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label>T. Cambio</label>
                             <input type="number" id="txt_TipoCambio" class="form-control" value="1.000" step="0.001">
                         </div>
-                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                        <div class="col-md-4 d-flex align-items-center justify-content-center">
                             <div class="custom-control custom-switch mt-4">
                                 <input type="checkbox" class="custom-control-input" id="chk_IncluyeIgv" checked onchange="recalcularTodo()">
-                                <label class="custom-control-label font-weight-bold" for="chk_IncluyeIgv">Precios + IGV</label>
+                                <label class="custom-control-label font-weight-bold" for="chk_IncluyeIgv">Precios incluyen IGV</label>
                             </div>
                         </div>
                     </div>
@@ -152,7 +151,7 @@
             </div>
 
             <div class="fixed-bottom bg-white border-top p-3 text-right shadow" style="opacity: 0.95;">
-                <a href="/OrdenServicio/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                <a href="/OrdenServicio/Index" class="btn btn-danger mr-2">Cancelar</a>
                 <button class="btn btn-info px-5 font-weight-bold" onclick="guardarOrden()">
                     <i class="fas fa-save"></i> GUARDAR OS
                 </button>

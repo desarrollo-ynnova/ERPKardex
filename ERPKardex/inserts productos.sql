@@ -454,8 +454,8 @@ INSERT INTO dingresosalidaalm (
     empresa_id
 )
 SELECT 
-    @IdIngreso,                          
-    ROW_NUMBER() OVER(ORDER BY sa.id),  
+    @IdIngreso,
+    RIGHT('000' + CAST(ROW_NUMBER() OVER(ORDER BY sa.id) AS VARCHAR), 3),  
     sa.producto_id,
     p.codigo,
     p.descripcion_producto,              

@@ -41,7 +41,7 @@ namespace ERPKardex.Controllers
                                 Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                 Proveedor = ent.RazonSocial,
                                 Ruc = ent.Ruc,
-                                Moneda = mon.Codigo,
+                                Moneda = mon.Nombre,
                                 Total = o.Total,
                                 Estado = est.Nombre,
                                 o.EstadoId,
