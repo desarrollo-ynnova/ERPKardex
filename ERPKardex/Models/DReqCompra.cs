@@ -34,8 +34,6 @@ namespace ERPKardex.Models
         [Column("cantidad_solicitada")]
         public decimal CantidadSolicitada { get; set; }
 
-        [Column("observacion_item")]
-        [StringLength(255)]
         public string? Lugar { get; set; }
 
         [Column("empresa_id")]
