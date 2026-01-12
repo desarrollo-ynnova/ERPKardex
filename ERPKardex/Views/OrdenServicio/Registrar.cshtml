@@ -466,7 +466,7 @@
         let colorBtn = "#3085d6";
 
         if (hayExcesos) {
-            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay servicios con cantidades superiores al saldo pendiente. ¿Desea proceder con la SOBRE-ATENCIÓN?";
+            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay servicios con cantidades superiores a la cantidad solicitada del pedido. ¿Desea proceder con la SOBRE-ATENCIÓN?";
             titulo = "Confirmar Exceso";
             icon = "warning";
             colorBtn = "#d33"; // Rojo
@@ -512,8 +512,10 @@
             text: mensajeConfirmacion,
             icon: icon,
             showCancelButton: true,
+            reverseButtons: true,
             confirmButtonColor: colorBtn,
-            confirmButtonText: "Sí, Registrar"
+            confirmButtonText: "Sí, Registrar",
+            cancelButtonText: "Cancelar"
         }).then((result) => {
             if (result.isConfirmed) {
                 $('#efec-cargando').removeClass('d-none');

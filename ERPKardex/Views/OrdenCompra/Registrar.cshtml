@@ -525,7 +525,7 @@
         let mensajeConfirmacion = "¿Registrar Orden de Compra?";
 
         if (hayExcesos) {
-            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay ítems con cantidades superiores al saldo pendiente del pedido. ¿Desea proceder con la SOBRE-ATENCIÓN?";
+            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay ítems con cantidades superiores a la cantidad solicitada del pedido. ¿Desea proceder con la SOBRE-ATENCIÓN?";
         }
 
         // Construir Cabecera
@@ -581,7 +581,8 @@
             showCancelButton: true,
             reverseButtons: true,
             confirmButtonColor: hayExcesos ? "#d33" : "#3085d6", // Rojo si es peligroso
-            confirmButtonText: "Sí, Registrar"
+            confirmButtonText: "Sí, Registrar",
+            cancelButtonText: "Cancelar",
         }).then((result) => {
             if (result.isConfirmed) {
                 // Proceder con el AJAX (Tu código actual)

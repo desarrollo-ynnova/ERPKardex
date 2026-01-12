@@ -82,6 +82,7 @@ namespace ERPKardex.Controllers
             {
                 var detalles = (from d in _context.DPedidoCompras
                                 join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                join est in _context.Estados on d.EstadoId equals est.Id
                                 where d.PedidoCompraId == id
                                 select new
                                 {
@@ -91,6 +92,7 @@ namespace ERPKardex.Controllers
                                     d.CantidadAprobada,
                                     CantidadAtendida = d.CantidadAtendida ?? 0,
                                     d.ObservacionItem,
+                                    Estado = est.Nombre,
                                     CentroCosto = cc.Codigo,
                                     d.Lugar,
                                     Ref = d.TablaReferencia == "DREQCOMPRA" ? ("Req. " + d.ItemReferencia) : "-"
@@ -260,10 +262,11 @@ namespace ERPKardex.Controllers
                     var estAtendidoDREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido" && e.Tabla == "DREQ");
                     var estParcialREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Parcial" && e.Tabla == "REQ");
                     var estTotalREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Total" && e.Tabla == "REQ");
+                    var estPendienteDPED = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DPED");
 
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PED");
 
-                    if (estGeneradoPED == null || estAtendidoDREQ == null || estParcialREQ == null || estTotalREQ == null || tipoDoc == null)
+                    if (estGeneradoPED == null || estAtendidoDREQ == null || estParcialREQ == null || estTotalREQ == null || tipoDoc == null || estPendienteDPED == null)
                         throw new Exception("Falta configuración de Estados o Tipo Documento.");
 
                     // 2. CORRELATIVO
@@ -313,7 +316,7 @@ namespace ERPKardex.Controllers
 
                             // Estado del detalle del pedido (Usamos el mismo Generado de cabecera o Pendiente si tienes DPED)
                             // Si tienes estado "Pendiente" en 'DPED', úsalo aquí. Por ahora uso Generado.
-                            det.EstadoId = estGeneradoPED.Id;
+                            det.EstadoId = estPendienteDPED.Id;
 
                             _context.DPedidoCompras.Add(det);
 

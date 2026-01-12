@@ -122,7 +122,7 @@ namespace ERPKardex.Controllers
                 var esGlobal = EsAdminGlobal;
 
                 var data = await _context.CentroCostos
-                    .Where(x => (esGlobal || x.EmpresaId == miEmpresaId) && x.Estado == true && x.EsImputable == true)
+                    .Where(x => x.EmpresaId == miEmpresaId && x.Estado == true && x.EsImputable == true)
                     .Select(x => new { x.Id, x.Codigo, x.Nombre })
                     .OrderBy(x => x.Codigo)
                     .ToListAsync();

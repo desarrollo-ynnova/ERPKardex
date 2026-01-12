@@ -264,7 +264,10 @@
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Sí, Aprobar",
-            confirmButtonColor: "#28a745"
+            confirmButtonColor: "#28a745",
+            reverseButtons: true,
+            cancelButtonColor: "#d33",
+            cancelButtonText: "Cancelar",
         }).then((result) => {
             if (result.isConfirmed) {
                 $.post('/OrdenCompra/AprobarOrden', { id: id }, function(res) {
@@ -286,7 +289,9 @@
             icon: "error",
             showCancelButton: true,
             confirmButtonText: "Sí, Anular",
-            confirmButtonColor: "#dc3545"
+            confirmButtonColor: "#dc3545",
+            reverseButtons: true,
+            cancelButtonText: "Cancelar",
         }).then((result) => {
             if (result.isConfirmed) {
                 $.post('/OrdenCompra/RechazarOrden', { id: id }, function(res) {

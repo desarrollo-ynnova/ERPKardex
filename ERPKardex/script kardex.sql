@@ -6,6 +6,7 @@ drop table if exists empresa;
 drop table if exists sucursal;
 drop table if exists almacen;
 drop table if exists motivo;
+drop table if exists tipo_cuenta;
 drop table if exists centro_costo;
 drop table if exists actividad;
 drop table if exists moneda;
@@ -126,6 +127,14 @@ create table motivo (
 	estado BIT
 );
 
+create table tipo_cuenta (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    codigo VARCHAR(255),
+    nombre VARCHAR(255),
+    estado BIT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
 create table centro_costo (
     id INT IDENTITY(1,1) PRIMARY KEY,
     codigo VARCHAR(20),
@@ -133,6 +142,11 @@ create table centro_costo (
     empresa_id INT,
     padre_id INT,
     es_imputable BIT DEFAULT 1,
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    tipo_cuenta_id INT,
+    cuenta_cargo VARCHAR(255),
+    cuenta_abono VARCHAR(255),
 	estado BIT DEFAULT 1,
     fecha_registro DATETIME DEFAULT GETDATE(),
 );
@@ -683,7 +697,8 @@ INSERT INTO estado (nombre, tabla) VALUES
 -- Solo los estados que pediste para los DPEDIDOS
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Pendiente', 'DPED'),
-('Atendido', 'DPED');
+('Atendido Parcial', 'DPED'),
+('Atendido Total', 'DPED');
 
 -- Estados para el Pedido (Operativos)
 INSERT INTO estado (nombre, tabla) VALUES 
@@ -788,6 +803,61 @@ INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRÍCOLA S.A.C.', 1);
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20615184153', 'SUPPLY BIOTECHNOLOGY LOGISTIC WORLD S.A.C.S.', 1);
 
+GO
+-- B. INSERTAR LAS DEMÁS EMPRESAS (IDs 5 al 16)
+-- ------------------------------------------------------------------
+SET IDENTITY_INSERT empresa ON;
+-- ID 5: SOLUCIONES INDUSTRIALES METQUIM
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 5)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (5, '20614551853', 'SOLUCIONES INDUSTRIALES METQUIM S.A.C.', 1);
+
+-- ID 6: GREEN FARM
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 6)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (6, '20603845294', 'PRODUCTOS Y SERVICIOS GENERALES GREEN FARM S.A.C.', 1);
+
+-- ID 7: IMBO
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 7)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (7, '20605644725', 'CONSTRUCTORA INMOBILIARIA EDIFICACIONES E INGENIERIA IMBO S.A.C', 1);
+
+-- ID 8: EVOCA
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 8)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (8, '20561231304', 'EVOCA S.A.C.', 1);
+
+-- ID 9: INSTITUTO E.I.R.L.
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 9)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (9, '20605353721', 'INSTITUTO DE INVESTIGACION E INNOVACION DE GESTION Y DESARROLLO EMPRESARIAL E.I.R.L.', 1);
+
+-- ID 10: MEDICINA CORPORATIVA
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 10)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (10, '20607165832', 'MEDICINA CORPORATIVA Y SALUD S.A.C.', 1);
+
+-- ID 11: COMERCIALIZADORA EXPORTADORA
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 11)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (11, '20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1);
+
+-- ID 12: AGROQUIMEX
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 12)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (12, '20612680842', 'INNOVACION Y GESTION EN BIOPLAGUICIDAS AGROQUIMEX S.A.C', 1);
+
+-- ID 13: ECOMATERIALES
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 13)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (13, '20615085198', 'CORPORACION ECOMATERIALES DEL PERU S.A.C.', 1);
+
+-- ID 14: RECLUTA HEAD HUNTING
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 14)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (14, '20615125254', 'RECLUTA HEAD HUNTING S.A.C.S', 1);
+
+-- ID 15: YNNOVA DIGITAL
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 15)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (15, '20615155251', 'YNNOVA DIGITAL CORP S.A.C.S.', 1);
+
+-- ID 16: TRUST MORE COMPLIANCE
+IF NOT EXISTS(SELECT * FROM empresa WHERE id = 16)
+    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (16, '20614993198', 'TRUST MORE COMPLIANCE S.A.C.S.', 1);
+
+SET IDENTITY_INSERT empresa OFF;
+GO
+
 -- inserts de 'sucursal'
 INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCIPAL - POMALCA', 1, 1);
 
@@ -858,107 +928,100 @@ INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('36',0
 INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('37',0,'RETIRO POR CONVENIO COLECTIVO',1);
 INSERT INTO motivo (codigo, tipo_movimiento, descripcion, estado) VALUES ('38',0,'RETIRO POR SUSTITUCIÓN DE BIEN SINIESTRADO',1);
 
--- inserts de 'centro_costo'
--- 1. NIVEL 1: Áreas Generales (Padres - No Imputables)
---INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES 
---('ADM', 'ADMINISTRACIÓN CENTRAL', 1, NULL, 0, 1),      -- ID 1
---('OP-AGRO', 'OPERACIONES AGRÍCOLAS', 1, NULL, 0, 1),   -- ID 2
---('PROD', 'PLANTA DE PRODUCCIÓN', 1, NULL, 0, 1),       -- ID 3
---('COM', 'COMERCIAL Y VENTAS', 1, NULL, 0, 1);          -- ID 4
+---- inserts de 'centro_costo'
+---- NIVEL 1: PADRES RAÍZ
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C1101', 'TERRENOS', 1, NULL, 0, 1),
+--('C1102', 'ACTIVO FIJO', 1, NULL, 0, 1),
+--('C1103', 'GESTION ADMINISTRATIVA', 1, NULL, 0, 1),
+--('C1104', 'GESTION OPERATIVA', 1, NULL, 0, 1),
+--('C1105', 'GESTION VENTAS', 1, NULL, 0, 1);
 
--- NIVEL 1: PADRES RAÍZ
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C1101', 'TERRENOS', 1, NULL, 0, 1),
-('C1102', 'ACTIVO FIJO', 1, NULL, 0, 1),
-('C1103', 'GESTION ADMINISTRATIVA', 1, NULL, 0, 1),
-('C1104', 'GESTION OPERATIVA', 1, NULL, 0, 1),
-('C1105', 'GESTION VENTAS', 1, NULL, 0, 1);
+---- NIVEL 2: HIJOS DIRECTOS
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C110101', 'TERRENO PROPIO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1101'), 1, 1),
+--('C110102', 'TERRENO ALQUILADO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1101'), 0, 1),
+--('C110201', 'INFRAESTRUCTURA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
+--('C110202', 'MAQUINARIA Y EQUIPOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
+--('C110203', 'EQUIPOS AUXILIARES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
+--('C110204', 'VEHICULOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
+--('C110205', 'INTANGIBLES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
+--('C110301', 'GERENCIA GENERAL', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1103'), 1, 1),
+--('C110401', 'PROCESO PRODUCTIVO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
+--('C110402', 'COMPRA DE INSUMOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
+--('C110404', 'INVESTIGACION Y DESARROLLO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
+--('C110405', 'CONTROL DE CALIDAD', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
+--('C110406', 'MANTENIMIENTO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
+--('C110501', 'VENTAS NACIONALES (PERU)', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1105'), 0, 1);
 
--- NIVEL 2: HIJOS DIRECTOS
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C110101', 'TERRENO PROPIO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1101'), 1, 1),
-('C110102', 'TERRENO ALQUILADO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1101'), 0, 1),
-('C110201', 'INFRAESTRUCTURA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
-('C110202', 'MAQUINARIA Y EQUIPOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
-('C110203', 'EQUIPOS AUXILIARES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
-('C110204', 'VEHICULOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
-('C110205', 'INTANGIBLES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1102'), 1, 1),
-('C110301', 'GERENCIA GENERAL', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1103'), 1, 1),
-('C110401', 'PROCESO PRODUCTIVO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
-('C110402', 'COMPRA DE INSUMOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
-('C110404', 'INVESTIGACION Y DESARROLLO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
-('C110405', 'CONTROL DE CALIDAD', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
-('C110406', 'MANTENIMIENTO', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1104'), 1, 1),
-('C110501', 'VENTAS NACIONALES (PERU)', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C1105'), 0, 1);
+---- NIVEL 3: NIETOS
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C11010201', 'ALMACEN POMALCA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110102'), 1, 1),
+--('C11050101', 'VENTA INSUMOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
+--('C11050102', 'SOPORTE POST-VENTA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
+--('C11050103', 'ENSAYOS Y DEMOSTRACIONES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
+--('C11050104', 'GESTION COMERCIAL - PERU', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1);
 
--- NIVEL 3: NIETOS
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C11010201', 'ALMACEN POMALCA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110102'), 1, 1),
-('C11050101', 'VENTA INSUMOS', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
-('C11050102', 'SOPORTE POST-VENTA', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
-('C11050103', 'ENSAYOS Y DEMOSTRACIONES', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1),
-('C11050104', 'GESTION COMERCIAL - PERU', 1, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C110501'), 1, 1);
+---- NIVEL 1: PADRES RAÍZ (empresa_id = 2)
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C0101', 'TERRENOS', 2, NULL, 0, 1),
+--('C0102', 'ACTIVO FIJO', 2, NULL, 0, 1),
+--('C0103', 'GESTION ADMINISTRATIVA', 2, NULL, 0, 1),
+--('C0104', 'GESTION OPERACIONES', 2, NULL, 0, 1),
+--('C0105', 'GESTION VENTAS', 2, NULL, 0, 1);
 
--- NIVEL 1: PADRES RAÍZ (empresa_id = 2)
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C0101', 'TERRENOS', 2, NULL, 0, 1),
-('C0102', 'ACTIVO FIJO', 2, NULL, 0, 1),
-('C0103', 'GESTION ADMINISTRATIVA', 2, NULL, 0, 1),
-('C0104', 'GESTION OPERACIONES', 2, NULL, 0, 1),
-('C0105', 'GESTION VENTAS', 2, NULL, 0, 1);
+---- NIVEL 2: HIJOS DIRECTOS
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C010101', 'TERRENO PROPIO', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0101' AND empresa_id = 2), 1, 1),
+--('C010102', 'TERRENO ALQUILADO', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0101' AND empresa_id = 2), 1, 1),
+--('C010201', 'INFRAESTRUCTURA', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
+--('C010202', 'MAQUINARIA Y EQUIPOS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
+--('C010203', 'EQUIPOS AUXILIARES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
+--('C010204', 'VEHICULOS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 0, 1),
+--('C010301', 'OFICINA DMINISTRATIVA', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0103' AND empresa_id = 2), 1, 1),
+--('C010302', 'GERENTE GENERAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0103' AND empresa_id = 2), 1, 1),
+--('C010401', 'SOLUCIONES INDUSTRIALES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0104' AND empresa_id = 2), 1, 1),
+--('C010402', 'COMERCIALIZACION DE MATERIALES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0104' AND empresa_id = 2), 1, 1),
+--('C010501', 'VENTAS Y COTIZACIONES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
+--('C010502', 'MARKETING DIGITAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
+--('C010503', 'ATENCION AL CLIENTE', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
+--('C010504', 'POSTVENTA Y GARANTIAS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
+--('C010505', 'GESTION COMERCIAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1);
 
--- NIVEL 2: HIJOS DIRECTOS
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C010101', 'TERRENO PROPIO', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0101' AND empresa_id = 2), 1, 1),
-('C010102', 'TERRENO ALQUILADO', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0101' AND empresa_id = 2), 1, 1),
-('C010201', 'INFRAESTRUCTURA', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
-('C010202', 'MAQUINARIA Y EQUIPOS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
-('C010203', 'EQUIPOS AUXILIARES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 1, 1),
-('C010204', 'VEHICULOS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = 2), 0, 1),
-('C010301', 'OFICINA DMINISTRATIVA', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0103' AND empresa_id = 2), 1, 1),
-('C010302', 'GERENTE GENERAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0103' AND empresa_id = 2), 1, 1),
-('C010401', 'SOLUCIONES INDUSTRIALES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0104' AND empresa_id = 2), 1, 1),
-('C010402', 'COMERCIALIZACION DE MATERIALES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0104' AND empresa_id = 2), 1, 1),
-('C010501', 'VENTAS Y COTIZACIONES', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
-('C010502', 'MARKETING DIGITAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
-('C010503', 'ATENCION AL CLIENTE', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
-('C010504', 'POSTVENTA Y GARANTIAS', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1),
-('C010505', 'GESTION COMERCIAL', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = 2), 1, 1);
+---- NIVEL 3: NIETOS (Placas de vehículos)
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C01020401', 'FORD RANGER - PLACA M8J851', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C010204' AND empresa_id = 2), 1, 1),
+--('C01020402', 'RENAULT OROCH - PLACA M8K701', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C010204' AND empresa_id = 2), 1, 1);
 
--- NIVEL 3: NIETOS (Placas de vehículos)
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C01020401', 'FORD RANGER - PLACA M8J851', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C010204' AND empresa_id = 2), 1, 1),
-('C01020402', 'RENAULT OROCH - PLACA M8K701', 2, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C010204' AND empresa_id = 2), 1, 1);
+---- NIVEL 1: PADRES RAÍZ (empresa_id = 3)
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C0301', 'TERRENOS', 3, NULL, 0, 1),
+--('C0302', 'ACTIVO FIJO', 3, NULL, 0, 1),
+--('C0303', 'GESTION ADMINISTRATIVA', 3, NULL, 0, 1),
+--('C0304', 'GESTION OPERACIONES', 3, NULL, 0, 1),
+--('C0305', 'GESTION VENTAS', 3, NULL, 0, 1);
 
--- NIVEL 1: PADRES RAÍZ (empresa_id = 3)
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C0301', 'TERRENOS', 3, NULL, 0, 1),
-('C0302', 'ACTIVO FIJO', 3, NULL, 0, 1),
-('C0303', 'GESTION ADMINISTRATIVA', 3, NULL, 0, 1),
-('C0304', 'GESTION OPERACIONES', 3, NULL, 0, 1),
-('C0305', 'GESTION VENTAS', 3, NULL, 0, 1);
+---- NIVEL 2: HIJOS DIRECTOS
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C030101', 'TERRENO PROPIO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0301' AND empresa_id = 3), 1, 1),
+--('C030102', 'TERRENO ALQUILADO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0301' AND empresa_id = 3), 1, 1),
+--('C030201', 'INFRAESTRUCTURA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
+--('C030202', 'MAQUINARIA Y EQUIPOS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
+--('C030203', 'EQUIPOS AUXILIARES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
+--('C030204', 'VEHICULOS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 0, 1),
+--('C030301', 'OFICINA DMINISTRATIVA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0303' AND empresa_id = 3), 1, 1),
+--('C030302', 'GERENTE GENERAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0303' AND empresa_id = 3), 1, 1),
+--('C030401', 'SERVICIOS DE MANTENIMIENTO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0304' AND empresa_id = 3), 1, 1),
+--('C030402', 'COMERCIALIZACION DE MATERIALES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0304' AND empresa_id = 3), 1, 1),
+--('C030501', 'VENTAS Y COTIZACIONES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
+--('C030502', 'MARKETING DIGITAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
+--('C030503', 'ATENCION AL CLIENTE', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
+--('C030504', 'POSTVENTA Y GARANTIAS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
+--('C030505', 'GESTION COMERCIAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1);
 
--- NIVEL 2: HIJOS DIRECTOS
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C030101', 'TERRENO PROPIO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0301' AND empresa_id = 3), 1, 1),
-('C030102', 'TERRENO ALQUILADO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0301' AND empresa_id = 3), 1, 1),
-('C030201', 'INFRAESTRUCTURA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
-('C030202', 'MAQUINARIA Y EQUIPOS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
-('C030203', 'EQUIPOS AUXILIARES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 1, 1),
-('C030204', 'VEHICULOS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = 3), 0, 1),
-('C030301', 'OFICINA DMINISTRATIVA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0303' AND empresa_id = 3), 1, 1),
-('C030302', 'GERENTE GENERAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0303' AND empresa_id = 3), 1, 1),
-('C030401', 'SERVICIOS DE MANTENIMIENTO', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0304' AND empresa_id = 3), 1, 1),
-('C030402', 'COMERCIALIZACION DE MATERIALES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0304' AND empresa_id = 3), 1, 1),
-('C030501', 'VENTAS Y COTIZACIONES', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
-('C030502', 'MARKETING DIGITAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
-('C030503', 'ATENCION AL CLIENTE', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
-('C030504', 'POSTVENTA Y GARANTIAS', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1),
-('C030505', 'GESTION COMERCIAL', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = 3), 1, 1);
-
--- NIVEL 3: NIETOS
-INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
-('C03020401', 'FORD RANGER XLS - SIN PLACA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C030204' AND empresa_id = 3), 1, 1);
+---- NIVEL 3: NIETOS
+--INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+--('C03020401', 'FORD RANGER XLS - SIN PLACA', 3, (SELECT TOP 1 id FROM centro_costo WHERE codigo = 'C030204' AND empresa_id = 3), 1, 1);
 
 -- inserts de 'actividad'
 INSERT INTO actividad (codigo, nombre, estado, empresa_id) VALUES 

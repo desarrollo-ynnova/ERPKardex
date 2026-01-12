@@ -393,7 +393,11 @@
             text: "Se generará el documento PS y se atenderán los requerimientos.",
             icon: "question",
             showCancelButton: true,
-            confirmButtonText: "Sí, Registrar"
+            reverseButtons: true,
+            confirmButtonText: "Sí, Registrar",
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            cancelButtonText: "Cancelar",
         }).then((result) => {
             if (result.isConfirmed) {
                 ShowSpinner();

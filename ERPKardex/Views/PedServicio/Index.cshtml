@@ -54,6 +54,7 @@
                                 <th style="width: 80px;">U.M.</th>
                                 <th style="width: 80px;">Cant.</th>
                                 <th style="width: 80px;">Cant. Atendida</th>
+                                <th style="width: 100px;">Estado</th>
                                 <th>Ref. Origen</th>
                             </tr>
                         </thead>
@@ -285,6 +286,13 @@
                     let html = '';
                     if(res.data && res.data.length > 0){
                         res.data.forEach(d => {
+                            let badgeClass = 'badge-secondary';
+                            let estadoTexto = d.estado || 'No definido'; // Fallback por seguridad
+
+                            if (estadoTexto === 'Pendiente') badgeClass = 'badge-warning';
+                            else if (estadoTexto === 'Atendido Parcial') badgeClass = 'badge-info';
+                            else if (estadoTexto === 'Atendido Total') badgeClass = 'badge-success';
+
                             html += `<tr>
                                 <td class="font-weight-bold">${d.item}</td>
                                 <td class="text-left text-wrap" style="max-width:300px;">${d.descripcion}</td>
@@ -293,10 +301,13 @@
                                 <td>${d.unidadMedida}</td>
                                 <td class="font-weight-bold">${d.cantidad.toFixed(2)}</td>
                                 <td class="font-weight-bold">${d.cantidadAtendida.toFixed(2)}</td>
+                                <td class="align-middle text-center">
+                                    <span class="badge ${badgeClass} p-2">${estadoTexto}</span>
+                                </td>
                                 <td><span class="badge badge-light border">${d.ref}</span></td>
                             </tr>`;
                         });
-                    } else html = '<tr><td colspan="6">Sin detalles.</td></tr>';
+                    } else html = '<tr><td colspan="9">Sin detalles.</td></tr>';
                     $('#tbody_DetallePedido').html(html);
                     $('#modalDetallePedido').modal('show');
                 } else toastr.error(res.message);

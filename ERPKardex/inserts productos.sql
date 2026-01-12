@@ -1406,3 +1406,1390 @@ ON m.id = data.id_modelo; -- Asumiendo que tu columna de ID en la tabla modelo s
 
 PRINT '>> CARGA MASIVA COMPLETADA EXITOSAMENTE.';
 GO
+
+DECLARE @empId INT = 4; -- Iniciamos en 4 (Supply) para que también tenga su sucursal
+
+WHILE @empId <= 16
+BEGIN
+    -- 1. Insertar Sucursal (Si no existe código 001)
+    IF NOT EXISTS (SELECT 1 FROM sucursal WHERE codigo = '001' AND empresa_id = @empId)
+    BEGIN
+        INSERT INTO sucursal (codigo, nombre, estado, empresa_id) 
+        VALUES ('001', 'PRINCIPAL', 1, @empId);
+    END
+
+    -- Obtener ID de la sucursal
+    DECLARE @sucId INT = (SELECT TOP 1 id FROM sucursal WHERE codigo = '001' AND empresa_id = @empId);
+
+    -- 2. Insertar Almacén (Si no existe código 01)
+    IF NOT EXISTS (SELECT 1 FROM almacen WHERE codigo = '01' AND sucursal_id = @sucId)
+    BEGIN
+        INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) 
+        VALUES ('01', 'PRINCIPAL', 1, '001', @sucId, 1, @empId);
+    END
+
+    SET @empId = @empId + 1;
+END
+
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20603727551'; -- RUC DE STALNO
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para STALNO (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0101', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0102', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0103', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0104', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C0105', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0106', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1); -- Nuevo módulo
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0101 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0101' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0102 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene hijos específicos)
+
+    -- Hijos de C0103 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0103' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0104 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0104' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010401', 'SOLUCIONES INDUSTRIALES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010402', 'COMERCIALIZACION DE MATERIALES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0105 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0105' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010501', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010502', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010503', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010504', 'POSTVENTA Y GARANTIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0106 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0106' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C010601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C010603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS (VEHICULOS ESPECIFICOS)
+    -- =========================================================================
+    
+    -- Hijos de C010204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C010204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C01020401', 'FORD RANGER - PLACA M8J851', @IdEmpresa, @IdPadre, 1, 1),
+    ('C01020402', 'RENAULT OROCH - PLACA M8K701', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de STALNO insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20614551853'; -- RUC DE METQUIM
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para METQUIM (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0201', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0202', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0203', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0204', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C0205', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0206', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0201 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0201' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0202 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0202' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene máquinas específicas)
+    ('C020203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene placas específicas)
+
+    -- Hijos de C0203 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0203' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0204 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020401', 'INGENIERIA Y DISEÑO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020402', 'FABRICACION Y PRODUCCION', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0205 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0205' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020501', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020502', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020503', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020504', 'POSTVENTA Y GARANTIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0206 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0206' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C020601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C020603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C020202 (MAQUINARIA Y EQUIPOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C020202' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C02020201', 'MAQUINA 1', @IdEmpresa, @IdPadre, 1, 1),
+    ('C02020202', 'MAQUINA 2', @IdEmpresa, @IdPadre, 1, 1),
+    ('C02020203', 'MAQUINA 3', @IdEmpresa, @IdPadre, 1, 1),
+    ('C02020204', 'MAQUINA 4', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C020204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C020204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C02020401', 'FORD RANGER XLT - PLACA BAB809', @IdEmpresa, @IdPadre, 1, 1),
+    ('C02020402', 'FORD RANGER XL - PLACA CHQ737', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de METQUIM insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20613898167'; -- RUC DE MAQSA
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para MAQSA (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0301', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0302', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0303', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0304', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C0305', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0306', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0301 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0301' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0302 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0302' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene hijo específico)
+
+    -- Hijos de C0303 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0303' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0304 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0304' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030401', 'SERVICIOS DE MANTENIMIENTO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030402', 'COMERCIALIZACION DE MATERIALES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0305 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0305' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030501', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030502', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030503', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030504', 'POSTVENTA Y GARANTIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0306 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0306' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C030601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C030603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C030204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C030204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C03020401', 'FORD RANGER XLS - SIN PLACA', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de MAQSA insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20603845294'; -- RUC DE GREEN FARM
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para GREEN FARM (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0401', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0402', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0403', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0404', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0405', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0406', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0401 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0401' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0402 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0402' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040204', 'VEHICULOS', @IdEmpresa, @IdPadre, 1, 1); -- IMPUTABLE (No tiene hijos específicos en esta lista)
+
+    -- Hijos de C0403 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0403' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040301', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0404 (OPERATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0404' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040401', 'COMERCIALIZACION DE INSUMOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040402', 'ASESORIA ESPECIALIZADA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040403', 'REGULACIONES Y CERTIFICACIONES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0405 (VENTAS) - ATENCIÓN AQUÍ
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0405' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040501', 'VENTAS NACIONALES', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C0406 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0406' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C040601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C040603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C040501 (VENTAS NACIONALES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C040501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C04050101', 'SOPORTE POST-VENTA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C04050102', 'ENSAYOS Y DEMOSTRACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C04050103', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de GREEN FARM insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20605644725'; -- RUC DE IMBO
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para IMBO (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0501', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0502', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0503', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0504', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C0505', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0506', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0501 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0502 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0502' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C0503 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0503' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0504 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0504' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050401', 'ALQUILER DE MAQUINARIA TERCERIZADA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050402', 'COMERCIALIZACION DE MATERIALES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0505 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0505' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050501', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050502', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050503', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050504', 'POSTVENTA Y GARANTIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0506 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0506' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C050601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C050603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS (VEHICULOS ESPECIFICOS)
+    -- =========================================================================
+
+    -- Hijos de C050204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C050204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C05020401', 'FORD RANGER XLS - PLACA CHN926', @IdEmpresa, @IdPadre, 1, 1),
+    ('C05020402', 'VOLKSWAGEN AMAROK - PLACA M7D737', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de IMBO insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20605353721'; -- RUC DE INIGDE
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para INIGDE (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0701', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0702', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0703', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0704', 'GESTION ACADEMICA', @IdEmpresa, NULL, 0, 1), -- Equivalente a Operativa
+    ('C0705', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0706', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0701 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0701' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0702 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0702' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nieto específico)
+
+    -- Hijos de C0703 (ADMINISTRATIVA) - ¡NO PROPORCIONADOS!
+    -- Se deja solo el padre C0703 creado arriba.
+
+    -- Hijos de C0704 (GESTION ACADEMICA)
+    -- NOTA: Se asignaron códigos hijos 01 y 02 para corregir duplicidad con Ventas/Financiera
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0704' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070401', 'LICENCIAMIENTOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070402', 'TECNOLOGIA E INOOVACION EDUCATIVA', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0705 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0705' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070501', 'ADMINISION Y MATRICULAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070502', 'MARKETING EDUCATIVO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070503', 'CONVENIOS Y ALIANZAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070504', 'ATENCION AL ESTUDIANTE', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0706 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0706' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C070204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C070204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C07020401', 'VOLKSWAGEN AMAROK - PLACA TER912', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de INIGDE insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20561231304'; -- RUC DE EVOCA
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para EVOCA (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0601', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0602', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0603', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0604', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C0605', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0606', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0601 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0601' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0602 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0602' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060204', 'VEHICULOS', @IdEmpresa, @IdPadre, 1, 1); -- IMPUTABLE (Sin nietos en esta lista)
+
+    -- Hijos de C0603 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0603' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0604 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0604' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060401', 'SERVICIO DE DISEÑO DE INTERIORES Y ARQUITECTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060402', 'COMERCIALIZACION DE MATERIALES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0605 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0605' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060501', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060502', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060503', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060504', 'POSTVENTA Y GARANTIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0606 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0606' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C060601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C060603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de EVOCA insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20607165832'; -- RUC DE MEDICORS
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para MEDICORS (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0801', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0802', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0803', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0804', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0805', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0806', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0801 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0801' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0802 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0802' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080204', 'VEHICULOS', @IdEmpresa, @IdPadre, 1, 1); -- IMPUTABLE (Sin nietos en la lista)
+
+    -- Hijos de C0803 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0803' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080301', 'OFICINA DMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0804 (OPERATIVA)
+    -- NOTA: Se corrigieron los códigos que venían como C04... a C08...
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0804' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080401', 'COMERCIALIZACION DE INSUMOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080402', 'ASESORIA ESPECIALIZADA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080403', 'ASUNTOS REGULATORIOS (RS)', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080404', 'FISCALIZACIONES Y PERMISOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0805 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0805' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080501', 'VENTAS INSTITUCIONALES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080502', 'VENTAS PRIVADAS / RETAIL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080503', 'LICITACIONES Y CONTRATOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080504', 'MARKETING MEDICO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080505', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0806 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0806' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C080601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C080603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de MEDICORS insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20609093561'; -- RUC DE COMEXDI (C09)
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para COMEXDI (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C0901', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C0902', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C0903', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0904', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C0905', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C0906', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C0901 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0901' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0902 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0902' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C0903 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0903' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090301', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090302', 'GERENTE OPERACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090303', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0904 (OPERATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0904' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090401', 'COMERCIALIZACION DE INSUMOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090402', 'ASESORIA ESPECIALIZADA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090403', 'REGULACIONES Y PERMISOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C0905 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0905' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090501', 'VENTAS NACIONALES', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C0906 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0906' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C090601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C090603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C090204 (VEHICULOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C090204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C09020401', 'CHEVROLET COLORADO - PLACA Z9A801', @IdEmpresa, @IdPadre, 1, 1),
+    ('C09020402', 'CHEVROLET COLORADO - PLACA Z9B762', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C090501 (VENTAS NACIONALES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C090501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C09050101', 'SOPORTE POST-VENTA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C09050102', 'CAPACITACION A CLIENTES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C09050103', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de COMEXDI insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20612680842'; -- RUC DE AGROQUIMEX
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para AGROQUIMEX (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1001', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C1002', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C1003', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1004', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1005', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C1006', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1001 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1001' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1002 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1002' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C1003 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1003' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100301', 'GERENTE OPERACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1004 (OPERATIVA)
+    -- NOTA: Se corrigieron los códigos C09... a C10...
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1004' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100401', 'COMERCIALIZACION DE INSUMOS - PERU', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100402', 'COMERCIALIZACION DE INSUMOS - COLOMBIA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100403', 'ASESORIA ESPECIALIZADA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100404', 'REGULACIONES Y PERMISOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1005 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1005' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100501', 'VENTAS NACIONALES (PERU)', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE
+    ('C100502', 'VENTAS INTERNACIONALES (COLOMBIA)', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE
+
+    -- Hijos de C1006 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1006' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C100601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C100603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- 1. VEHICULOS (Hijos de C100204)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C100204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C10020401', 'FORD RANGER XLT - PLACA CHL752', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10020402', 'MAZDA BT50 - PLACA M8J733', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10020403', 'MAZDA BT50 - PLACA M8K812', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10020404', 'MAZDA NFW BT50 - PLACA M8S724', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10020405', 'MAZDA NFW BT50 - PLACA M8R945', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10020406', 'SUBARU CROSSTREK - PLACA T7P485', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- 2. VENTAS PERU (Hijos de C100501)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C100501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C10050101', 'SOPORTE POST-VENTA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050102', 'ENSAYOS Y DEMOSTRACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050103', 'ASISTENCIA TECNICA EN CAMPO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050104', 'CAPACITACION A CLIENTES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050105', 'GESTION COMERCIAL - PERU', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- 3. VENTAS COLOMBIA (Hijos de C100502)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C100502' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C10050201', 'SOPORTE POST-VENTA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050202', 'ENSAYOS Y DEMOSTRACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050203', 'ASISTENCIA TECNICA EN CAMPO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050204', 'CAPACITACION A CLIENTES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C10050205', 'GESTION COMERCIAL - COLOMBIA', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de AGROQUIMEX insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20607778338'; -- RUC DE CONTROL SCIENCE (C11)
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para CONTROL SCIENCE (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1101', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C1102', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C1103', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1104', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1105', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C1106', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1101 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1101' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110101', 'TERRENO PROPIO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110102', 'TERRENO ALQUILADO', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nieto Almacén)
+
+    -- Hijos de C1102 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110204', 'VEHICULOS', @IdEmpresa, @IdPadre, 1, 1), -- IMPUTABLE (Sin nietos en esta lista)
+    ('C110205', 'INTANGIBLES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1103 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1103' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110301', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1104 (OPERATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1104' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110401', 'PROCESO PRODUCTIVO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110402', 'COMPRA DE INSUMOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110404', 'INVESTIGACION Y DESARROLLO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110405', 'CONTROL DE CALIDAD', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110406', 'MANTENIMIENTO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1105 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1105' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110501', 'VENTAS NACIONALES (PERU)', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C1106 (FINANCIERA)
+    -- NOTA: Se corrigieron los códigos C10... a C11...
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1106' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C110601', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110602', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C110603', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C110102 (TERRENO ALQUILADO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C110102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C11010201', 'ALMACEN POMALCA', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C110501 (VENTAS NACIONALES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C110501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C11050101', 'VENTA INSUMOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C11050102', 'SOPORTE POST-VENTA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C11050103', 'ENSAYOS Y DEMOSTRACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C11050104', 'GESTION COMERCIAL - PERU', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de CONTROL SCIENCE insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20615085198'; -- RUC DE ECOMATERIALES (C12)
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+DECLARE @IdAbuelo INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para ECOMATERIALES (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1201', 'TERRENOS', @IdEmpresa, NULL, 0, 1),
+    ('C1202', 'ACTIVO FIJO', @IdEmpresa, NULL, 0, 1),
+    ('C1203', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1204', 'INVERSIONES', @IdEmpresa, NULL, 0, 1), -- Rubro especial de esta empresa
+    ('C1205', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1201 (TERRENOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1201' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C120101', 'TERRENO MORROPE', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1202 (ACTIVO FIJO)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1202' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C120201', 'INFRAESTRUCTURA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120202', 'MAQUINARIA Y EQUIPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120203', 'EQUIPOS AUXILIARES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120204', 'VEHICULOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120205', 'INTANGIBLES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1203 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1203' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C120301', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1204 (INVERSIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1204' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C120401', 'PACKING', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene desglose de gastos abajo)
+
+    -- Hijos de C1205 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1205' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C120501', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120502', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C120503', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C120401 (PACKING)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C120401' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C12040101', 'GASTOS LEGALES Y CONSTITUCIÓN', @IdEmpresa, @IdPadre, 1, 1),
+    ('C12040102', 'ESTUDIOS Y PLANEAMIENTO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C12040103', 'INGENIERIA Y DISEÑO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C12040104', 'PERMISOS Y LICENCIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C12040105', 'CAPACITACION INICIAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C12040106', 'PUESTA EN MARCHA', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de ECOMATERIALES insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20615125254'; -- RUC DE RECLUTA HEAD HUNTING
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para RECLUTA (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1301', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1302', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1303', 'GESTION VENTAS', @IdEmpresa, NULL, 0, 1),
+    ('C1304', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1301 (ADMINISTRATIVA) - ¡GRAN DESGLOSE AQUÍ!
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1301' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C130101', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130102', 'GESTION LEGAL', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C130103', 'GESTION SSOMA', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C130104', 'GESTION DE PLANILLAS', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C130105', 'GESTION DE REEMBOLSOS', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C130106', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1302 (OPERATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1302' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C130201', 'EVENTOS CORPORATIVOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130202', 'HEADHUNTING', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130203', 'CONTRATA DE PERSONAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1303 (VENTAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1303' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C130301', 'VENTAS Y COTIZACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130302', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130303', 'ATENCION AL CLIENTE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130304', 'GESTION COMERCIAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1304 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1304' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C130401', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130402', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C130403', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C130102 (GESTION LEGAL)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C130102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C13010201', 'LITIGIOS Y PROCESOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010202', 'CONTRATOS Y CONVENIOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010203', 'PROCESOS LABORALES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010204', 'PROPIEDAD INTELECTUAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C130103 (GESTION SSOMA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C130103' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C13010301', 'SEGURIDAD Y SALUD OCUPACIONAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010302', 'GESTION DE RIESGOS Y PERMISOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010303', 'INSPECCIONES Y AUDITORIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010304', 'CONSULTORIA Y SERVICIOS EXTERNOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010305', 'CAPACITACIONES Y CULTURA', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C130104 (GESTION DE PLANILLAS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C130104' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C13010401', 'PLANILLA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010402', 'BENEFICIOS SOCIALES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010403', 'CONTROL DE ASISTENCIAS Y TIEMPOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010404', 'LIQUIDACIONES Y FINIQUITOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C130105 (GESTION DE REEMBOLSOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C130105' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C13010501', 'VIATICOS Y MOVILIDAD', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010502', 'CAJA CHICA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C13010503', 'REEMBOLSOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de RECLUTA insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20615155251'; -- RUC DE YNNOVA DIGITAL
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para YNNOVA (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1401', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1402', 'GESTION OPERATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1403', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1401 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1401' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C140101', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C140102', 'TECNOLOGIA DE INFORMACION', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C140103', 'MARKETING', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nietos)
+
+    -- Hijos de C1402 (OPERATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1402' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C140201', 'PROYECTOS', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C140202', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1403 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1403' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C140301', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C140302', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C140303', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C140102 (TECNOLOGIA DE INFORMACION)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C140102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C14010201', 'DESARROLLO DE SISTEMAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010202', 'SOPORTE CORPORATIVO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010203', 'CIBERSEGURIDAD', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010204', 'PATENTES Y PROPIEDAD INTELECTUAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C140103 (MARKETING)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C140103' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C14010301', 'MARKETING DIGITAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010302', 'BRANDING Y COMUNICACIÓN', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010303', 'EVENTOS Y ACTIVACIONES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14010304', 'INTELIGENCIA DE MERCADO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C140201 (PROYECTOS)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C140201' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C14020101', 'PLANIFICACION', @IdEmpresa, @IdPadre, 1, 1),
+    ('C14020102', 'GESTION DE RIESGOS', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de YNNOVA DIGITAL insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20614993198'; -- RUC DE TRUST MORE (C15)
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para TRUST MORE (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1501', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1502', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1501 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1501' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C150101', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150102', 'AUDITORIA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150103', 'COMPLIANCE', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150104', 'OPERACIONES CORPORATIVO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150105', 'TAX & ACCOUNTING', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C150106', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150107', 'PRESIDENCIA', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1502 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1502' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C150201', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150202', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C150203', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C150105 (TAX & ACCOUNTING)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C150105' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C15010501', 'CONTABILIDAD', @IdEmpresa, @IdPadre, 1, 1),
+    ('C15010502', 'TESORERIA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C15010503', 'FINANZAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C15010504', 'CUENTAS POR COBRAR', @IdEmpresa, @IdPadre, 1, 1),
+    ('C15010505', 'CUENTAS POR PAGAR', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de TRUST MORE insertados correctamente!';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+DECLARE @RucTarget VARCHAR(11) = '20615184153'; -- RUC DE SUPPLY BIOTECHNOLOGY
+DECLARE @IdEmpresa INT;
+DECLARE @IdPadre INT;
+
+-- Obtener ID de la empresa de forma segura
+SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
+
+IF @IdEmpresa IS NOT NULL
+BEGIN
+    PRINT 'Insertando Centros de Costo para SUPPLY (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
+
+    -- =========================================================================
+    -- NIVEL 1: PADRES RAÍZ
+    -- =========================================================================
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C1601', 'GESTION ADMINISTRATIVA', @IdEmpresa, NULL, 0, 1),
+    ('C1602', 'GESTION OPERACIONES', @IdEmpresa, NULL, 0, 1),
+    ('C1603', 'GESTION FINANCIERA', @IdEmpresa, NULL, 0, 1);
+
+    -- =========================================================================
+    -- NIVEL 2: HIJOS
+    -- =========================================================================
+
+    -- Hijos de C1601 (ADMINISTRATIVA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1601' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C160101', 'OFICINA ADMINISTRATIVA - LIMA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160102', 'LOGISTICA', @IdEmpresa, @IdPadre, 0, 1), -- NO IMPUTABLE (Tiene nietos)
+    ('C160103', 'PLANEAMIENTO', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160104', 'COSTOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160105', 'PRESUPUESTOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160106', 'CONTROL PATRIMONIAL', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160107', 'INVENTARIOS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160108', 'GERENCIA GENERAL', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1602 (OPERACIONES)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1602' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C160201', 'CALIDAD', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160202', 'SIG - MEJORA CONTINUA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160203', 'CERTIFICACIONES', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- Hijos de C1603 (FINANCIERA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C1603' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C160301', 'ITF', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160302', 'COMISIONES BANCARIAS', @IdEmpresa, @IdPadre, 1, 1),
+    ('C160303', 'DIFERENCIA TIPO DE CAMBIO', @IdEmpresa, @IdPadre, 1, 1);
+
+    -- =========================================================================
+    -- NIVEL 3: NIETOS
+    -- =========================================================================
+
+    -- Hijos de C160102 (LOGISTICA)
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C160102' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C16010201', 'COMPRAS NACIONALES', @IdEmpresa, @IdPadre, 1, 1),
+    ('C16010202', 'COMPRAS INTERNACIONALES', @IdEmpresa, @IdPadre, 1, 1);
+
+    PRINT '¡Centros de Costo de SUPPLY BIOTECHNOLOGY insertados correctamente!';
+    PRINT '--- FINAL DEL PROCESO DE INSERCIÓN MASIVA ---';
+END
+ELSE
+BEGIN
+    PRINT 'ERROR CRÍTICO: No se encontró la empresa con RUC ' + @RucTarget;
+END
+GO
+
+SELECT 
+    e.id AS ID_Empresa,
+    LEFT(e.razon_social, 30) + '...' AS Empresa,
+    COUNT(cc.id) AS Total_CentrosCosto,
+    SUM(CASE WHEN cc.padre_id IS NULL THEN 1 ELSE 0 END) AS Niveles_Raiz, -- Deberían ser entre 4 y 6 aprox
+    SUM(CASE WHEN cc.es_imputable = 1 THEN 1 ELSE 0 END) AS Total_Imputables, -- Destinos finales
+    (SELECT COUNT(*) FROM sucursal s WHERE s.empresa_id = e.id) AS Sucursales
+FROM empresa e
+LEFT JOIN centro_costo cc ON e.id = cc.empresa_id
+GROUP BY e.id, e.razon_social
+ORDER BY e.id;

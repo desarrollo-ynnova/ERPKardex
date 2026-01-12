@@ -347,18 +347,24 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var usuarioId = UsuarioActualId;
+                    var usuarioId = UsuarioActualId; // Usamos BaseController
                     var orden = _context.OrdenCompras.Find(id);
                     if (orden == null) throw new Exception("Orden no encontrada.");
 
                     var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "ORDEN");
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
 
-                    if (orden.EstadoId != estadoGenerado.Id) throw new Exception("Solo se aprueban órdenes en estado Generado.");
+                    if (orden.EstadoId != estadoGenerado.Id) throw new Exception("Solo se pueden aprobar órdenes en estado Generado.");
+
+                    // 1. CARGAMOS LOS ESTADOS DEL DETALLE DE PEDIDO (DPED)
+                    // Asegúrate de haber corrido el INSERT SQL que te pasé antes
+                    var estDPedPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DPED")?.Id ?? 0;
+                    var estDPedParcial = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Parcial" && e.Tabla == "DPED")?.Id ?? 0;
+                    var estDPedTotal = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Total" && e.Tabla == "DPED")?.Id ?? 0;
 
                     var detalles = _context.DOrdenCompras.Where(d => d.OrdenCompraId == id).ToList();
 
-                    // ACTUALIZAR SALDOS
+                    // 2. ACTUALIZAR SALDOS Y ESTADOS DE LOS ÍTEMS DEL PEDIDO
                     foreach (var det in detalles)
                     {
                         if (det.IdReferencia != null && det.TablaReferencia == "DPEDCOMPRA")
@@ -366,14 +372,27 @@ namespace ERPKardex.Controllers
                             var pedItem = _context.DPedidoCompras.Find(det.IdReferencia);
                             if (pedItem != null)
                             {
-                                // Sumar cantidad atendida (permitimos que supere lo solicitado)
+                                // A. Actualizamos cantidad atendida
                                 pedItem.CantidadAtendida = (pedItem.CantidadAtendida ?? 0) + (det.Cantidad ?? 0);
+
+                                // B. Determinamos el nuevo estado del ÍTEM (Lógica Granular)
+                                if (pedItem.CantidadAtendida >= pedItem.CantidadSolicitada)
+                                {
+                                    // Se atendió todo o hubo sobreatención -> TOTAL
+                                    pedItem.EstadoId = estDPedTotal;
+                                }
+                                else if (pedItem.CantidadAtendida > 0)
+                                {
+                                    // Se atendió algo, pero falta -> PARCIAL
+                                    pedItem.EstadoId = estDPedParcial;
+                                }
+                                // Si es 0 se queda como estaba (Pendiente/Generado)
                             }
                         }
                     }
                     _context.SaveChanges();
 
-                    // VERIFICAR ESTADO DE PEDIDOS (Parcial / Total)
+                    // 3. VERIFICAR ESTADO DE PEDIDOS (CABECERA)
                     var pedidosInvolucrados = detalles
                         .Where(d => d.TablaReferencia == "DPEDCOMPRA" && d.IdReferencia != null)
                         .Select(d => _context.DPedidoCompras.Where(dp => dp.Id == d.IdReferencia).Select(dp => dp.PedidoCompraId).FirstOrDefault())
@@ -385,15 +404,16 @@ namespace ERPKardex.Controllers
                     foreach (var pedId in pedidosInvolucrados)
                     {
                         var pedido = _context.PedCompras.Find(pedId);
-                        // Lógica: Si TODOS los items tienen (Atendido >= Solicitado), es Total.
-                        bool todoAtendido = !_context.DPedidoCompras
+
+                        // Lógica Cabecera: Si CUALQUIER item sigue teniendo saldo pendiente -> La cabecera es PARCIAL
+                        bool quedaAlgoPendiente = _context.DPedidoCompras
                             .Any(dp => dp.PedidoCompraId == pedId && (dp.CantidadAtendida ?? 0) < (dp.CantidadSolicitada ?? 0));
 
-                        if (todoAtendido) pedido.EstadoId = estTotalPED.Id;
+                        if (!quedaAlgoPendiente) pedido.EstadoId = estTotalPED.Id;
                         else pedido.EstadoId = estParcialPED.Id;
                     }
 
-                    // APROBAR ORDEN
+                    // 4. APROBAR ORDEN
                     orden.EstadoId = estadoAprobado.Id;
                     orden.UsuarioAprobador = usuarioId;
                     orden.FechaAprobacion = DateTime.Now;

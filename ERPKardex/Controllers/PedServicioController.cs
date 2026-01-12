@@ -81,6 +81,7 @@ namespace ERPKardex.Controllers
             {
                 var detalles = (from d in _context.DPedidosServicio
                                 join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id
+                                join est in _context.Estados on d.EstadoId equals est.Id
                                 where d.PedidoServicioId == id
                                 select new
                                 {
@@ -90,6 +91,7 @@ namespace ERPKardex.Controllers
                                     Cantidad = d.Cantidad,
                                     CantidadAtendida = d.CantidadAtendida ?? 0,
                                     CentroCosto = cc.Codigo,
+                                    Estado = est.Nombre,
                                     d.Lugar, // Mostramos lugar en el modal
                                     Ref = d.TablaReferencia == "DREQSERVICIO" ? ("Req. " + d.ItemReferencia) : "-"
                                 }).OrderBy(x => x.Item).ToList();
@@ -219,9 +221,10 @@ namespace ERPKardex.Controllers
                     var estPendienteDREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DREQ");
                     var estParcialREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Parcial" && e.Tabla == "REQ");
                     var estTotalREQ = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Total" && e.Tabla == "REQ");
+                    var estPendienteDPED = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DPED");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "PS");
 
-                    if (estGeneradoPED == null || estAtendidoDREQ == null || estParcialREQ == null || estTotalREQ == null || tipoDoc == null)
+                    if (estGeneradoPED == null || estAtendidoDREQ == null || estParcialREQ == null || estTotalREQ == null || tipoDoc == null || estPendienteDPED == null)
                         throw new Exception("Falta configuración.");
 
                     // 2. CORRELATIVO
@@ -267,7 +270,7 @@ namespace ERPKardex.Controllers
                             det.EmpresaId = empresaId;
                             det.Item = item.ToString("D3");
                             det.CantidadAtendida = 0;
-                            det.EstadoId = estGeneradoPED.Id;
+                            det.EstadoId = estPendienteDPED.Id;
 
                             _context.DPedidosServicio.Add(det);
 
