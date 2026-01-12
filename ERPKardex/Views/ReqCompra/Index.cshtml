@@ -64,6 +64,7 @@
                             <th>U.M.</th>
                             <th>Lugar</th>
                             <th class="text-center">Cantidad</th>
+                            <th class="text-center">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="tblModalBody"></tbody>
@@ -137,7 +138,9 @@
                             if(data === 'Pendiente') color = 'warning';
                             if(data === 'Aprobado') color = 'success';
                             if(data === 'Rechazado') color = 'danger';
-                            if(data === 'Atendido') color = 'primary';
+                            if(data === 'Atendido Parcial') color = 'info';
+                            if(data === 'Atendido Total') color = 'primary';
+
                             return `<span class="badge badge-${color}" style="font-size:0.9rem">${data}</span>`;
                         }
                     },
@@ -172,7 +175,7 @@
 
         // --- VER DETALLE (MODAL) ---
         function verDetalle(id) {
-            $('#tblModalBody').html('<tr><td colspan="5" class="text-center">Cargando...</td></tr>');
+            $('#tblModalBody').html('<tr><td colspan="7" class="text-center">Cargando...</td></tr>');
             $('#modalDetalle').modal('show');
 
             $.get('/ReqCompra/GetDetalleReq?id=' + id, function(res) {
@@ -182,6 +185,8 @@
 
                     let html = '';
                     res.detalles.forEach(d => {
+                        let badgeItem = d.estado === 'Pendiente' ? 'badge-warning' : 'badge-success';
+                        
                         html += `<tr>
                             <td>${d.item}</td>
                             <td>${d.centroCosto}</td>
@@ -189,6 +194,7 @@
                             <td>${d.unidadMedida}</td>
                             <td>${d.lugar}</td>
                             <td class="text-center font-weight-bold">${d.cantidadSolicitada}</td>
+                            <td class="text-center"><span class="badge ${badgeItem}">${d.estado}</span></td>
                         </tr>`;
                     });
                     $('#tblModalBody').html(html);

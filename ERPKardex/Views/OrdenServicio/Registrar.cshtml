@@ -115,6 +115,7 @@
                                     <th width="35%">Descripción del Servicio</th>
                                     <th width="5%">U.M.</th>
                                     <th width="10%">C. Costo</th>
+                                    <th>Lugar</th>
                                     <th width="10%">Saldo Ped.</th>
                                     <th width="10%" class="bg-warning text-dark">Cantidad</th>
                                     <th width="10%" class="bg-warning text-dark">P. Unit</th>
@@ -186,8 +187,36 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<div class="modal fade" id="modalVistaPrevia" tabindex="-1" role="dialog" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-info">
+            <div class="modal-header bg-info text-white py-2">
+                <h6 class="modal-title font-weight-bold"><i class="fas fa-list-alt"></i> Contenido del Pedido</h6>
+                <button type="button" class="close text-white" onclick="$('#modalVistaPrevia').modal('hide')">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0 text-center">
+                        <thead class="bg-light text-info">
+                            <tr>
+                                <th>Item</th>
+                                <th>Descripción</th>
+                                <th>U.M.</th>
+                                <th>C. Costo</th>
+                                <th>Lugar</th>
+                                <th class="text-dark bg-warning" style="width: 120px;">Saldo Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_BodyVistaPrevia"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="$('#modalVistaPrevia').modal('hide')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     let LISTA_PRODUCTOS = [];
     let IGV_TASA = 0.18;
@@ -248,7 +277,10 @@
             if(res.status && res.data.length > 0) {
                 res.data.forEach(p => {
                     html += `<tr>
-                        <td><button class="btn btn-sm btn-info" onclick="seleccionarPedido(${p.id})"><i class="fas fa-check"></i></button></td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-success mr-1" onclick="seleccionarPedido(${p.id})"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-sm btn-info" onclick="verDetallePrevia(${p.id})"><i class="fas fa-eye"></i></button>
+                        </td>
                         <td class="font-weight-bold">${p.numero}</td>
                         <td>${p.fecha}</td>
                         <td>${p.fechaNecesaria}</td>
@@ -260,6 +292,31 @@
             }
             $('#tbl_BusquedaPedidos tbody').html(html);
             $('#modalPedidos').modal('show');
+        });
+    }
+    
+    // 4. VER DETALLE PREVIA (Nueva función)
+    function verDetallePrevia(pedId) {
+        $('#tbl_BodyVistaPrevia').html('<tr><td colspan="6" class="text-center">Cargando...</td></tr>');
+        $('#modalVistaPrevia').modal('show');
+
+        $.get('/OrdenServicio/GetDetallesPedidoParaOrden?pedidoId=' + pedId, function(res) {
+            if(res.status) {
+                let html = '';
+                if(res.data.length > 0) {
+                    res.data.forEach(d => {
+                        html += `<tr>
+                            <td class="font-weight-bold">${d.item}</td>
+                            <td class="text-left"><small>${d.descripcion}</small></td>
+                            <td>${d.unidadMedida}</td>
+                            <td><small>${d.centroCostoNombre}</small></td>
+                            <td><small>${d.lugar || '-'}</small></td>
+                            <td class="font-weight-bold text-dark bg-warning">${d.saldoDisponible.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                } else { html = '<tr><td colspan="6">Sin saldos pendientes.</td></tr>'; }
+                $('#tbl_BodyVistaPrevia').html(html);
+            }
         });
     }
 
@@ -286,6 +343,7 @@
                     UnidadMedida: d.unidadMedida,
                     CentroCostoId: d.centroCostoId,
                     CentroCostoNombre: d.centroCostoNombre,
+                    Lugar: d.lugar,
                     SaldoMaximo: d.saldoDisponible,
                     Cantidad: d.saldoDisponible,
                     PrecioUnitario: 0
@@ -304,6 +362,7 @@
                 <td class="text-left align-middle"><small>${item.Descripcion}</small></td>
                 <td class="align-middle">${item.UnidadMedida}</td>
                 <td class="align-middle small">${item.CentroCostoNombre}</td>
+                <td class="align-middle small">${item.Lugar}</td>
                 <td class="align-middle text-muted font-weight-bold">${item.SaldoMaximo.toFixed(2)}</td>
                 <td>
                     <input type="number" class="form-control form-control-sm text-center font-weight-bold"
@@ -324,20 +383,26 @@
             </tr>`;
         });
 
-        if(LISTA_PRODUCTOS.length === 0) html = '<tr><td colspan="9" class="text-muted py-4">Sin servicios.</td></tr>';
+        if(LISTA_PRODUCTOS.length === 0) html = '<tr><td colspan="10" class="text-muted py-4">Sin servicios.</td></tr>';
 
         $('#tbl_Body').html(html);
         recalcularGlobales();
     }
-
+    
+    // 1. ACTUALIZAR LINEA (Con advertencia visual, NO bloqueo)
     function actualizarLinea(idx, tipo, valor) {
         let val = parseFloat(valor) || 0;
         let item = LISTA_PRODUCTOS[idx];
 
         if(tipo === 'cant') {
+            let input = $(`#tbl_Body tr:eq(${idx}) input[type='number']:first`);
+
             if(val > item.SaldoMaximo) {
-                Swal.fire("Error", `Excede saldo (${item.SaldoMaximo})`, "error");
-                val = item.SaldoMaximo;
+                input.addClass('is-warning border-warning text-warning');
+                input.attr('title', `Excede saldo de ${item.SaldoMaximo}`);
+            } else {
+                input.removeClass('is-warning border-warning text-warning');
+                input.removeAttr('title');
             }
             item.Cantidad = val;
         } else {
@@ -393,6 +458,20 @@
             condPagoFinal = `CRÉDITO A ${dias} DÍAS`;
         }
 
+        // Detección de Excesos
+        let hayExcesos = LISTA_PRODUCTOS.some(p => p.Cantidad > p.SaldoMaximo);
+        let mensajeConfirmacion = "¿Registrar Orden de Servicio?";
+        let titulo = "Confirmar Registro";
+        let icon = "question";
+        let colorBtn = "#3085d6";
+
+        if (hayExcesos) {
+            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay servicios con cantidades superiores al saldo pendiente. ¿Desea proceder con la SOBRE-ATENCIÓN?";
+            titulo = "Confirmar Exceso";
+            icon = "warning";
+            colorBtn = "#d33"; // Rojo
+        }
+
         let cabecera = {
             EmpresaId: parseInt($('#cbx_Empresa').val()),
             EntidadId: parseInt($('#cbx_Proveedor').val()),
@@ -421,33 +500,45 @@
                 Descripcion: x.Descripcion,
                 UnidadMedida: x.UnidadMedida,
                 CentroCostoId: x.CentroCostoId,
+                Lugar: x.Lugar,
                 Cantidad: x.Cantidad,
                 PrecioUnitario: x.PrecioUnitario,
                 Total: x.Cantidad * x.PrecioUnitario
             };
         });
 
-        $('#efec-cargando').removeClass('d-none');
-        $.ajax({
-            url: '/OrdenServicio/Guardar',
-            type: 'POST',
-            data: {
-                cabecera: cabecera,
-                detallesJson: JSON.stringify(detalles)
-            },
-            success: function(res) {
-                $('#efec-cargando').addClass('d-none');
-                if(res.status) {
-                    Swal.fire("Éxito", res.message, "success").then(() => {
-                        window.location.href = '/OrdenServicio/Index';
-                    });
-                } else {
-                    Swal.fire("Error", res.message, "error");
-                }
-            },
-            error: function() {
-                $('#efec-cargando').addClass('d-none');
-                toastr.error("Error de conexión");
+        Swal.fire({
+            title: titulo,
+            text: mensajeConfirmacion,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonColor: colorBtn,
+            confirmButtonText: "Sí, Registrar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#efec-cargando').removeClass('d-none');
+                $.ajax({
+                    url: '/OrdenServicio/Guardar',
+                    type: 'POST',
+                    data: {
+                        cabecera: cabecera,
+                        detallesJson: JSON.stringify(detalles)
+                    },
+                    success: function(res) {
+                        $('#efec-cargando').addClass('d-none');
+                        if(res.status) {
+                            Swal.fire("Éxito", res.message, "success").then(() => {
+                                window.location.href = '/OrdenServicio/Index';
+                            });
+                        } else {
+                            Swal.fire("Error", res.message, "error");
+                        }
+                    },
+                    error: function() {
+                        $('#efec-cargando').addClass('d-none');
+                        toastr.error("Error de conexión");
+                    }
+                });
             }
         });
     }

@@ -392,26 +392,29 @@
         $("#tbl_Detalle tbody").html(html);
     }
 
-    // --- FUNCIÓN CORREGIDA PARA ELIMINAR ---
+    // --- FUNCIÓN CORREGIDA Y ROBUSTA PARA ELIMINAR ---
     function fct_EliminarDetalle(index) {
         // 1. Identificamos el objeto que vamos a borrar
         let itemBorrar = LISTA_DETALLE[index];
-        
+
         // 2. Buscamos su ID de referencia en el array de validación
-        let idxEnArrayIds = IDS_AGREGADOS.indexOf(itemBorrar.IdReferencia);
-        
-        // 3. Si existe, lo quitamos. ESTO PERMITE VOLVER A AGREGARLO DESPUÉS.
-        if (idxEnArrayIds > -1) {
-            IDS_AGREGADOS.splice(idxEnArrayIds, 1);
+        let idRef = itemBorrar.IdReferencia;
+
+        // 3. Lo quitamos del array de IDs permitidos (usando filter es más seguro)
+        if (idRef) {
+            IDS_AGREGADOS = IDS_AGREGADOS.filter(id => id !== idRef);
         }
 
         // 4. Lo borramos de la tabla visual
         LISTA_DETALLE.splice(index, 1);
-        
-        // 5. Reordenamos items visuales
+
+        // 5. Reordenamos items visuales (001, 002...)
         LISTA_DETALLE.forEach((d, i) => d.Item = (i + 1).toString().padStart(3, '0'));
-        
+
         fct_RenderDetalle();
+
+        // Opcional: Mostrar mensaje feedback
+        toastr.info("Producto removido. Puede volver a agregarlo desde el buscador.");
     }
 
     function fct_Guardar() {

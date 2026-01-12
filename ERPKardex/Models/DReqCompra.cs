@@ -11,7 +11,7 @@ namespace ERPKardex.Models
         public int Id { get; set; }
 
         [Column("reqcompra_id")]
-        public int ReqCompraId { get; set; }
+        public int? ReqCompraId { get; set; }
 
         [Column("item")]
         [StringLength(3)]
@@ -34,6 +34,8 @@ namespace ERPKardex.Models
         [Column("cantidad_solicitada")]
         public decimal CantidadSolicitada { get; set; }
 
+        [Column("estado_id")]
+        public int EstadoId { get; set; }
         public string? Lugar { get; set; }
 
         [Column("empresa_id")]

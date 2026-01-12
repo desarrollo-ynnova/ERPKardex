@@ -347,6 +347,11 @@ CREATE TABLE reqcompra (
     estado_id INT,              -- Solo: Pendiente, Aprobado, Rechazado
     
     empresa_id INT,
+
+    -- APROBACIÓN
+    usuario_aprobador INT,
+    fecha_aprobacion DATETIME,
+    usuario_registro INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -362,6 +367,7 @@ CREATE TABLE dreqcompra (
     
     cantidad_solicitada DECIMAL(12,2),
     
+    estado_id INT,
     lugar VARCHAR(255),
     empresa_id INT
 );
@@ -379,6 +385,11 @@ CREATE TABLE reqservicio (
     estado_id INT,              -- Solo: Pendiente, Aprobado, Rechazado
     
     empresa_id INT,
+
+    -- APROBACIÓN
+    usuario_aprobador INT,
+    fecha_aprobacion DATETIME,
+    usuario_registro INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -392,6 +403,7 @@ CREATE TABLE dreqservicio (
     descripcion_servicio VARCHAR(MAX),
     unidad_medida VARCHAR(50),
     
+    estado_id INT,
     cantidad_solicitada DECIMAL(12,2) DEFAULT 1,
     
     lugar VARCHAR(255),
@@ -421,6 +433,7 @@ CREATE TABLE pedcompra (
     estado_id INT,
     
     empresa_id INT,
+    usuario_registro INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -445,6 +458,8 @@ CREATE TABLE dpedcompra (
     
     lugar VARCHAR(255),
     observacion_item VARCHAR(255),
+
+    estado_id INT,
     empresa_id INT
 );
 
@@ -467,6 +482,7 @@ CREATE TABLE pedservicio (
     estado_id INT,
     
     empresa_id INT,
+    usuario_registro INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -489,6 +505,7 @@ CREATE TABLE dpedservicio (
     
     lugar VARCHAR(255),
     observacion_item VARCHAR(255),
+    estado_id INT,
     empresa_id INT
 );
 
@@ -524,6 +541,10 @@ CREATE TABLE ordencompra (
     estado_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
+
+    -- APROBACIÓN
+    usuario_aprobador INT,
+    fecha_aprobacion DATETIME,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -592,6 +613,10 @@ CREATE TABLE ordenservicio (
     estado_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
+
+    -- APROBACIÓN
+    usuario_aprobador INT,
+    fecha_aprobacion DATETIME,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
@@ -646,8 +671,19 @@ INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Pendiente', 'REQ'),
 ('Aprobado', 'REQ'),
-('Atendido', 'REQ'),
+('Atendido Parcial', 'REQ'),
+('Atendido Total', 'REQ'),
 ('Rechazado', 'REQ');
+
+-- Solo los estados que pediste para los DREQUERIMIENTOS
+INSERT INTO estado (nombre, tabla) VALUES 
+('Pendiente', 'DREQ'),
+('Atendido', 'DREQ');
+
+-- Solo los estados que pediste para los DPEDIDOS
+INSERT INTO estado (nombre, tabla) VALUES 
+('Pendiente', 'DPED'),
+('Atendido', 'DPED');
 
 -- Estados para el Pedido (Operativos)
 INSERT INTO estado (nombre, tabla) VALUES 

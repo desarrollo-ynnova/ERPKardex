@@ -50,6 +50,7 @@
                                 <th style="width: 50px;">Item</th>
                                 <th>Descripción del Servicio</th>
                                 <th style="width: 100px;">C. Costo</th>
+                                <th>Lugar</th>
                                 <th style="width: 80px;">U.M.</th>
                                 <th style="width: 80px;">Cant.</th>
                                 <th style="width: 80px;">Cant. Atendida</th>
@@ -274,7 +275,7 @@
 
     function fct_VerPedido(id) {
         ShowSpinner();
-        $('#tbody_DetallePedido').html('<tr><td colspan="6">Cargando...</td></tr>');
+        $('#tbody_DetallePedido').html('<tr><td colspan="8">Cargando...</td></tr>');
         $.ajax({
             url: '/PedServicio/GetDetallePedido?id=' + id,
             type: 'GET',
@@ -288,6 +289,7 @@
                                 <td class="font-weight-bold">${d.item}</td>
                                 <td class="text-left text-wrap" style="max-width:300px;">${d.descripcion}</td>
                                 <td class="text-success font-weight-bold">${d.centroCosto}</td>
+                                <td class="text-left">${d.lugar}</td>
                                 <td>${d.unidadMedida}</td>
                                 <td class="font-weight-bold">${d.cantidad.toFixed(2)}</td>
                                 <td class="font-weight-bold">${d.cantidadAtendida.toFixed(2)}</td>

@@ -3,11 +3,11 @@ using ERPKardex.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace ERPKardex.Controllers
 {
-    public class OrdenServicioController : Controller
+    // 1. HERENCIA DE BASECONTROLLER
+    public class OrdenServicioController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
@@ -16,27 +16,30 @@ namespace ERPKardex.Controllers
             _context = context;
         }
 
+        #region VISTAS
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
+        #endregion
 
         #region 1. LISTADO (INDEX)
 
         [HttpGet]
-        public JsonResult GetOrdenesData()
+        public async Task<JsonResult> GetOrdenesData()
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                var miEmpresaId = EmpresaUsuarioId; // BaseController
+                var esGlobal = EsAdminGlobal;       // BaseController
 
                 var query = from o in _context.OrdenServicios
                             join ent in _context.Entidades on o.EntidadId equals ent.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
-                            where (empresaId == 4 || o.EmpresaId == empresaId)
                             orderby o.Id descending
                             select new
                             {
                                 o.Id,
+                                o.EmpresaId,
                                 o.Numero,
                                 Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                 Proveedor = ent.RazonSocial,
@@ -48,7 +51,14 @@ namespace ERPKardex.Controllers
                                 o.Observacion
                             };
 
-                return Json(new { status = true, data = query.ToList() });
+                // Filtro Seguridad
+                if (!esGlobal)
+                {
+                    query = query.Where(x => x.EmpresaId == miEmpresaId);
+                }
+
+                var listado = await query.ToListAsync();
+                return Json(new { status = true, data = listado });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
@@ -64,7 +74,8 @@ namespace ERPKardex.Controllers
                                 select new
                                 {
                                     d.Item,
-                                    Producto = d.Descripcion, // Descripción larga
+                                    Producto = d.Descripcion,
+                                    d.Lugar,
                                     d.UnidadMedida,
                                     d.Cantidad,
                                     d.PrecioUnitario,
@@ -80,16 +91,18 @@ namespace ERPKardex.Controllers
 
         #endregion
 
-        #region 2. DATOS PARA REGISTRO
+        #region 2. DATOS PARA REGISTRO (MAESTROS)
 
         [HttpGet]
         public JsonResult GetCombosRegistro()
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                var miEmpresaId = EmpresaUsuarioId;
+                var esGlobal = EsAdminGlobal;
 
-                var proveedores = _context.Entidades.Where(x => x.Estado == true && (empresaId == 4 || x.EmpresaId == empresaId))
+                var proveedores = _context.Entidades
+                    .Where(x => x.Estado == true && (esGlobal || x.EmpresaId == miEmpresaId))
                     .Select(x => new { x.Id, x.Ruc, x.RazonSocial }).ToList();
 
                 var monedas = _context.Monedas.Where(x => x.Estado == true).ToList();
@@ -101,24 +114,26 @@ namespace ERPKardex.Controllers
 
         #endregion
 
-        #region 3. LÓGICA DE JALAR PEDIDOS DE SERVICIO
+        #region 3. LÓGICA DE JALAR PEDIDOS (CEREBRO)
 
         [HttpGet]
         public JsonResult GetPedidosPendientes(int? empresaFiltroId)
         {
             try
             {
-                var empresaUsuario = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-                int idEmpresa = (empresaUsuario == 4) ? (empresaFiltroId ?? 0) : empresaUsuario;
+                var miEmpresaId = EmpresaUsuarioId;
+                var esGlobal = EsAdminGlobal;
+                int idEmpresa = esGlobal ? (empresaFiltroId ?? 0) : miEmpresaId;
 
-                var estadosValidos = _context.Estados.Where(e => (e.Nombre == "Generado" || e.Nombre == "Aprobado") && e.Tabla == "PED")
-                                                     .Select(e => e.Id).ToList();
+                var estadosValidos = _context.Estados
+                    .Where(e => (e.Nombre == "Generado" || e.Nombre == "Atendido Parcial") && e.Tabla == "PED")
+                    .Select(e => e.Id).ToList();
 
                 var pedidos = (from p in _context.PedServicios
                                join d in _context.DPedidosServicio on p.Id equals d.PedidoServicioId
                                where p.EmpresaId == idEmpresa
                                      && estadosValidos.Contains(p.EstadoId ?? 0)
-                                     && d.Cantidad > (d.CantidadAtendida ?? 0)
+                                     && d.Cantidad > (d.CantidadAtendida ?? 0) // Filtro saldo
                                group p by new { p.Id, p.Numero, p.FechaEmision, p.FechaNecesaria, p.Observacion } into g
                                select new
                                {
@@ -157,7 +172,7 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. Items del Pedido
+                // 1. Ítems del Pedido
                 var itemsPedido = (from d in _context.DPedidosServicio
                                    join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into joinCC
                                    from cc in joinCC.DefaultIfEmpty()
@@ -172,20 +187,21 @@ namespace ERPKardex.Controllers
                                        d.CantidadAtendida,
                                        d.CentroCostoId,
                                        CentroCostoNombre = cc != null ? cc.Codigo : "-",
+                                       d.Lugar, // En servicio también hay lugar por detalle
                                        d.Item
                                    }).ToList();
 
-                // 2. CORRECCIÓN: Saldo Comprometido en Órdenes GENERADAS
+                // 2. Comprometido en Borradores (Generado)
                 var estadoGeneradoOS = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN")?.Id ?? 0;
 
                 var comprometidos = (from doc in _context.DOrdenServicios
                                      join os in _context.OrdenServicios on doc.OrdenServicioId equals os.Id
-                                     where os.EstadoId == estadoGeneradoOS // <--- VALIDACIÓN CONTRA GENERADO
+                                     where os.EstadoId == estadoGeneradoOS
                                         && doc.TablaReferencia == "DPEDSERVICIO"
                                      select new { doc.IdReferencia, doc.Cantidad })
-                                     .ToList();
+                                    .ToList();
 
-                // 3. Cruzar y Calcular
+                // 3. Cálculo final
                 var resultado = itemsPedido.Select(ip =>
                 {
                     decimal cantComprometida = comprometidos.Where(x => x.IdReferencia == ip.Id).Sum(x => x.Cantidad ?? 0);
@@ -200,11 +216,13 @@ namespace ERPKardex.Controllers
                         ip.UnidadMedida,
                         ip.CentroCostoId,
                         ip.CentroCostoNombre,
+                        ip.Lugar,
                         CantidadPedido = ip.CantidadSolicitada,
+                        // Si saldo es negativo (sobre-atención previa), mostramos 0
                         SaldoDisponible = saldoDisponible > 0 ? saldoDisponible : 0
                     };
                 })
-                .Where(x => x.SaldoDisponible > 0)
+                .Where(x => x.SaldoDisponible > 0) // Solo items con saldo
                 .ToList();
 
                 return Json(new { status = true, data = resultado });
@@ -214,7 +232,7 @@ namespace ERPKardex.Controllers
 
         #endregion
 
-        #region 4. GUARDAR Y APROBAR (OS)
+        #region 4. GUARDAR Y APROBAR
 
         [HttpPost]
         public JsonResult Guardar(OrdenServicio cabecera, string detallesJson)
@@ -223,16 +241,14 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var empresaUsuario = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
-                    int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+                    var usuarioId = UsuarioActualId; // BaseController
 
-                    // CORRECCIÓN: Usar estado GENERADO
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OS");
 
-                    if (estadoGenerado == null || tipoDoc == null)
-                        throw new Exception("Falta configuración de estados (Generado) o documentos (OS).");
+                    if (estadoGenerado == null || tipoDoc == null) throw new Exception("Falta configuración (OS).");
 
+                    // Correlativo
                     var ultimo = _context.OrdenServicios
                         .Where(x => x.EmpresaId == cabecera.EmpresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
                         .OrderByDescending(x => x.Numero)
@@ -245,17 +261,19 @@ namespace ERPKardex.Controllers
                         if (partes.Length > 1 && int.TryParse(partes[1], out int val)) nro = val + 1;
                     }
 
+                    // Cabecera
                     cabecera.Numero = $"OS-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
                     cabecera.UsuarioCreacionId = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
-                    cabecera.EstadoId = estadoGenerado.Id; // <--- ASIGNAR GENERADO
+                    cabecera.EstadoId = estadoGenerado.Id;
 
                     if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
 
                     _context.OrdenServicios.Add(cabecera);
                     _context.SaveChanges();
 
+                    // Detalles
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
                         var items = JsonConvert.DeserializeObject<List<DOrdenServicio>>(detallesJson);
@@ -263,12 +281,14 @@ namespace ERPKardex.Controllers
 
                         foreach (var det in items)
                         {
+                            // VALIDACIÓN DE SALDO COMENTADA (PERMITIR SOBRE-ATENCIÓN)
+                            // La advertencia se maneja en el front.
+                            /*
                             if (det.IdReferencia != null && det.TablaReferencia == "DPEDSERVICIO")
                             {
                                 var pedItem = _context.DPedidosServicio.AsNoTracking().FirstOrDefault(x => x.Id == det.IdReferencia);
                                 if (pedItem != null)
                                 {
-                                    // Validar contra otras GENERADAS
                                     var emitidosOtros = _context.DOrdenServicios
                                         .Where(x => x.IdReferencia == det.IdReferencia && x.TablaReferencia == "DPEDSERVICIO"
                                                  && x.OrdenServicioId != cabecera.Id
@@ -278,9 +298,12 @@ namespace ERPKardex.Controllers
                                     decimal saldoReal = (pedItem.Cantidad ?? 0) - (pedItem.CantidadAtendida ?? 0) - emitidosOtros;
 
                                     if ((det.Cantidad ?? 0) > saldoReal)
-                                        throw new Exception($"El servicio {det.Descripcion} excede el saldo disponible ({saldoReal}).");
+                                    {
+                                        throw new Exception($"El servicio {det.Descripcion} excede saldo: {saldoReal}");
+                                    }
                                 }
                             }
+                            */
 
                             det.Id = 0;
                             det.OrdenServicioId = cabecera.Id;
@@ -305,7 +328,7 @@ namespace ERPKardex.Controllers
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { status = false, message = "Error: " + ex.Message });
+                    return Json(new { status = false, message = ex.Message });
                 }
             }
         }
@@ -317,19 +340,18 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
+                    var usuarioId = UsuarioActualId; // BaseController
                     var orden = _context.OrdenServicios.Find(id);
                     if (orden == null) throw new Exception("Orden no encontrada.");
 
                     var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "ORDEN");
-
-                    // CORRECCIÓN: Validar contra GENERADO
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
 
                     if (orden.EstadoId != estadoGenerado.Id) throw new Exception("Solo se pueden aprobar órdenes en estado Generado.");
 
                     var detalles = _context.DOrdenServicios.Where(d => d.OrdenServicioId == id).ToList();
 
-                    // ACTUALIZAR SALDOS PEDIDO SERVICIO
+                    // ACTUALIZAR SALDOS
                     foreach (var det in detalles)
                     {
                         if (det.IdReferencia != null && det.TablaReferencia == "DPEDSERVICIO")
@@ -337,40 +359,41 @@ namespace ERPKardex.Controllers
                             var pedItem = _context.DPedidosServicio.Find(det.IdReferencia);
                             if (pedItem != null)
                             {
-                                decimal saldoActual = (pedItem.Cantidad ?? 0) - (pedItem.CantidadAtendida ?? 0);
-                                if ((det.Cantidad ?? 0) > saldoActual)
-                                    throw new Exception($"Conflicto de saldo en item {det.Item}.");
-
+                                // Sumar cantidad atendida (permitiendo exceso)
                                 pedItem.CantidadAtendida = (pedItem.CantidadAtendida ?? 0) + (det.Cantidad ?? 0);
                             }
                         }
                     }
                     _context.SaveChanges();
 
-                    // ACTUALIZAR ESTADO DE PEDIDOS DE SERVICIO
+                    // VERIFICAR ESTADO DE PEDIDOS (Parcial / Total)
                     var pedidosInvolucrados = detalles
                         .Where(d => d.TablaReferencia == "DPEDSERVICIO" && d.IdReferencia != null)
                         .Select(d => _context.DPedidosServicio.Where(dp => dp.Id == d.IdReferencia).Select(dp => dp.PedidoServicioId).FirstOrDefault())
                         .Distinct().ToList();
 
-                    var estadoAtendidoTotal = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Total" && e.Tabla == "PED");
-                    var estadoAtendidoParcial = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Parcial" && e.Tabla == "PED");
+                    var estTotalPED = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Total" && e.Tabla == "PED");
+                    var estParcialPED = _context.Estados.FirstOrDefault(e => e.Nombre == "Atendido Parcial" && e.Tabla == "PED");
 
                     foreach (var pedId in pedidosInvolucrados)
                     {
                         var pedido = _context.PedServicios.Find(pedId);
-                        bool todoAtendido = !_context.DPedidosServicio
-                            .Any(dp => dp.PedidoServicioId == pedId && dp.CantidadAtendida < dp.Cantidad);
+                        // Lógica: Si TODOS los items tienen (Atendido >= Solicitado), es Total.
+                        bool hayPendientes = _context.DPedidosServicio
+                            .Any(dp => dp.PedidoServicioId == pedId && (dp.CantidadAtendida ?? 0) < (dp.Cantidad ?? 0));
 
-                        if (todoAtendido) pedido.EstadoId = estadoAtendidoTotal.Id;
-                        else pedido.EstadoId = estadoAtendidoParcial.Id;
+                        if (!hayPendientes) pedido.EstadoId = estTotalPED.Id;
+                        else pedido.EstadoId = estParcialPED.Id;
                     }
 
+                    // APROBAR ORDEN
                     orden.EstadoId = estadoAprobado.Id;
+                    orden.UsuarioAprobador = usuarioId;
+                    orden.FechaAprobacion = DateTime.Now;
                     _context.SaveChanges();
 
                     transaction.Commit();
-                    return Json(new { status = true, message = "OS Aprobada y saldos actualizados." });
+                    return Json(new { status = true, message = "Orden Aprobada." });
                 }
                 catch (Exception ex)
                 {
@@ -385,15 +408,17 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                var usuarioId = UsuarioActualId; // BaseController
                 var orden = _context.OrdenServicios.Find(id);
-                // CORRECCIÓN: Usar ANULADO
                 var estadoAnulado = _context.Estados.FirstOrDefault(e => e.Nombre == "Anulado" && e.Tabla == "ORDEN");
 
                 if (orden != null && estadoAnulado != null)
                 {
                     orden.EstadoId = estadoAnulado.Id;
+                    orden.UsuarioAprobador = usuarioId;
+                    orden.FechaAprobacion = DateTime.Now;
                     _context.SaveChanges();
-                    return Json(new { status = true, message = "OS Anulada." });
+                    return Json(new { status = true, message = "Orden anulada." });
                 }
                 return Json(new { status = false, message = "Error al anular." });
             }

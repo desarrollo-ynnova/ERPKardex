@@ -37,7 +37,16 @@
             </div>
             <div class="modal-body p-0">
                 <table class="table table-sm table-striped mb-0 text-center">
-                    <thead class="bg-light"><tr><th>Item</th><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead>
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Item</th>
+                            <th>Descripción</th>
+                            <th>Lugar</th>
+                            <th>Cant.</th>
+                            <th>Precio</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
                     <tbody id="tblBodyDetalle"></tbody>
                 </table>
             </div>
@@ -235,6 +244,7 @@
                 html += `<tr>
                     <td>${d.item}</td>
                     <td class="text-left"><small>${d.producto}</small></td>
+                    <td class="text-left"><small>${d.lugar}</small></td>
                     <td>${d.cantidad} ${d.unidadMedida}</td>
                     <td>${d.precioUnitario.toFixed(2)}</td>
                     <td>${d.total.toFixed(2)}</td>

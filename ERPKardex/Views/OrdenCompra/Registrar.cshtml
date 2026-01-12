@@ -190,8 +190,40 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<div class="modal fade" id="modalVistaPrevia" tabindex="-1" role="dialog" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-primary">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title font-weight-bold">
+                    <i class="fas fa-list-alt"></i> Contenido del Pedido
+                </h6>
+                <button type="button" class="close text-white" onclick="$('#modalVistaPrevia').modal('hide')">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0 text-center">
+                        <thead class="bg-light text-primary">
+                            <tr>
+                                <th>Item</th>
+                                <th>Producto / Descripción</th>
+                                <th>U.M.</th>
+                                <th>C. Costo</th>
+                                <th>Lugar</th>
+                                <th class="text-dark bg-warning" style="width: 120px;">Saldo Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_BodyVistaPrevia"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="$('#modalVistaPrevia').modal('hide')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     // Variables Globales
     let LISTA_PRODUCTOS = [];
@@ -252,21 +284,31 @@
         if(!empId) return Swal.fire("Aviso", "Seleccione la Empresa Compradora.", "warning");
 
         $('#efec-cargando').removeClass('d-none');
+
+        // Llamamos al endpoint que ya creamos en el controlador
         $.get('/OrdenCompra/GetPedidosPendientes?empresaFiltroId=' + empId, function(res) {
             $('#efec-cargando').addClass('d-none');
+
             let html = '';
             if(res.status && res.data.length > 0) {
                 res.data.forEach(p => {
                     html += `<tr>
-                        <td><button class="btn btn-sm btn-info" onclick="seleccionarPedido(${p.id})"><i class="fas fa-check"></i></button></td>
-                        <td class="font-weight-bold">${p.numero}</td>
-                        <td>${p.fecha}</td>
-                        <td>${p.fechaNecesaria}</td>
-                        <td><small>${p.observacion || '-'}</small></td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-success mr-1" title="Seleccionar y Jalar" onclick="seleccionarPedido(${p.id})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-sm btn-info" title="Ver contenido" onclick="verDetallePrevia(${p.id}, '${p.numero}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                        <td class="font-weight-bold align-middle">${p.numero}</td>
+                        <td class="align-middle">${p.fecha}</td>
+                        <td class="align-middle text-danger">${p.fechaNecesaria}</td>
+                        <td class="align-middle small text-left">${p.observacion || '-'}</td>
                     </tr>`;
                 });
             } else {
-                html = '<tr><td colspan="4" class="text-center">No hay pedidos pendientes para esta empresa.</td></tr>';
+                html = '<tr><td colspan="5" class="text-center text-muted p-3">No hay pedidos pendientes para esta empresa.</td></tr>';
             }
             $('#tbl_BusquedaPedidos tbody').html(html);
             $('#modalPedidos').modal('show');
@@ -315,6 +357,42 @@
             }
         });
     }
+    
+    // Agrega esta nueva función en tu bloque <script>
+    function verDetallePrevia(pedId, numeroPedido) {
+        // Limpiamos y mostramos cargando
+        $('#tbl_BodyVistaPrevia').html('<tr><td colspan="6" class="text-center py-3">Cargando detalles...</td></tr>');
+
+        // Abrimos el modal (Bootstrap maneja el z-index automáticamente si es > 1050)
+        $('#modalVistaPrevia').modal('show');
+
+        // Usamos el mismo endpoint que usas para jalar los datos, ya que calcula el saldo real
+        $.get('/OrdenCompra/GetDetallesPedidoParaOrden?pedidoId=' + pedId, function(res) {
+            if(res.status) {
+                let html = '';
+                if(res.data.length > 0) {
+                    res.data.forEach(d => {
+                        html += `<tr>
+                            <td class="font-weight-bold">${d.item}</td>
+                            <td class="text-left">${d.descripcion}</td>
+                            <td>${d.unidadMedida}</td>
+                            <td><small>${d.centroCostoNombre}</small></td>
+                            <td><small>${d.lugar || '-'}</small></td>
+                            <td class="font-weight-bold text-dark bg-warning" style="font-size: 1.1em;">
+                                ${d.saldoDisponible.toFixed(2)}
+                            </td>
+                        </tr>`;
+                    });
+                } else {
+                    html = '<tr><td colspan="6" class="text-center">Este pedido no tiene saldos pendientes.</td></tr>';
+                }
+                $('#tbl_BodyVistaPrevia').html(html);
+            } else {
+                toastr.error("No se pudo cargar el detalle.");
+                $('#modalVistaPrevia').modal('hide');
+            }
+        });
+    }
 
     // 4. RENDERIZADO Y CÁLCULOS
     function renderTabla() {
@@ -354,23 +432,31 @@
         $('#tbl_Body').html(html);
         recalcularGlobales();
     }
-
+    
     function actualizarLinea(idx, tipo, valor) {
         let val = parseFloat(valor) || 0;
         let item = LISTA_PRODUCTOS[idx];
 
         if(tipo === 'cant') {
+            // Lógica de Advertencia Visual
+            let input = $(`#tbl_Body tr:eq(${idx}) input[type='number']:first`); // Input cantidad
+
             if(val > item.SaldoMaximo) {
-                Swal.fire("Error", `No puede pedir más del saldo disponible (${item.SaldoMaximo})`, "error");
-                val = item.SaldoMaximo; // Restaurar al max
-                // Nota: en producción podrías buscar el input por ID y resetearlo visualmente
+                // No bloqueamos, solo advertimos visualmente
+                input.addClass('is-warning border-warning text-warning');
+                input.attr('title', `Excede el saldo de ${item.SaldoMaximo}`);
+
+                // Opcional: Toast de advertencia una sola vez o discreto
+                toastr.warning(`El ítem ${item.Descripcion} supera el saldo disponible.`);
+            } else {
+                input.removeClass('is-warning border-warning text-warning');
+                input.removeAttr('title');
             }
             item.Cantidad = val;
         } else {
             item.PrecioUnitario = val;
         }
 
-        // Actualizar visualmente la celda de total fila
         $(`#td_total_${idx}`).text((item.Cantidad * item.PrecioUnitario).toFixed(2));
         recalcularGlobales();
     }
@@ -434,6 +520,14 @@
             condPagoFinal = `CRÉDITO A ${dias} DÍAS`;
         }
 
+        // --- NUEVA LÓGICA DE DETECCIÓN DE EXCESOS ---
+        let hayExcesos = LISTA_PRODUCTOS.some(p => p.Cantidad > p.SaldoMaximo);
+        let mensajeConfirmacion = "¿Registrar Orden de Compra?";
+
+        if (hayExcesos) {
+            mensajeConfirmacion = "⚠️ ¡ATENCIÓN! Hay ítems con cantidades superiores al saldo pendiente del pedido. ¿Desea proceder con la SOBRE-ATENCIÓN?";
+        }
+
         // Construir Cabecera
         let cabecera = {
             EmpresaId: parseInt($('#cbx_Empresa').val()),
@@ -480,6 +574,24 @@
             };
         });
 
+        Swal.fire({
+            title: hayExcesos ? "Confirmar Sobre-atención" : "Confirmar Registro",
+            text: mensajeConfirmacion,
+            icon: hayExcesos ? "warning" : "question",
+            showCancelButton: true,
+            reverseButtons: true,
+            confirmButtonColor: hayExcesos ? "#d33" : "#3085d6", // Rojo si es peligroso
+            confirmButtonText: "Sí, Registrar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Proceder con el AJAX (Tu código actual)
+                enviarOrdenAlBackend(cabecera, detalles);
+            }
+        });
+    }
+    
+    // Función auxiliar para encapsular el AJAX y no repetir código
+    function enviarOrdenAlBackend(cabecera, detalles) {
         $('#efec-cargando').removeClass('d-none');
         $.ajax({
             url: '/OrdenCompra/Guardar',
@@ -504,4 +616,5 @@
             }
         });
     }
+
 </script>
