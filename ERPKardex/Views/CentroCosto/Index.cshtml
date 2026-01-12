@@ -33,9 +33,13 @@
                             <tr>
                                 <th>Código</th>
                                 <th>Tipo cuenta</th>
+                                <th>F. Inicio</th>
+                                <th>F. Fin</th>
                                 <th>Nombre</th>
                                 <th>Padre</th>
                                 <th>Imputable</th>
+                                <th>C. Abono</th>
+                                <th>C. Cargo</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -253,6 +257,8 @@
                             return `${data.numeroCuenta} - ${data.tipoCuenta}`
                         },
                     },
+                    { "data": "fechaInicio" },
+                    { "data": "fechaFin" },
                     { "data": "nombre" },
                     { "data": "padre" },
                     {
@@ -261,6 +267,8 @@
                             return data ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-warning">No</span>';
                         }
                     },
+                    { "data": "cuentaAbono" },
+                    { "data": "cuentaCargo" },
                     {
                         "data": "id",
                         "render": function (data) {

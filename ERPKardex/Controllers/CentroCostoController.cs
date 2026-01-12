@@ -133,7 +133,11 @@ namespace ERPKardex.Controllers
                 TipoCuenta = x.tc != null ? x.tc.Nombre : "-",
                 x.cc.EsImputable,
                 x.cc.EmpresaId,
-                FechaInicio = x.cc.FechaInicio.HasValue ? x.cc.FechaInicio.Value.ToString("dd/MM/yyyy") : "-"
+                Empresa = x.emp.RazonSocial,
+                CuentaAbono = x.cc.CuentaAbono ?? "-",
+                CuentaCargo = x.cc.CuentaCargo ?? "-",
+                FechaInicio = x.cc.FechaInicio.HasValue ? x.cc.FechaInicio.Value.ToString("dd/MM/yyyy") : "-",
+                FechaFin = x.cc.FechaFin.HasValue ? x.cc.FechaFin.Value.ToString("dd/MM/yyyy") : "-",
             })
             .OrderBy(x => x.Codigo)
             .ToList();

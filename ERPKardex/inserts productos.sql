@@ -2879,51 +2879,61 @@ UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numer
 GO
 
 -- 10. AGROQUIMEX
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01001%' OR codigo like 'C01002%' or codigo like 'C01004%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01003%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01005%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01006%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1001%' OR codigo like 'C1002%' or codigo like 'C1004%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1003%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C1005%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1006%';
 
 GO
 
 -- 11. CONTROL SCIENCE
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01101%' OR codigo like 'C01102%' or codigo like 'C01104%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01103%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01105%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01106%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1101%' OR codigo like 'C1102%' or codigo like 'C1104%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1103%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C1105%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1106%';
 
 GO
 
 -- 12. ECOMAT
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01201%' OR codigo like 'C01202%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01203%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '92') WHERE codigo like 'C01204%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01205%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1201%' OR codigo like 'C1202%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1203%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '92') WHERE codigo like 'C1204%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1205%';
 
 GO
 
 -- 13. RECLUTA
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01301%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01302%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01303%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01304%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1301%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1302%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C1303%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1304%';
 
 GO
 
 -- 14. YNNOVA
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01401%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01402%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01403%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1401%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1402%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1403%';
 
 GO
 
 -- 15. TRUST
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01501%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01502%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1501%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1502%';
 
 GO
 
 -- 16. SUPPLY
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01601%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01602%';
-UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01603%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C1601%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C1602%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C1603%';
+
+GO
+
+UPDATE centro_costo SET fecha_inicio = '2025-01-01';
+
+GO
+
+select * from tipo_cuenta
+
+select * from centro_costo where tipo_cuenta_id is null
