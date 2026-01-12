@@ -16,6 +16,7 @@ namespace ERPKardex.Data
         public DbSet<Grupo> Grupos { get; set; }
         public DbSet<Subgrupo> Subgrupos { get; set; }
         public DbSet<TipoExistencia> TipoExistencias { get; set; }
+        public DbSet<TipoCuenta> TipoCuentas { get; set; }
         public DbSet<Cuenta> Cuentas { get; set; }
         public DbSet<UnidadMedida> UnidadesMedida { get; set; }
         public DbSet<FormulacionQuimica> FormulacionesQuimicas { get; set; }

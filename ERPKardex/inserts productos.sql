@@ -1443,7 +1443,6 @@ SELECT @IdEmpresa = id FROM empresa WHERE ruc = @RucTarget;
 IF @IdEmpresa IS NOT NULL
 BEGIN
     PRINT 'Insertando Centros de Costo para STALNO (ID: ' + CAST(@IdEmpresa AS VARCHAR) + ')...';
-
     -- =========================================================================
     -- NIVEL 1: PADRES RAÍZ
     -- =========================================================================
@@ -1909,7 +1908,10 @@ BEGIN
     ('C070204', 'VEHICULOS', @IdEmpresa, @IdPadre, 0, 1); -- NO IMPUTABLE (Tiene nieto específico)
 
     -- Hijos de C0703 (ADMINISTRATIVA) - ¡NO PROPORCIONADOS!
-    -- Se deja solo el padre C0703 creado arriba.
+    SELECT @IdPadre = id FROM centro_costo WHERE codigo = 'C0703' AND empresa_id = @IdEmpresa;
+    INSERT INTO centro_costo (codigo, nombre, empresa_id, padre_id, es_imputable, estado) VALUES
+    ('C070301', 'OFICINA ADMINISTRATIVA', @IdEmpresa, @IdPadre, 1, 1),
+    ('C070302', 'GERENTE GENERAL', @IdEmpresa, @IdPadre, 1, 1);
 
     -- Hijos de C0704 (GESTION ACADEMICA)
     -- NOTA: Se asignaron códigos hijos 01 y 02 para corregir duplicidad con Ventas/Financiera
@@ -2793,3 +2795,135 @@ FROM empresa e
 LEFT JOIN centro_costo cc ON e.id = cc.empresa_id
 GROUP BY e.id, e.razon_social
 ORDER BY e.id;
+
+GO
+
+INSERT INTO tipo_cuenta (codigo, nombre, numero_cuenta, estado) VALUES ('0001', 'ADMINISTRATIVO', '95', 1);
+INSERT INTO tipo_cuenta (codigo, nombre, numero_cuenta, estado) VALUES ('0002', 'VENTAS', '94', 1);
+INSERT INTO tipo_cuenta (codigo, nombre, numero_cuenta, estado) VALUES ('0003', 'FINANCIERO', '97', 1);
+INSERT INTO tipo_cuenta (codigo, nombre, numero_cuenta, estado) VALUES ('0004', 'OPERACIONES', '90', 1);
+INSERT INTO tipo_cuenta (codigo, nombre, numero_cuenta, estado) VALUES ('0005', 'TRABAJOS EN CURSO', '92', 1);
+
+GO
+
+-- 1. STALNO
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0101%' OR codigo like 'C0102%' or codigo like 'C0104%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0103%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0105%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0106%';
+
+GO
+
+-- 2. METQUIM
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0201%' OR codigo like 'C0202%' or codigo like 'C0204%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0203%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0205%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0206%';
+
+GO
+
+-- 3. MAQSA
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0301%' OR codigo like 'C0302%' or codigo like 'C0304%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0303%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0305%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0306%';
+
+GO
+
+-- 4. GREEN FARM
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0401%' OR codigo like 'C0402%' or codigo like 'C0404%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0403%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0405%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0406%';
+
+GO
+
+-- 5. IMBO
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0501%' OR codigo like 'C0502%' or codigo like 'C0504%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0503%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0505%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0506%';
+
+GO
+
+-- 6. EVOCA
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0601%' OR codigo like 'C0602%' or codigo like 'C0604%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0603%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0605%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0606%';
+
+GO
+
+-- 7. INIGDE
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0701%' OR codigo like 'C0702%' or codigo like 'C0704%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0703%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0705%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0706%';
+
+GO
+
+-- 8. MEDICORS
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0801%' OR codigo like 'C0802%' or codigo like 'C0804%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0803%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0805%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0806%';
+
+GO
+
+-- 9. COMEXDI
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C0901%' OR codigo like 'C0902%' or codigo like 'C0904%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C0903%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C0905%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C0906%';
+
+GO
+
+-- 10. AGROQUIMEX
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01001%' OR codigo like 'C01002%' or codigo like 'C01004%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01003%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01005%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01006%';
+
+GO
+
+-- 11. CONTROL SCIENCE
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01101%' OR codigo like 'C01102%' or codigo like 'C01104%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01103%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01105%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01106%';
+
+GO
+
+-- 12. ECOMAT
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01201%' OR codigo like 'C01202%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01203%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '92') WHERE codigo like 'C01204%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01205%';
+
+GO
+
+-- 13. RECLUTA
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01301%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01302%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '94') WHERE codigo like 'C01303%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01304%';
+
+GO
+
+-- 14. YNNOVA
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01401%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01402%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01403%';
+
+GO
+
+-- 15. TRUST
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01501%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01502%';
+
+GO
+
+-- 16. SUPPLY
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '95') WHERE codigo like 'C01601%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '90') WHERE codigo like 'C01602%';
+UPDATE centro_costo SET tipo_cuenta_id = (select id from tipo_cuenta where numero_cuenta like '97') WHERE codigo like 'C01603%';

@@ -131,6 +131,7 @@ create table tipo_cuenta (
     id INT IDENTITY(1,1) PRIMARY KEY,
     codigo VARCHAR(255),
     nombre VARCHAR(255),
+    numero_cuenta VARCHAR(255),
     estado BIT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );

@@ -1,0 +1,85 @@
+﻿<div class="modal fade" id="modalCentroCosto" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="tituloModal">Nuevo Centro de Costo</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="frmCentroCosto">
+                    <input type="hidden" id="hdId" name="Id" value="0" />
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Empresa</label>
+                            <select id="cboEmpresa" name="EmpresaId" class="form-control select2" style="width:100%"></select>
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label>Centro de Costo Padre</label>
+                            <select id="cboPadre" name="PadreId" class="form-control select2" style="width:100%">
+                                <option value="">[RAÍZ - SIN PADRE]</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Código (*)</label>
+                            <input type="text" id="txtCodigo" name="Codigo" class="form-control" required />
+                        </div>
+                        <div class="col-md-8 form-group">
+                            <label>Nombre (*)</label>
+                            <input type="text" id="txtNombre" name="Nombre" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            <label>Es Imputable</label>
+                            <select id="cboImputable" name="EsImputable" class="form-control">
+                                <option value="true">SÍ (Recibe Gastos)</option>
+                                <option value="false">NO (Agrupador)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Fecha Inicio</label>
+                            <input type="date" id="txtFechaInicio" name="FechaInicio" class="form-control" />
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>Fecha Fin</label>
+                            <input type="date" id="txtFechaFin" name="FechaFin" class="form-control" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h6 class="text-primary">Configuración Contable</h6>
+
+                    <div class="row">
+                        <div class="col-md-12 form-group">
+                            <label>Tipo de Cuenta (Clase 9)</label>
+                            <select id="cboTipoCuenta" name="TipoCuentaId" class="form-control select2" style="width:100%"></select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Cuenta Cargo</label>
+                            <input type="text" id="txtCuentaCargo" name="CuentaCargo" class="form-control" placeholder="Ej: 94.1.01" />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Cuenta Abono</label>
+                            <input type="text" id="txtCuentaAbono" name="CuentaAbono" class="form-control" placeholder="Ej: 79.1.01" />
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="fct_Guardar()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
