@@ -156,6 +156,7 @@ CREATE TABLE entidad (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	ruc varchar(255),
 	razon_social varchar(255),
+	nombre_contacto varchar(255),
     telefono varchar(255),
     email varchar(255),
 	estado BIT,

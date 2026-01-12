@@ -31,6 +31,11 @@
                         <input type="text" id="txt_RazonSocial" class="form-control" placeholder="Nombre de la empresa o persona">
                     </div>
 
+                    <div class="form-group">
+                        <label class="font-weight-bold">Nombre de Contacto (*)</label>
+                        <input type="text" id="txt_NombreContacto" class="form-control" placeholder="Nombre de la persona de contacto">
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label class="font-weight-bold">Correo Electrónico</label>
@@ -78,6 +83,7 @@
             if(res.status) {
                 $('#txt_Ruc').val(res.data.ruc);
                 $('#txt_RazonSocial').val(res.data.razonSocial);
+                $('#txt_NombreContacto').val(res.data.nombreContacto);
                 $('#txt_Telefono').val(res.data.telefono);
                 $('#txt_Email').val(res.data.email);
 
@@ -93,14 +99,17 @@
         // Validaciones simples
         let ruc = $('#txt_Ruc').val().trim();
         let razon = $('#txt_RazonSocial').val().trim();
+        let nombreContacto = $('#txt_NombreContacto').val().trim();
 
         if(!ruc || ruc.length < 11) return Swal.fire("Aviso", "El RUC debe tener 11 dígitos.", "warning");
         if(!razon) return Swal.fire("Aviso", "Ingrese la Razón Social.", "warning");
+        if(!nombreContacto) return Swal.fire("Aviso", "Ingrese el nombre de contacto.", "warning");
 
         let modelo = {
             Id: $('#hdn_Id').val(),
             Ruc: ruc,
             RazonSocial: razon,
+            NombreContacto: nombreContacto,
             Telefono: $('#txt_Telefono').val(),
             Email: $('#txt_Email').val(),
             // Enviamos el estado seleccionado (true si es "1", false si es "0")

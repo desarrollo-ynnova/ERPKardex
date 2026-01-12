@@ -49,6 +49,7 @@ namespace ERPKardex.Controllers
                         e.Id,
                         e.Ruc,
                         e.RazonSocial,
+                        e.NombreContacto,
                         e.Telefono,
                         e.Email,
                         e.Estado // Necesario para pintar el badge en la vista
@@ -88,6 +89,7 @@ namespace ERPKardex.Controllers
             {
                 var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
                 modelo.RazonSocial = modelo.RazonSocial?.ToUpper();
+                modelo.NombreContacto = modelo.NombreContacto?.ToUpper();
 
                 // Validación de RUC duplicado en la misma empresa
                 var existeRuc = await _context.Entidades
@@ -115,6 +117,7 @@ namespace ERPKardex.Controllers
                     // Actualizar datos
                     entidadDb.Ruc = modelo.Ruc;
                     entidadDb.RazonSocial = modelo.RazonSocial;
+                    entidadDb.NombreContacto = modelo.NombreContacto;
                     entidadDb.Telefono = modelo.Telefono;
                     entidadDb.Email = modelo.Email;
 
