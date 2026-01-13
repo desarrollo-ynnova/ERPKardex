@@ -332,7 +332,7 @@
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="/Activo/Index"
-                                       class="nav-link @((controllerName == "Activo" && actionName == "Index") ? "active" : "")">
+                                       class="nav-link @((controllerName == "Activo" && new[] { "Index", "Asignacion", "Historial", "Registro" }.Contains(actionName)) ? "active" : "")">
                                         <i class="fas fa-list-ul nav-icon text-primary"></i>
                                         <p>Cómputo</p>
                                     </a>
