@@ -311,21 +311,22 @@ namespace ERPKardex.Controllers
                 string tipoActa = esDevolucion ? "ACTA DE DEVOLUCIÓN" : "ACTA DE ENTREGA";
 
                 // --- Obtener Personas (Emisor y Receptor) ---
-                string nombreEmisor = "", cargoEmisor = "", empresaEmisor = "";
+                string nombreEmisor = "", dniEmisor = "", cargoEmisor = "", empresaEmisor = "";
                 string nombreReceptor = "", dniReceptor = "", cargoReceptor = "", ubicacion = "";
 
-                // Usuario del Sistema (Generalmente IT/Logística)
-                var usuarioLogueado = await _context.Usuarios.FindAsync(UsuarioActualId); // Asumo tabla Usuario
+                // Usuario del Sistema (Generalmente IT/Logística - Quien está logueado haciendo la operación)
+                var usuarioLogueado = await _context.Usuarios.FindAsync(UsuarioActualId);
                 string nombreUserSys = usuarioLogueado?.Nombre ?? "ADMINISTRADOR SISTEMA";
+                string dniUserSys = usuarioLogueado?.Dni ?? "-"; // Recuperamos el DNI de la tabla usuario
 
-                // Empresa del Sistema (Usamos la del usuario actual o hardcodeada)
-                string empresaSys = "YNNOVACORP"; // O recuperar de _context.Empresas.Find(EmpresaUsuarioId)
+                // Empresa del Sistema (Hardcodeada o recuperada)
+                string empresaSys = "YNNOVACORP";
 
                 if (esDevolucion)
                 {
                     // CASO DEVOLUCIÓN:
-                    // DEVUELTO POR: El usuario que tenía el activo ANTES de este movimiento.
-                    // RECEPCIÓN: El usuario del sistema (IT).
+                    // EMISOR (Quien devuelve): El usuario que tenía el activo ANTES.
+                    // RECEPTOR (Quien recibe): El usuario del sistema (IT/Logística).
 
                     // Buscamos el movimiento INMEDIATAMENTE ANTERIOR a este
                     var movAnterior = await _context.ActivoAsignaciones
@@ -336,29 +337,34 @@ namespace ERPKardex.Controllers
                     if (movAnterior != null && movAnterior.PersonalId != null)
                     {
                         var pDevuelve = await _context.Personal.FindAsync(movAnterior.PersonalId);
+                        // Opcional: recuperar empresa del personal si es necesario
                         var empDevuelve = await _context.Empresas.FindAsync(pDevuelve.EmpresaId);
 
                         nombreEmisor = pDevuelve.NombresCompletos;
+                        dniEmisor = pDevuelve.Dni;
                         cargoEmisor = pDevuelve.Cargo;
                         empresaEmisor = empDevuelve?.RazonSocial ?? "-";
                     }
                     else
                     {
-                        nombreEmisor = "USUARIO DESCONOCIDO"; // Caso raro si no hay historial
+                        nombreEmisor = "USUARIO DESCONOCIDO";
+                        dniEmisor = "-";
                     }
 
                     nombreReceptor = nombreUserSys; // IT Recibe
+                    dniReceptor = dniUserSys;
                     cargoReceptor = "SOPORTE TI / LOGÍSTICA";
-                    ubicacion = movimiento.UbicacionTexto; // Donde se guardó
+                    ubicacion = movimiento.UbicacionTexto;
                 }
                 else
                 {
                     // CASO ENTREGA:
-                    // ENTREGADO POR: El usuario del sistema (IT).
-                    // RECEPCIÓN: El personal seleccionado en el movimiento.
+                    // EMISOR (Quien entrega): El usuario del sistema (IT).
+                    // RECEPTOR (Quien recibe): El personal seleccionado.
 
                     nombreEmisor = nombreUserSys; // IT Entrega
-                    cargoEmisor = "SOPORTE TI / LOGÍSTICA";
+                    dniEmisor = dniUserSys;
+                    cargoEmisor = "EQUIPO DE TI";
                     empresaEmisor = empresaSys;
 
                     var pRecibe = await _context.Personal.FindAsync(movimiento.PersonalId);
@@ -368,13 +374,12 @@ namespace ERPKardex.Controllers
                     ubicacion = movimiento.UbicacionTexto;
                 }
 
-                // --- Construir Características (String largo para el Word) ---
+                // --- Construir Características ---
                 var marca = await _context.Marcas.FindAsync(activo.MarcaId);
                 var modelo = await _context.Modelos.FindAsync(activo.ModeloId);
                 var tipo = await _context.ActivoTipos.FindAsync(activo.TipoId);
                 var specs = await _context.ActivoEspecificaciones.Where(x => x.ActivoId == activo.Id).ToListAsync();
 
-                // Formato: "Modelo: X, S/N: Y, IMEI1: Z..."
                 List<string> listaSpecs = new List<string>();
                 if (modelo != null) listaSpecs.Add($"Modelo: {modelo.Nombre}");
                 if (!string.IsNullOrEmpty(activo.Serie)) listaSpecs.Add($"S/N: {activo.Serie}");
@@ -397,6 +402,7 @@ namespace ERPKardex.Controllers
 
                         // Cabecera Acta
                         EmisorNombre = nombreEmisor,
+                        EmisorDni = dniEmisor, // ¡Aquí va el DNI corregido!
                         EmisorCargo = cargoEmisor,
                         EmisorEmpresa = empresaEmisor,
 
@@ -410,9 +416,12 @@ namespace ERPKardex.Controllers
                         Caracteristicas = caracteristicasTexto,
                         Cantidad = "1",
 
-                        // Firmas (Nombres debajo de la línea)
-                        FirmaEntrega = esDevolucion ? nombreEmisor : nombreEmisor, // En devolución firma quien devuelve a la izquierda? Depende formato.
-                        FirmaRecibe = nombreReceptor
+                        // Firmas (Para poner debajo de la línea)
+                        FirmaEntrega = nombreEmisor,
+                        FirmaEntregaDni = dniEmisor, // DNI para la firma izquierda
+
+                        FirmaRecibe = nombreReceptor,
+                        FirmaRecibeDni = dniReceptor // DNI para la firma derecha
                     }
                 });
             }

@@ -145,6 +145,7 @@
             <div class="line"></div>
             <div style="font-weight: bold;">ENTREGA:</div>
             <div id="sig_EntregaNombre" style="font-size: 9pt;"></div>
+            <div id="sig_EntregaDni" style="font-size: 9pt;"></div>
         </div>
         <div class="sig-block">
             <div class="line"></div>
@@ -190,8 +191,15 @@
 
                         // Firmas
                         document.getElementById('sig_EntregaNombre').innerText = d.firmaEntrega;
+                        // Agregamos el DNI debajo del nombre en la firma de Entrega
+                        if(d.firmaEntregaDni && d.firmaEntregaDni !== '-') {
+                            document.getElementById('sig_EntregaNombre').innerHTML += `<br>DNI: ${d.firmaEntregaDni}`;
+                        }
+
                         document.getElementById('sig_RecibeNombre').innerText = d.firmaRecibe;
-                        document.getElementById('sig_RecibeDni').innerText = d.receptorDni ? "DNI: " + d.receptorDni : "";
+                        if(d.firmaRecibeDni && d.firmaRecibeDni !== '-') {
+                            document.getElementById('sig_RecibeDni').innerText = "DNI: " + d.firmaRecibeDni;
+                        }
 
                         // Auto-imprimir tras 1 segundo
                         setTimeout(() => window.print(), 1000);
