@@ -1,49 +1,48 @@
 ﻿@{
-    ViewData["Title"] = "Inventario de Activos";
+    ViewData["Title"] = "Inventario General";
+    bool esAdmin = ViewBag.EsAdmin ?? false;
+    // Necesitamos saber si es admin para mostrar el combo
 }
-
-<div class="card d-none" id="efec-cargando">
-    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
-        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
-    </div>
-</div>
 
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>Gestión de Activos Fijos</h1>
-            </div>
+            <div class="col-sm-6"><h1>Inventario de Activos</h1></div>
         </div>
     </div>
 </section>
 
 <section class="content">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow card-primary card-outline">
-                    <div class="card-header">
-                        <h3 class="card-title">Listado General de Equipos</h3>
-                    </div>
-                    <div class="card-body">
-                        <table id="tbl_Activos" class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th class="text-center">CÓDIGO</th>
-                                    <th class="text-center">EQUIPO</th>
-                                    <th class="text-center">SERIE</th>
-                                    <th class="text-center">CONDICIÓN</th>
-                                    <th class="text-center">SITUACIÓN</th>
-                                    <th class="text-center">ASIGNADO A</th>
-                                    <th class="text-center">UBICACIÓN</th>
-                                    <th class="text-center">ACCIONES</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Listado de Equipos</h3>
+                <div class="card-tools">
+                    @if (@esAdmin)
+                    {
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <select id="cbxFiltroEmpresa" class="form-control">
+                                <option value="0">-- TODAS LAS EMPRESAS --</option>
+                            </select>
+                        </div>
+                    }
                 </div>
+            </div>
+            <div class="card-body">
+                <table id="tbl_Activos" class="table table-bordered table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>ASIGNADO A</th>
+                            <th>CÓDIGO</th>
+                            <th>EQUIPO (Marca/Modelo)</th>
+                            <th>SERIE</th>
+                            <th>CONDICIÓN</th>
+                            <th>UBICACIÓN</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -52,6 +51,7 @@
 @section Scripts {
     <script>
         var dtActivos;
+        var esAdmin = '@ViewBag.EsAdmin' === 'True';
 
         $(document).ready(function () {
             // $('body').addClass('sidebar-collapse');
@@ -117,7 +117,8 @@
                 lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
             });
 
-            // Configuración DataTables (Estilo AdminLTE)
+            if(esAdmin) cargarEmpresas();
+
             dtActivos = $('#tbl_Activos').DataTable({
                 buttons: [
                     {
@@ -131,7 +132,7 @@
                         text: '<i class="bi bi-file-earmark-excel"></i>',
                         titleAttr: 'Exportar a Excel',
                         className: 'btn btn-success',
-                        filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                        filename: 'Activos cómputo ' + moment().format('DD-MM-YYYY HH_mm'),
                         footer: true,
                         exportOptions:
                         {
@@ -144,7 +145,7 @@
                         text: '<i class="bi bi-file-earmark-pdf"></i>',
                         titleAttr: 'Exportar a PDF',
                         className: 'btn btn-danger',
-                        filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                        filename: 'Activos cómputo ' + moment().format('DD-MM-YYYY HH_mm'),
                         exportOptions:
                         {
                             stripHtml: true,
@@ -181,39 +182,37 @@
                 ajax: {
                     url: "/Activo/GetActivos",
                     type: "GET",
-                    datatype: "json",
+                    data: function(d) {
+                        d.empresaIdFiltro = $('#cbxFiltroEmpresa').val();
+                    },
                     dataSrc: function (json) {
-                        if (!json.status) {
-                            toastr.error(json.message);
-                            return [];
-                        }
-                        return json.data;
+                        return json.status ? json.data : [];
                     }
                 },
+                order: [[0, 'asc']], // Ordenar por Persona para agrupar visualmente
                 columns: [
-                    { data: "codigo", className: "font-weight-bold" },
-                    { data: "equipo" }, // Concatenado en Backend (Tipo + Marca + Modelo)
+                    { data: "asignadoA", className: "font-weight-bold text-primary" },
+                    { data: "codigo" },
+                    { data: "descripcion" },
                     { data: "serie" },
-                    { data: "condicion" },
                     {
-                        data: "situacion",
-                        render: function(data) {
-                            let color = data === 'EN USO' ? 'success' : 'warning';
-                            return `<span class="badge badge-${color}">${data}</span>`;
+                        data: "condicion",
+                        render: function(d) {
+                            let color = d === 'OPERATIVO' ? 'success' : (d === 'NUEVO' ? 'primary' : 'danger');
+                            return `<span class="badge badge-${color}">${d}</span>`;
                         }
                     },
-                    { data: "asignadoA" },
                     { data: "ubicacion" },
                     {
                         data: "id",
+                        className: "text-center",
                         render: function (data) {
                             return `
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/Activo/Asignacion?id=${data}" class="btn btn-info" title="Asignar / Devolver"><i class="fas fa-exchange-alt"></i></a>
+                                    <a href="/Activo/Asignacion?id=${data}" class="btn btn-info" title="Mover"><i class="fas fa-exchange-alt"></i></a>
                                     <a href="/Activo/Historial?id=${data}" class="btn btn-secondary" title="Historial"><i class="fas fa-history"></i></a>
                                 </div>`;
-                        },
-                        className: "text-center"
+                        }
                     }
                 ],
                 lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
@@ -230,10 +229,40 @@
                     $('#btn_Nuevo').removeClass('dt-button');
                     $('#btn_Nuevo').appendTo('div.col-sm-4.c1.d-flex.justify-content-end');
                 },
+                // Callback para "limpiar" visualmente el nombre repetido (Efecto Agrupación)
+                drawCallback: function (settings) {
+                    var api = this.api();
+                    var rows = api.rows({ page: 'current' }).nodes();
+                    var last = null;
+
+                    // Si prefieres usar el plugin RowGroup de Datatables, úsalo.
+                    // Si no, este truco visual oculta el nombre si es igual al anterior
+                    /* api.column(0, { page: 'current' }).data().each(function (group, i) {
+                        if (last !== group) {
+                            // Aquí podrías insertar una fila de cabecera si quisieras
+                            last = group;
+                        } else {
+                            // Ocultar texto repetido para efecto visual limpio
+                            $(rows).eq(i).find('td:eq(0)').css('color', 'transparent');
+                        }
+                    });
+                    */
+                }
+            });
+
+            $('#cbxFiltroEmpresa').change(function() {
+                dtActivos.ajax.reload();
             });
         });
 
-        function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
-        function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
+        function cargarEmpresas() {
+            $.get('/Activo/GetEmpresasCombo', function(res) {
+                if(res.status) {
+                    let h = '<option value="0">-- TODAS --</option>';
+                    res.data.forEach(e => h += `<option value="${e.id}">${e.razonSocial}</option>`);
+                    $('#cbxFiltroEmpresa').html(h);
+                }
+            });
+        }
     </script>
 }

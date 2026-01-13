@@ -1,174 +1,412 @@
 ﻿@{
-    ViewData["Title"] = "Movimiento de Activo";
-    int activoId = int.Parse(Context.Request.Query["id"]);
+    ViewData["Title"] = "Gestión de Movimientos";
+    // Capturamos el ID si venimos del listado
+    string idInicial = Context.Request.Query["id"];
 }
 
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="callout callout-info">
-                <h5><i class="fas fa-info-circle"></i> Activo Seleccionado</h5>
-                <p class="mb-0 font-weight-bold text-lg" id="lbl_Activo">Cargando...</p>
-                <small id="lbl_InfoActual">...</small>
-            </div>
+<div class="container-fluid py-3">
 
-            <div class="card card-warning card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">Registrar Movimiento</h3>
-                </div>
-                <div class="card-body">
+    <div class="card shadow-sm" id="cardPrincipal">
+        <div class="card-header d-flex p-0">
+            <h3 class="card-title p-3 font-weight-bold" id="lblTituloAccion">Nueva Transacción</h3>
+            <ul class="nav nav-pills ml-auto p-2">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#tab_entrega" data-toggle="tab" id="btnTabEntrega" onclick="fct_CambiarModoManual('ENTREGA')">
+                        <i class="fas fa-box-open"></i> ENTREGA (Salida)
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#tab_devolucion" data-toggle="tab" id="btnTabDevolucion" onclick="fct_CambiarModoManual('DEVOLUCION')">
+                        <i class="fas fa-undo"></i> DEVOLUCIÓN (Retorno)
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-                    <div class="form-group text-center">
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                            <label class="btn btn-outline-primary active" id="lbl_OpcionEntrega">
-                                <input type="radio" name="tipoMov" value="ENTREGA" checked>
-                                <i class="fas fa-user-check"></i> ENTREGAR A USUARIO
-                            </label>
-                            <label class="btn btn-outline-danger" id="lbl_OpcionDevolucion">
-                                <input type="radio" name="tipoMov" value="DEVOLUCION">
-                                <i class="fas fa-undo"></i> DEVOLUCIÓN A STOCK
-                            </label>
-                        </div>
-                    </div>
-                    <hr>
-
-                    <div id="div_Entrega">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-5 border-right">
+                    <div id="panelEntrega">
+                        <h5 class="text-primary"><i class="fas fa-user-check"></i> Asignar a:</h5>
                         <div class="form-group">
                             <label>Personal Receptor</label>
-                            <select id="cbx_Personal" class="form-control select2-busqueda"></select>
+                            <select id="cbx_Personal_Entrega" class="form-control select2-busqueda" style="width:100%"></select>
+                            <small class="text-muted">Seleccione quién recibe los equipos.</small>
                         </div>
                     </div>
 
-                    <div id="div_Devolucion" class="d-none">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> El activo regresará al Stock y quedará sin responsable asignado.
-                        </div>
-                        <div class="form-group">
-                            <label>Condición de Retorno</label>
-                            <select id="cbx_CondicionRetorno" class="form-control">
-                                <option value="OPERATIVO">OPERATIVO (Buen estado)</option>
-                                <option value="MALOGRADO">MALOGRADO (Dañado)</option>
-                                <option value="EN REPARACION">NECESITA REPARACIÓN</option>
-                            </select>
+                    <div id="panelDevolucion" class="d-none">
+                        <h5 class="text-warning"><i class="fas fa-user-clock"></i> Recibir de:</h5>
+                        <div class="callout callout-warning">
+                            <label class="mb-0">Responsable Actual Detectado:</label>
+                            <h4 id="lbl_ResponsableDevolucion" class="font-weight-bold text-dark">--</h4>
+                            <input type="hidden" id="hdn_ResponsableId">
+                            <small class="text-muted">El sistema detecta automáticamente al dueño.</small>
                         </div>
                     </div>
-
-                    <div class="form-group">
-                        <label>Nueva Ubicación Física</label>
-                        <input type="text" id="txt_Ubicacion" class="form-control" placeholder="Ej: Oficina 302 / Almacén Central">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Observaciones</label>
-                        <textarea id="txt_Observacion" class="form-control" rows="3"></textarea>
-                    </div>
-
                 </div>
-                <div class="card-footer text-right">
-                    <a href="/Activo/Index" class="btn btn-default">Volver</a>
-                    <button type="button" class="btn btn-primary" onclick="fct_Procesar()">
-                        <i class="fas fa-check"></i> Procesar Movimiento
+
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Ubicación de Destino</label>
+                                <select id="cbx_Ubicacion" class="form-control select2-tags" style="width:100%"></select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Observación General</label>
+                                <textarea id="txt_ObsGeneral" class="form-control" rows="1" placeholder="Ej: Cambio de oficina, renovación..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-secondary py-2 mt-2" id="div_AlertaContexto">
+                        <i class="fas fa-info-circle"></i> <span id="lbl_AyudaContexto">Modo Entrega: Seleccione activos <b>EN STOCK</b>.</span>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row mb-2 align-items-end">
+                <div class="col-md-10">
+                    <label>Buscar Activo para agregar:</label>
+                    <select id="cbx_BuscarActivo" class="form-control" style="width:100%"></select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-dark btn-block" id="btnAgregar" disabled>
+                        <i class="fas fa-plus-circle"></i> Agregar
                     </button>
                 </div>
             </div>
+
+            <div class="table-responsive mt-3">
+                <table class="table table-bordered table-hover text-center">
+                    <thead id="th_Tabla" class="bg-primary text-white">
+                        <tr>
+                            <th>CÓDIGO</th>
+                            <th>DESCRIPCIÓN</th>
+                            <th width="20%">CONDICIÓN</th>
+                            <th>OBSERVACIÓN ÍTEM</th>
+                            <th width="50px"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl_Detalle">
+                        <tr><td colspan="5" class="text-muted py-3">La lista está vacía</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+        <div class="card-footer text-right bg-light">
+            <a href="/Activo/Index" class="btn btn-default mr-2">Cancelar</a>
+            <button class="btn btn-success btn-lg px-5" onclick="fct_GuardarMovimiento()">
+                <i class="fas fa-save"></i> PROCESAR OPERACIÓN
+            </button>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        const ID_ACTIVO = @activoId;
+        var CARRITO = [];
+        var MODO_ACTUAL = 'ENTREGA'; // 'ENTREGA' o 'DEVOLUCION'
+        var RESPONSABLE_ID_DETECTADO = null; // ID numérico para validar devoluciones en bloque
+        var ID_INICIAL_URL = '@idInicial'; // ID que viene de la URL (si existe)
 
         $(document).ready(function () {
-            $('.select2-busqueda').select2({ theme: 'bootstrap4' });
+            // 1. Inicializar Plugins
+            $('.select2-busqueda').select2({ theme: 'bootstrap4', placeholder: "Seleccione personal..." });
+            $('#cbx_Ubicacion').select2({ theme: 'bootstrap4', tags: true, placeholder: "Seleccione o escriba..." });
 
-            // Cargar datos iniciales
-            $.get('/Activo/GetDatosAsignacion?activoId=' + ID_ACTIVO, function(res) {
-                if(res.status) {
-                    let a = res.activo;
-                    let cur = res.actual;
-                    $('#lbl_Activo').text(`${a.codigoInterno} - SERIE: ${a.serie}`);
-                    $('#lbl_InfoActual').html(`Responsable Actual: <b>${cur.responsable}</b> <br> Ubicación: ${cur.ubicacion}`);
+            // 2. Cargar Datos
+            fct_CargarPersonal();
+            fct_CargarUbicaciones();
 
-                    // Pre-llenar condición si es devolución
-                    $('#cbx_CondicionRetorno').val(a.condicion);
-                } else {
-                    toastr.error(res.message);
-                }
+            // 3. Cargar Buscador y Auto-seleccionar si hay ID inicial
+            fct_CargarBuscadorActivos();
+
+            // 4. Eventos
+            $('#cbx_BuscarActivo').change(function() {
+                $('#btnAgregar').prop('disabled', !$(this).val());
             });
 
-            // Cargar personal
-            $.get('/Activo/GetPersonalCombo', function(res) {
-                if(res.status) {
-                    let h = '<option value="">-- SELECCIONE --</option>';
-                    res.data.forEach(p => h += `<option value="${p.id}">${p.nombresCompletos}</option>`);
-                    $('#cbx_Personal').html(h);
-                }
-            });
+            $('#btnAgregar').click(function() {
+                let opt = $('#cbx_BuscarActivo option:selected');
+                if(!opt.val()) return;
 
-            // Lógica de Toggle
-            $('input[name="tipoMov"]').change(function() {
-                if(this.value === 'ENTREGA') {
-                    $('#div_Entrega').removeClass('d-none');
-                    $('#div_Devolucion').addClass('d-none');
-                } else {
-                    $('#div_Entrega').addClass('d-none');
-                    $('#div_Devolucion').removeClass('d-none');
-                }
+                let item = {
+                    id: opt.val(),
+                    texto: opt.text(),
+                    situacion: opt.data('situacion'), // 'EN USO' o 'EN STOCK'
+                    condicion: opt.data('condicion'),
+                    asignadoA: opt.data('asignado'),  // Nombre para mostrar
+                    personalId: opt.data('pid')       // ID para validar lógica
+                };
+
+                fct_AgregarItemAlCarrito(item);
+                $('#cbx_BuscarActivo').val('').trigger('change');
             });
         });
 
-        function fct_Procesar() {
-            let modo = $('input[name="tipoMov"]:checked').val();
-            let url = '', data = {};
-
-            if(modo === 'ENTREGA') {
-                let pid = $('#cbx_Personal').val();
-                if(!pid) return toastr.warning("Seleccione al personal receptor");
-
-                url = '/Activo/GuardarAsignacion';
-                data = {
-                    activoId: ID_ACTIVO,
-                    personalId: pid,
-                    ubicacion: $('#txt_Ubicacion').val(),
-                    observacion: $('#txt_Observacion').val()
-                };
+        // --- LÓGICA DE MODOS VISUALES ---
+        function fct_CambiarModoManual(modo) {
+            // Si el usuario cambia pestaña manualmente y hay items, preguntar
+            if (CARRITO.length > 0 && MODO_ACTUAL !== modo) {
+                Swal.fire({
+                    title: '¿Cambiar modo?',
+                    text: "Se limpiará la lista porque los ítems actuales no corresponden a esta acción.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    reverseButtons: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: 'Sí, cambiar',
+                    cancelButtonText: 'Cancelar'
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        CARRITO = [];
+                        fct_RenderCarrito();
+                        fct_AplicarModo(modo);
+                    } else {
+                        // Revertir tab visualmente
+                        if (MODO_ACTUAL === 'ENTREGA') $('#btnTabEntrega').tab('show');
+                        else $('#btnTabDevolucion').tab('show');
+                    }
+                });
             } else {
-                url = '/Activo/GuardarDevolucion';
-                data = {
-                    activoId: ID_ACTIVO,
-                    condicionRetorno: $('#cbx_CondicionRetorno').val(),
-                    ubicacion: $('#txt_Ubicacion').val(), // Generalmente Almacén
-                    observacion: $('#txt_Observacion').val()
-                };
+                fct_AplicarModo(modo);
+            }
+        }
+
+        function fct_AplicarModo(modo) {
+            MODO_ACTUAL = modo;
+            if (modo === 'ENTREGA') {
+                $('#panelEntrega').removeClass('d-none');
+                $('#panelDevolucion').addClass('d-none');
+                $('#th_Tabla').removeClass('bg-warning text-dark').addClass('bg-primary text-white');
+                $('#lbl_AyudaContexto').html("Modo Entrega: Seleccione activos <b>EN STOCK</b>.");
+                $('#div_AlertaContexto').removeClass('alert-warning').addClass('alert-secondary');
+
+                // Asegurar Tab Visual
+                $('#btnTabEntrega').tab('show');
+                RESPONSABLE_ID_DETECTADO = null;
+            } else {
+                $('#panelEntrega').addClass('d-none');
+                $('#panelDevolucion').removeClass('d-none');
+                $('#th_Tabla').removeClass('bg-primary text-white').addClass('bg-warning text-dark');
+                $('#lbl_AyudaContexto').html("Modo Devolución: Seleccione activos <b>EN USO</b>.");
+                $('#div_AlertaContexto').removeClass('alert-secondary').addClass('alert-warning');
+
+                // Asegurar Tab Visual
+                $('#btnTabDevolucion').tab('show');
+
+                // Resetear etiqueta si está vacío
+                if(CARRITO.length === 0) {
+                    $('#lbl_ResponsableDevolucion').text("-- ESPERANDO ITEM --");
+                    RESPONSABLE_ID_DETECTADO = null;
+                }
+            }
+        }
+
+        // --- LÓGICA DE AGREGADO ---
+        function fct_AgregarItemAlCarrito(item) {
+            // 1. Validar Duplicado
+            if(CARRITO.find(x => x.ActivoId == item.id)) {
+                toastr.warning("El activo ya está en la lista.");
+                return;
             }
 
+            // 2. AUTO-DETECCIÓN DE MODO (Si es el primer item)
+            if(CARRITO.length === 0) {
+                // Si está EN USO -> Forzamos Devolución
+                if(item.situacion !== 'EN STOCK') {
+                    if(MODO_ACTUAL !== 'DEVOLUCION') fct_AplicarModo('DEVOLUCION');
+                }
+                // Si está EN STOCK -> Forzamos Entrega
+                else {
+                    if(MODO_ACTUAL !== 'ENTREGA') fct_AplicarModo('ENTREGA');
+                }
+            }
+
+            // 3. VALIDACIONES DE REGLA DE NEGOCIO
+            if (MODO_ACTUAL === 'ENTREGA') {
+                if(item.situacion !== 'EN STOCK') {
+                    toastr.error(`No puede entregar este equipo. Actualmente está asignado a: ${item.asignadoA}`);
+                    return;
+                }
+            } else { // DEVOLUCION
+                if(item.situacion === 'EN STOCK') {
+                    toastr.error("Este equipo ya está en almacén. No se puede devolver.");
+                    return;
+                }
+
+                // Validar que sea del mismo dueño (usando ID numérico)
+                let pidItem = parseInt(item.personalId || 0);
+
+                if (RESPONSABLE_ID_DETECTADO === null) {
+                    RESPONSABLE_ID_DETECTADO = pidItem;
+                    $('#lbl_ResponsableDevolucion').text(item.asignadoA);
+                } else {
+                    if (pidItem !== RESPONSABLE_ID_DETECTADO) {
+                        toastr.error(`Conflicto: Este activo pertenece a otra persona (${item.asignadoA}). Solo procese devoluciones de un usuario a la vez.`);
+                        return;
+                    }
+                }
+            }
+
+            // 4. Agregar
+            CARRITO.push({
+                ActivoId: parseInt(item.id),
+                Descripcion: item.texto,
+                Condicion: item.condicion,
+                Observacion: ''
+            });
+            fct_RenderCarrito();
+        }
+
+        function fct_RenderCarrito() {
+            let html = '';
+            if(CARRITO.length === 0) {
+                $('#tbl_Detalle').html('<tr><td colspan="5" class="text-muted py-3">La lista está vacía</td></tr>');
+                return;
+            }
+
+            CARRITO.forEach((row, i) => {
+                let selCond = `
+                    <select class="form-control form-control-sm" onchange="CARRITO[${i}].Condicion = this.value">
+                        <option value="OPERATIVO" ${row.Condicion === 'OPERATIVO' ? 'selected' : ''}>OPERATIVO</option>
+                        <option value="MALOGRADO" ${row.Condicion === 'MALOGRADO' ? 'selected' : ''}>MALOGRADO</option>
+                        <option value="NUEVO" ${row.Condicion === 'NUEVO' ? 'selected' : ''}>NUEVO</option>
+                        <option value="BAJA" ${row.Condicion === 'BAJA' ? 'selected' : ''}>PARA BAJA</option>
+                    </select>`;
+
+                html += `
+                    <tr>
+                        <td class="align-middle font-weight-bold">${row.Descripcion.split('|')[0]}</td>
+                        <td class="align-middle text-left small">${row.Descripcion.split('|')[1] || row.Descripcion}</td>
+                        <td>${selCond}</td>
+                        <td><input type="text" class="form-control form-control-sm" placeholder="..." value="${row.Observacion}" onchange="CARRITO[${i}].Observacion = this.value"></td>
+                        <td><button class="btn btn-danger btn-sm" onclick="fct_Quitar(${i})"><i class="fas fa-times"></i></button></td>
+                    </tr>
+                `;
+            });
+            $('#tbl_Detalle').html(html);
+        }
+
+        function fct_Quitar(index) {
+            CARRITO.splice(index, 1);
+            fct_RenderCarrito();
+            if(CARRITO.length === 0 && MODO_ACTUAL === 'DEVOLUCION') {
+                RESPONSABLE_ID_DETECTADO = null;
+                $('#lbl_ResponsableDevolucion').text("-- ESPERANDO ITEM --");
+            }
+        }
+
+        // --- CARGAS AJAX ---
+        function fct_CargarBuscadorActivos() {
+            // Usamos GetActivos del controlador actualizado (que trae PersonalId)
+            $.get('/Activo/GetActivos', function(res) {
+                if(res.status) {
+                    let h = '<option value="">-- Buscar Código, Serie o Modelo --</option>';
+                    res.data.forEach(a => {
+                        // Guardamos datos vitales en data-attributes
+                        // OJO: data-pid viene del "PersonalId" que agregamos al controlador
+                        h += `<option value="${a.id}"
+                                      data-situacion="${a.situacion}"
+                                      data-asignado="${a.asignadoA}"
+                                      data-pid="${a.personalId || 0}"
+                                      data-condicion="${a.condicion}">
+                                ${a.codigo} | ${a.descripcion} | S/N: ${a.serie} (${a.situacion})
+                              </option>`;
+                    });
+                    $('#cbx_BuscarActivo').html(h).select2({ theme: 'bootstrap4' });
+
+                    // LOGICA DE AUTO-CARGA INICIAL
+                    if(ID_INICIAL_URL) {
+                        $('#cbx_BuscarActivo').val(ID_INICIAL_URL).trigger('change');
+
+                        // Simulamos clic en agregar si encontramos el activo
+                        let opt = $('#cbx_BuscarActivo option:selected');
+                        if(opt.val()) {
+                            $('#btnAgregar').click();
+                        }
+                    }
+                }
+            });
+        }
+
+        function fct_CargarPersonal() {
+            $.get('/Activo/GetPersonalCombo', function(res) {
+                if(res.status) {
+                    let h = '<option value="">-- Seleccione --</option>';
+                    res.data.forEach(p => h += `<option value="${p.id}">${p.nombresCompletos}</option>`);
+                    $('#cbx_Personal_Entrega').html(h);
+                }
+            });
+        }
+
+        function fct_CargarUbicaciones() {
+            $.get('/Activo/GetUbicaciones', function(res) {
+                if(res.status) {
+                    let h = '<option value="">-- Seleccione o escriba --</option>';
+                    res.data.forEach(u => h += `<option value="${u}">${u}</option>`);
+                    $('#cbx_Ubicacion').html(h);
+                }
+            });
+        }
+
+        // --- GUARDAR ---
+        function fct_GuardarMovimiento() {
+            if(CARRITO.length === 0) { toastr.warning("La lista está vacía."); return; }
+            if(!$('#cbx_Ubicacion').val()) { toastr.warning("Indique la ubicación de destino."); return; }
+
+            let personalId = null;
+            if(MODO_ACTUAL === 'ENTREGA') {
+                personalId = $('#cbx_Personal_Entrega').val();
+                if(!personalId) { toastr.error("Seleccione al personal receptor."); return; }
+            } else {
+                // En Devolución, mandamos el ID detectado para máxima seguridad
+                personalId = RESPONSABLE_ID_DETECTADO;
+            }
+
+            let dto = {
+                TipoMovimiento: MODO_ACTUAL,
+                PersonalId: personalId ? parseInt(personalId) : null,
+                Ubicacion: $('#cbx_Ubicacion').val(),
+                Observacion: $('#txt_ObsGeneral').val(),
+                Items: CARRITO
+            };
+
             Swal.fire({
-                title: '¿Confirmar Movimiento?',
-                text: 'Se generará el acta correspondiente.',
-                icon: 'warning',
+                title: '¿Confirmar ' + MODO_ACTUAL + '?',
+                text: `Se procesarán ${CARRITO.length} activos.`,
+                icon: 'question',
                 showCancelButton: true,
+                reverseButtons: true,
+                cancelButtonText: "Cancelar",
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
                 confirmButtonText: 'Sí, procesar'
             }).then((r) => {
                 if(r.isConfirmed) {
-                    $.post(url, data, function(res) {
-                        if(res.status) {
-                            Swal.fire({
-                                title: '¡Éxito!',
-                                text: 'Movimiento registrado. ¿Desea imprimir el acta?',
-                                icon: 'success',
-                                showCancelButton: true,
-                                confirmButtonText: 'Imprimir Acta',
-                                cancelButtonText: 'Ir al Listado'
-                            }).then((x) => {
-                                if(x.isConfirmed) {
-                                    window.open('/Activo/ActaImpresion?id=' + res.idAsignacion, '_blank');
-                                }
-                                window.location.href = '/Activo/Index';
-                            });
-                        } else {
-                            toastr.error(res.message);
-                        }
+                    $.ajax({
+                        url: '/Activo/GuardarMovimiento',
+                        type: 'POST',
+                        contentType: 'application/json', // Requerido para [FromBody]
+                        data: JSON.stringify(dto),
+                        success: function(res) {
+                            if(res.status) {
+                                Swal.fire('Éxito', 'Operación registrada', 'success').then(() => {
+                                    window.open('/Activo/ActaImpresion?id=' + res.idMovimiento, '_blank');
+                                    window.location.href = '/Activo/Index';
+                                });
+                            } else {
+                                toastr.error(res.message);
+                            }
+                        },
+                        error: function() { toastr.error("Error de conexión"); }
                     });
                 }
             });

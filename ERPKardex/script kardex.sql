@@ -48,7 +48,8 @@ drop table if exists activo_grupo;
 drop table if exists activo_tipo;
 drop table if exists activo;
 drop table if exists activo_especificacion;
-drop table if exists activo_asignacion;
+drop table if exists movimiento_activo;
+drop table if exists dmovimiento_activo;
 
 GO
 
@@ -717,19 +718,34 @@ CREATE TABLE activo_especificacion (
     valor VARCHAR(MAX),
 );
 
-CREATE TABLE activo_asignacion (
+-- CABECERA DEL MOVIMIENTO (El "Acta")
+CREATE TABLE movimiento_activo (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    activo_id INT NOT NULL,
-    personal_id INT,      
-    centro_costo_id INT,  
-    es_stock BIT DEFAULT 0, 
-    fecha_asignacion DATE DEFAULT GETDATE(),
-    fecha_devolucion DATE, 
-    ubicacion_texto VARCHAR(500), 
+    codigo_acta VARCHAR(50), -- Ej: ACT-2026-001
+    tipo_movimiento VARCHAR(20), -- 'ENTREGA', 'DEVOLUCION'
+    
+    fecha_movimiento DATETIME DEFAULT GETDATE(),
+    
+    -- Actores
+    empresa_id INT,
+    personal_id INT, -- Quien recibe (o quien devuelve)
+    usuario_registro_id INT, -- El logístico que hace la operación
+    
+    ubicacion_destino VARCHAR(255),
     observacion VARCHAR(500),
-    estado BIT DEFAULT 1,
-    usuario_registro_id INT,
-    ruta_acta VARCHAR(MAX)
+    ruta_acta_pdf VARCHAR(500),
+    
+    estado BIT DEFAULT 1 -- 1: Vigente, 0: Anulado
+);
+
+-- DETALLE DEL MOVIMIENTO (Los ítems del acta)
+CREATE TABLE dmovimiento_activo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    movimiento_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    
+    condicion_item VARCHAR(50), -- Estado en el momento del movimiento
+    observacion_item VARCHAR(255),
 );
 
 GO

@@ -3288,108 +3288,61 @@ GO
 -- ==========================================================================================
 -- 3. MIGRACIÓN DE PERSONAL (¡NUEVO!)
 -- ==========================================================================================
--- A) Crear Empresas si no existen (Basado en tu lista oficial)
 MERGE empresa AS TARGET
-USING (SELECT DISTINCT RUC, EmpresaNombre FROM #DataCarga WHERE RUC IS NOT NULL AND RUC NOT IN ('-', '')) AS SOURCE
+USING (SELECT DISTINCT RUC, EmpresaNombre FROM #DataCarga WHERE RUC IS NOT NULL AND RUC <> '-') AS SOURCE
 ON (TARGET.ruc = SOURCE.RUC)
-WHEN MATCHED THEN
-    UPDATE SET razon_social = SOURCE.EmpresaNombre
-WHEN NOT MATCHED BY TARGET THEN
-    INSERT (ruc, razon_social, estado) VALUES (SOURCE.RUC, SOURCE.EmpresaNombre, 1);
+WHEN NOT MATCHED THEN INSERT (ruc, razon_social, estado) VALUES (SOURCE.RUC, SOURCE.EmpresaNombre, 1);
 
--- B) Insertar Personal Faltante (Con su RUC correcto)
 INSERT INTO personal (dni, nombres_completos, empresa_id, cargo, estado)
-SELECT DISTINCT 
-    d.DNI, 
-    d.UsuarioNombre, 
-    e.id, 
-    'POR ASIGNAR', -- Cargo por defecto
-    1
+SELECT DISTINCT d.DNI, d.UsuarioNombre, e.id, 'POR ASIGNAR', 1
 FROM #DataCarga d
 JOIN empresa e ON e.ruc = d.RUC
-WHERE d.DNI IS NOT NULL 
-  AND d.DNI NOT IN ('-', '', 'A0000001', 'A0000002', 'A0000003', 'A0000004', 'A0000005', 'A0000006', 'A0000007') -- Filtrar códigos de área
-  AND d.UsuarioNombre NOT LIKE '%STOCK%' -- Filtrar stock
-  AND d.UsuarioNombre NOT LIKE '%AREA%'  -- Filtrar áreas
+WHERE d.DNI NOT IN ('-', '', 'A0000001','A0000002','A0000003','A0000004','A0000005','A0000006','A0000007')
+  AND d.UsuarioNombre NOT LIKE '%STOCK%'
   AND NOT EXISTS (SELECT 1 FROM personal p WHERE p.dni = d.DNI);
 
--- ==========================================================================================
--- 4. MIGRACIÓN DE MARCAS/MODELOS
--- ==========================================================================================
 INSERT INTO marca (nombre, estado, empresa_id)
-SELECT DISTINCT Marca, 1, 2 
-FROM #DataCarga d
-WHERE d.Marca NOT IN ('NO ESPECIFICADO', '-', 'GENÉRICO')
-  AND NOT EXISTS (SELECT 1 FROM marca m WHERE m.nombre = d.Marca);
+SELECT DISTINCT Marca, 1, (SELECT TOP 1 id FROM empresa) FROM #DataCarga 
+WHERE Marca NOT IN ('NO ESPECIFICADO', '-', 'GENÉRICO') AND NOT EXISTS (SELECT 1 FROM marca WHERE nombre = Marca);
 
 INSERT INTO modelo (nombre, estado, marca_id, empresa_id)
-SELECT DISTINCT d.Modelo, 1, m.id, 2
-FROM #DataCarga d
-JOIN marca m ON m.nombre = d.Marca
-WHERE d.Modelo NOT IN ('NO ESPECIFICADO', '-', 'GENÉRICO')
-  AND NOT EXISTS (SELECT 1 FROM modelo mod WHERE mod.nombre = d.Modelo AND mod.marca_id = m.id);
+SELECT DISTINCT d.Modelo, 1, m.id, (SELECT TOP 1 id FROM empresa)
+FROM #DataCarga d JOIN marca m ON m.nombre = d.Marca
+WHERE d.Modelo NOT IN ('NO ESPECIFICADO', '-', 'GENÉRICO') 
+  AND NOT EXISTS (SELECT 1 FROM modelo WHERE nombre = d.Modelo AND marca_id = m.id);
 
--- ==========================================================================================
--- 5. MIGRACIÓN DE ACTIVOS (Lógica v3 con Exploder)
--- ==========================================================================================
--- CTE para explotar cantidades (ej. 1 registro cantidad 5 -> 5 filas)
+-- 2. EXPANDIR DATA (Generar los 326 registros únicos del Excel)
+IF OBJECT_ID('tempdb..#DataIndividual') IS NOT NULL DROP TABLE #DataIndividual;
 WITH Exploder AS (
-    SELECT 
-        RUC, EmpresaNombre, DNI, UsuarioNombre, Grupo, Tipo, Marca, Modelo, Serie, Specs, SistemaOperativo, Direccion, Situacion, Condicion,
-        1 AS NroCopia,
-        Cantidad
-    FROM #DataCarga
-    WHERE Cantidad >= 1
+    SELECT *, 1 AS NroCopia FROM #DataCarga WHERE Cantidad >= 1
     UNION ALL
-    SELECT 
-        RUC, EmpresaNombre, DNI, UsuarioNombre, Grupo, Tipo, Marca, Modelo, Serie, Specs, SistemaOperativo, Direccion, Situacion, Condicion,
-        NroCopia + 1,
-        Cantidad
-    FROM Exploder
-    WHERE NroCopia < Cantidad
+    SELECT RUC, EmpresaNombre, DNI, UsuarioNombre, Grupo, Tipo, Marca, Modelo, Serie, Specs, 
+           SistemaOperativo, Direccion, Situacion, Condicion, Cantidad, NroCopia + 1 
+    FROM Exploder WHERE NroCopia < Cantidad
 )
-INSERT INTO activo (
-    codigo_interno, grupo_id, tipo_id, marca_id, modelo_id, serie, condicion, situacion, sucursal_id, empresa_id
-)
+SELECT *, NEWID() AS GuidActivo INTO #DataIndividual FROM Exploder;
+
+-- 3. INSERTAR LOS 326 ACTIVOS (Capturando el GuidActivo para el amarre)
+-- Añadimos temporalmente una columna para no perder el rastro del Guid
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('activo') AND name = 'temp_guid')
+    ALTER TABLE activo ADD temp_guid UNIQUEIDENTIFIER;
+
+INSERT INTO activo (codigo_interno, grupo_id, tipo_id, marca_id, modelo_id, serie, condicion, situacion, empresa_id, temp_guid)
 SELECT 
     CASE 
-        WHEN e.Serie = '-' OR e.Serie IS NULL OR e.Serie = 'NO ESPECIFICADO' THEN 'GEN-' + LEFT(NEWID(), 8)
-        WHEN e.Cantidad > 1 THEN 'ACT-' + LEFT(e.Serie, 10) + '-' + CAST(e.NroCopia AS VARCHAR)
-        ELSE 'ACT-' + LEFT(e.Serie, 15) 
+        WHEN de.Serie IN ('-', 'NO ESPECIFICADO') OR de.Serie IS NULL 
+        THEN 'GEN-' + LEFT(CAST(de.GuidActivo AS VARCHAR(36)), 8)
+        ELSE 'ACT-' + de.Serie + CASE WHEN de.Cantidad > 1 THEN '-' + CAST(de.NroCopia AS VARCHAR) ELSE '' END
     END,
-    g.id, 
-    t.id, 
-    m.id, 
-    mod.id, 
-    e.Serie, 
-    e.Condicion, 
-    e.Situacion,
-    NULL, -- Sucursal pendiente
-    emp.id -- EMPRESA YA VINCULADA DESDE EL INICIO POR RUC
-FROM Exploder e
-LEFT JOIN activo_grupo g ON g.nombre = e.Grupo
-LEFT JOIN activo_tipo t ON t.nombre = e.Tipo
-LEFT JOIN marca m ON m.nombre = e.Marca AND e.Marca NOT IN ('NO ESPECIFICADO', '-')
-LEFT JOIN modelo mod ON mod.nombre = e.Modelo AND mod.marca_id = m.id AND e.Modelo NOT IN ('NO ESPECIFICADO', '-')
-LEFT JOIN empresa emp ON emp.ruc = e.RUC; -- Join directo por RUC
+    (SELECT id FROM activo_grupo WHERE nombre = de.Grupo),
+    (SELECT id FROM activo_tipo WHERE nombre = de.Tipo),
+    m.id, mod.id, de.Serie, de.Condicion, de.Situacion, emp.id, de.GuidActivo
+FROM #DataIndividual de
+LEFT JOIN marca m ON m.nombre = de.Marca
+LEFT JOIN modelo mod ON mod.nombre = de.Modelo AND mod.marca_id = m.id
+LEFT JOIN empresa emp ON emp.ruc = de.RUC;
 
--- ASIGNACIONES
-INSERT INTO activo_asignacion (
-    activo_id, personal_id, centro_costo_id, es_stock, ubicacion_texto, observacion, estado
-)
-SELECT 
-    a.id,
-    p.id,
-    NULL, -- Areas pendientes de vincular a centro_costo
-    CASE WHEN d.Situacion = 'EN STOCK' OR d.UsuarioNombre = 'EN STOCK' THEN 1 ELSE 0 END,
-    d.Direccion,
-    CASE WHEN p.id IS NULL AND d.UsuarioNombre NOT LIKE '%STOCK%' THEN 'ASIGNADO A: ' + d.UsuarioNombre ELSE NULL END,
-    1
-FROM #DataCarga d
-JOIN activo a ON (a.serie = d.Serie OR (d.Serie = '-' AND a.serie = '-')) 
-              AND a.condicion = d.Condicion
-              AND a.situacion = d.Situacion
-LEFT JOIN personal p ON p.dni = d.DNI;
+GO
 
 -- ESPECIFICACIONES
 INSERT INTO activo_especificacion (activo_id, clave, valor)
@@ -3404,8 +3357,48 @@ INSERT INTO activo_especificacion (activo_id, clave, valor)
 SELECT a.id, 'DETALLE_CELULAR', d.Specs
 FROM #DataCarga d JOIN activo a ON a.serie = d.Serie WHERE d.Specs LIKE '%IMEI%';
 
--- Resumen
-SELECT 'Proceso Finalizado.' AS Mensaje, 
-       (SELECT COUNT(*) FROM personal) AS Total_Personal,
-       (SELECT COUNT(*) FROM activo) AS Total_Activos;
+GO
+-- 4. CABECERAS DE ACTAS (Solo para personal que NO es Stock)
+IF OBJECT_ID('tempdb..#TmpActas') IS NOT NULL DROP TABLE #TmpActas;
+SELECT EmpresaNombre, DNI, Direccion, NEWID() AS ActaUid
+INTO #TmpActas
+FROM #DataIndividual
+WHERE UsuarioNombre NOT LIKE '%STOCK%'
+GROUP BY EmpresaNombre, DNI, Direccion;
+
+INSERT INTO movimiento_activo (codigo_acta, tipo_movimiento, fecha_movimiento, empresa_id, personal_id, ubicacion_destino, observacion, estado, usuario_registro_id)
+SELECT 
+    'MIG-' + LEFT(CAST(m.ActaUid AS VARCHAR(36)), 8), 
+    'ENTREGA', GETDATE(), e.id, p.id, m.Direccion, 'MIGRACIÓN', 1, 1
+FROM #TmpActas m
+JOIN empresa e ON e.razon_social = m.EmpresaNombre
+JOIN personal p ON p.dni = m.DNI;
+
+-- 5. DETALLES (AMARRE 1-A-1 USANDO EL GUID TEMPORAL)
+INSERT INTO dmovimiento_activo (movimiento_id, activo_id, condicion_item, observacion_item)
+SELECT 
+    ma.id, 
+    a.id,
+    a.condicion,
+    'Migración individual'
+FROM activo a
+JOIN #DataIndividual di ON a.temp_guid = di.GuidActivo -- Amarre infalible
+JOIN #TmpActas ta ON ta.DNI = di.DNI AND ta.Direccion = di.Direccion
+JOIN movimiento_activo ma ON ma.codigo_acta = 'MIG-' + LEFT(CAST(ta.ActaUid AS VARCHAR(36)), 8)
+WHERE di.UsuarioNombre NOT LIKE '%STOCK%'; -- No genera movimiento si es Stock [cite: 143]
+
+GO
+
+-- 6. LIMPIEZA Y VERIFICACIÓN
+ALTER TABLE activo DROP COLUMN temp_guid;
+
+SELECT 
+    (SELECT COUNT(*) FROM activo) AS Total_Activos_Fisicos, -- Debe ser 326
+    (SELECT COUNT(*) FROM activo WHERE situacion = 'EN STOCK') AS En_Almacen, 
+    (SELECT COUNT(*) FROM dmovimiento_activo) AS Asignados_En_Actas;
+
+GO
+
+UPDATE activo set situacion = 'EN STOCK' WHERE id in (select id from activo where id not in (select activo_id from dmovimiento_activo));
+
 GO

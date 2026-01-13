@@ -1,11 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Historial del Activo";
-    // Recuperamos el ID de la URL
-    int activoId = 0;
-    if (!string.IsNullOrEmpty(Context.Request.Query["id"]))
-    {
-        activoId = int.Parse(Context.Request.Query["id"]);
-    }
+    int activoId = ViewBag.ActivoId != null ? (int)ViewBag.ActivoId : 0;
 }
 
 <section class="content-header">
@@ -36,15 +31,15 @@
                 <h3 class="card-title">Movimientos Registrados</h3>
             </div>
             <div class="card-body">
-                <table id="tbl_Historial" class="table table-bordered table-striped" style="width:100%">
+                <table id="tbl_Historial" class="table table-bordered table-striped w-100">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 15%">FECHA</th>
-                            <th class="text-center" style="width: 10%">TIPO</th>
-                            <th class="text-center" style="width: 30%">RESPONSABLE / UBICACIÓN</th>
-                            <th class="text-center" style="width: 10%">ESTADO</th>
-                            <th class="text-center" style="width: 20%">OBSERVACIÓN</th>
-                            <th class="text-center" style="width: 15%">ACTA</th>
+                            <th class="text-center">FECHA</th>
+                            <th class="text-center">TIPO</th>
+                            <th class="text-center">RESPONSABLE / UBICACIÓN</th>
+                            <th class="text-center">ESTADO</th>
+                            <th class="text-center">OBSERVACIÓN</th>
+                            <th class="text-center">ACTA</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -65,7 +60,7 @@
             </div>
             <form id="formSubida" enctype="multipart/form-data">
                 <div class="modal-body">
-                    <input type="hidden" id="hdnIdAsignacion" name="idAsignacion">
+                    <input type="hidden" id="hdnIdMovimiento" name="idMovimiento">
 
                     <div class="alert alert-info">
                         <small><i class="fas fa-exclamation-circle"></i> Suba el documento escaneado con las firmas correspondientes (PDF o Imagen).</small>
@@ -91,7 +86,6 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
 
     <script>
@@ -99,7 +93,6 @@
         const ID_ACTIVO = @activoId;
 
         $(document).ready(function () {
-            // Inicializar inputs file de Bootstrap
             bsCustomFileInput.init();
 
             if(ID_ACTIVO === 0) {
@@ -108,18 +101,15 @@
             }
 
             // 1. Cargar Info Cabecera del Activo
-            $.get('/Activo/GetDatosAsignacion?activoId=' + ID_ACTIVO, function(res) {
-                if(res.status) {
-                    $('#lbl_InfoActivo').text(`${res.activo.codigoInterno} - SERIE: ${res.activo.serie} (${res.activo.condicion})`);
-                }
-            });
+            // Nota: Aquí GetHistorial ya devuelve "activoInfo" en el JSON, lo usamos al cargar la tabla
+            // O podemos llamar a GetDatosAsignacion para info rápida. Usaremos el response del Datatable o una llamada simple.
+            // Para asegurar, llamamos al historial directamente.
 
             // 2. Configurar DataTable
             dtHistorial = $('#tbl_Historial').DataTable({
                 responsive: true,
-                autoWidth: false,
-                ordering: false, // Ya viene ordenado del backend
-                dom: "<'row'<'col-sm-12'tr>>", // Solo tabla
+                ordering: false, // Ordenado desde backend
+                dom: "<'row'<'col-sm-12'tr>>",
                 ajax: {
                     url: "/Activo/GetHistorial?activoId=" + ID_ACTIVO,
                     type: "GET",
@@ -129,25 +119,25 @@
                             toastr.error(json.message);
                             return [];
                         }
+                        // Aprovechamos para pintar la cabecera
+                        if(json.activoInfo) {
+                            let ai = json.activoInfo;
+                            $('#lbl_InfoActivo').html(`${ai.codigo} - <b>${ai.fullDesc}</b> <br> SERIE: ${ai.serie}`);
+                        }
                         return json.data;
                     }
                 },
                 columns: [
-                    // FECHA (Backend: 'fecha')
-                    {
-                        data: "fecha",
-                        className: "text-center align-middle"
-                    },
-                    // TIPO (Backend: 'tipo') - Badge
+                    { data: "fecha", className: "text-center align-middle" },
                     {
                         data: "tipo",
                         className: "text-center align-middle",
                         render: function(data) {
-                            let color = data === 'EN STOCK' ? 'secondary' : 'info';
+                            // Entrega vs Devolución
+                            let color = data === 'DEVOLUCION' ? 'secondary' : 'info';
                             return `<span class="badge badge-${color}">${data}</span>`;
                         }
                     },
-                    // RESPONSABLE / UBICACIÓN (Backend: 'responsable', 'ubicacion')
                     {
                         data: null,
                         className: "align-middle",
@@ -156,7 +146,6 @@
                                     <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${row.ubicacion || '-'}</small>`;
                         }
                     },
-                    // ESTADO (Backend: 'estado') - Badge
                     {
                         data: "estado",
                         className: "text-center align-middle",
@@ -165,47 +154,42 @@
                             return `<span class="badge badge-${color}">${data}</span>`;
                         }
                     },
-                    // OBSERVACIÓN (Backend: 'observacion')
                     {
                         data: "observacion",
-                        className: "align-middle",
+                        className: "align-middle small",
                         render: function(data) { return data || '-'; }
                     },
-                    // ACCIONES / ACTA (Backend: 'id', 'rutaActa')
                     {
                         data: null,
                         className: "text-center align-middle",
                         render: function (row) {
+                            // row.id es el ID del MOVIMIENTO (Cabecera)
                             let btn = '';
 
-                            // 1. Botón Imprimir (Siempre visible para reimprimir)
+                            // Botón Imprimir (Siempre disponible)
                             btn += `<a href="/Activo/ActaImpresion?id=${row.id}" target="_blank" class="btn btn-xs btn-default mr-1" title="Imprimir Formato"><i class="fas fa-print"></i></a>`;
 
                             if (row.rutaActa) {
-                                // 2a. Si hay ruta -> Botón VER (Verde)
-                                // Nota: row.rutaActa viene del back tal cual se guardó
+                                // Ver documento subido
                                 btn += `<a href="/${row.rutaActa}" target="_blank" class="btn btn-xs btn-success" title="Ver Documento"><i class="fas fa-file-pdf"></i> Ver</a>`;
                             } else {
-                                // 2b. Si no hay ruta -> Botón SUBIR (Azul)
+                                // Subir documento
                                 btn += `<button type="button" class="btn btn-xs btn-primary" onclick="fct_AbrirModalSubida(${row.id})" title="Subir Escaneado"><i class="fas fa-upload"></i></button>`;
                             }
                             return btn;
                         }
                     }
                 ],
-                language: { url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json" }
             });
         });
 
-        // Abrir Modal
-        function fct_AbrirModalSubida(idAsignacion) {
-            $('#hdnIdAsignacion').val(idAsignacion);
+        function fct_AbrirModalSubida(idMovimiento) {
+            $('#hdnIdMovimiento').val(idMovimiento);
             $('#fileInput').val('');
             $('.custom-file-label').html('Elegir archivo...');
             $('#modalSubida').modal('show');
         }
 
-        // Subir Archivo
         $('#formSubida').on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
@@ -219,13 +203,8 @@
                 success: function(response) {
                     if(response.status) {
                         $('#modalSubida').modal('hide');
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Subido!',
-                            text: response.message,
-                            timer: 1500
-                        });
-                        dtHistorial.ajax.reload(); // Refrescar tabla
+                        Swal.fire({ icon: 'success', title: '¡Subido!', text: response.message, timer: 1500 });
+                        dtHistorial.ajax.reload();
                     } else {
                         toastr.error(response.message);
                     }

@@ -17,67 +17,95 @@ namespace ERPKardex.Controllers
         }
 
         #region VISTAS
-        public IActionResult Index() => View();
+        public IActionResult Index()
+        {
+            // Pasamos la bandera calculada en BaseController
+            ViewBag.EsAdmin = EsAdminGlobal;
+            return View();
+        }
+
         public IActionResult Registro() => View();
+
         public IActionResult Asignacion() => View();
-        public IActionResult Historial() => View();
+
+        public IActionResult Historial()
+        {
+            // Recuperamos el ID de la URL si viene, para validaciones extra si quisieras
+            if (int.TryParse(Request.Query["id"], out int id))
+            {
+                ViewBag.ActivoId = id;
+            }
+            return View();
+        }
 
         // Vista para imprimir (Layout = null)
         public IActionResult ActaImpresion(int id)
         {
-            ViewBag.IdAsignacion = id;
+            // Ahora recibimos el ID del MOVIMIENTO (Cabecera), no de la asignación detalle
+            ViewBag.IdMovimiento = id;
             return View();
         }
         #endregion
 
-        #region API: LISTADO Y CONSULTAS
+        #region API: LISTADO Y CONSULTAS (Mejorado)
 
         [HttpGet]
-        public async Task<JsonResult> GetActivos()
+        public async Task<JsonResult> GetActivos(int? empresaIdFiltro)
         {
             try
             {
                 var query = _context.Activos.AsQueryable();
 
-                if (!EsAdminGlobal)
+                if (EsAdminGlobal)
+                {
+                    if (empresaIdFiltro.HasValue && empresaIdFiltro.Value > 0)
+                        query = query.Where(a => a.EmpresaId == empresaIdFiltro.Value);
+                }
+                else
                 {
                     query = query.Where(a => a.EmpresaId == EmpresaUsuarioId);
                 }
 
-                var listado = await (from a in query
-                                     join t in _context.ActivoTipos on a.TipoId equals t.Id into tj
-                                     from t in tj.DefaultIfEmpty()
-                                     join m in _context.Marcas on a.MarcaId equals m.Id into mj
-                                     from m in mj.DefaultIfEmpty()
-                                     join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
-                                     from mo in moj.DefaultIfEmpty()
+                var data = await (from a in query
+                                  join t in _context.ActivoTipos on a.TipoId equals t.Id into tj
+                                  from t in tj.DefaultIfEmpty()
+                                  join m in _context.Marcas on a.MarcaId equals m.Id into mj
+                                  from m in mj.DefaultIfEmpty()
+                                  join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
+                                  from mo in moj.DefaultIfEmpty()
 
-                                         // Subquery para la asignación vigente
-                                     let asignacion = _context.ActivoAsignaciones
-                                                        .Where(x => x.ActivoId == a.Id && x.Estado == true)
-                                                        .OrderByDescending(x => x.Id)
-                                                        .FirstOrDefault()
+                                      // Subquery para estado actual
+                                  let ultimoMov = (from d in _context.DMovimientosActivo
+                                                   join mov in _context.MovimientosActivo on d.MovimientoId equals mov.Id
+                                                   where d.ActivoId == a.Id && mov.Estado == true
+                                                   orderby mov.FechaMovimiento descending, mov.Id descending
+                                                   select new { mov.PersonalId, mov.UbicacionDestino }).FirstOrDefault()
 
-                                     join p in _context.Personal on asignacion.PersonalId equals p.Id into pj
-                                     from p in pj.DefaultIfEmpty()
+                                  join p in _context.Personal on ultimoMov.PersonalId equals p.Id into pj
+                                  from p in pj.DefaultIfEmpty()
 
-                                     select new
-                                     {
-                                         Id = a.Id,
-                                         Codigo = a.CodigoInterno ?? "S/C",
-                                         Tipo = t.Nombre ?? "-",
-                                         Marca = m.Nombre ?? "-",
-                                         Modelo = mo.Nombre ?? "-",
-                                         Equipo = (t.Nombre ?? "") + " " + (m.Nombre ?? "") + " " + (mo.Nombre ?? ""), // Concatenado para tabla
-                                         Serie = a.Serie ?? "-",
-                                         Condicion = a.Condicion, // Operativo, Malogrado
-                                         Situacion = a.Situacion, // En Uso, En Stock
-                                         AsignadoA = (asignacion != null && asignacion.EsStock == true) ? "EN STOCK" :
-                                                     (p != null) ? p.NombresCompletos : "SIN ASIGNAR",
-                                         Ubicacion = asignacion != null ? asignacion.UbicacionTexto : "-"
-                                     }).ToListAsync();
+                                  select new
+                                  {
+                                      Id = a.Id,
+                                      Codigo = a.CodigoInterno ?? "S/C",
+                                      Descripcion = (t.Nombre ?? "") + " " + (m.Nombre ?? "") + " " + (mo.Nombre ?? ""),
+                                      Serie = a.Serie ?? "-",
+                                      Condicion = a.Condicion,
+                                      Situacion = a.Situacion,
 
-                return Json(new { status = true, data = listado });
+                                      // Visual
+                                      AsignadoA = (a.Situacion == "EN STOCK") ? " EN STOCK" : (p != null) ? p.NombresCompletos : "SIN ASIGNAR",
+
+                                      // DATO CLAVE AGREGADO: ID DEL RESPONSABLE
+                                      PersonalId = (p != null) ? p.Id : (int?)null,
+
+                                      Ubicacion = ultimoMov != null ? ultimoMov.UbicacionDestino : "-"
+                                  })
+                                  .ToListAsync();
+
+                var listadoOrdenado = data.OrderBy(x => x.AsignadoA).ToList();
+
+                return Json(new { status = true, data = listadoOrdenado });
             }
             catch (Exception ex)
             {
@@ -92,19 +120,29 @@ namespace ERPKardex.Controllers
             {
                 var activo = await _context.Activos.FindAsync(id);
                 if (activo == null) return Json(new { status = false, message = "No encontrado" });
-
                 var specs = await _context.ActivoEspecificaciones.Where(s => s.ActivoId == id).ToListAsync();
-
                 return Json(new { status = true, data = activo, specs = specs });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
+        [HttpGet]
+        public async Task<JsonResult> GetUbicaciones()
+        {
+            // Select Distinct para el combo de ubicaciones
+            var ubicaciones = await _context.MovimientosActivo
+                                            .Where(x => !string.IsNullOrEmpty(x.UbicacionDestino))
+                                            .Select(x => x.UbicacionDestino)
+                                            .Distinct()
+                                            .OrderBy(x => x)
+                                            .ToListAsync();
+            return Json(new { status = true, data = ubicaciones });
+        }
+
         #endregion
 
-        #region API: REGISTRO (ALTA)
+        #region API: REGISTRO ACTIVO (Igual que antes)
 
-        // Modelo auxiliar para recibir el JSON limpio desde JS
         public class ActivoRegistroModel
         {
             public int? GrupoId { get; set; }
@@ -123,7 +161,6 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    // 1. Crear Cabecera
                     var activo = new Activo
                     {
                         CodigoInterno = "ACT-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
@@ -132,8 +169,8 @@ namespace ERPKardex.Controllers
                         MarcaId = model.MarcaId,
                         ModeloId = model.ModeloId,
                         Serie = model.Serie,
-                        Condicion = model.Condicion ?? "OPERATIVO", // Default
-                        Situacion = "EN STOCK", // Nace en Stock
+                        Condicion = model.Condicion ?? "OPERATIVO",
+                        Situacion = "EN STOCK",
                         EmpresaId = EmpresaUsuarioId,
                         FechaRegistro = DateTime.Now,
                         Estado = true
@@ -142,29 +179,35 @@ namespace ERPKardex.Controllers
                     _context.Activos.Add(activo);
                     await _context.SaveChangesAsync();
 
-                    // 2. Guardar Especificaciones
-                    if (model.Specs != null && model.Specs.Count > 0)
+                    if (model.Specs != null)
                     {
-                        foreach (var s in model.Specs)
-                        {
-                            s.ActivoId = activo.Id;
-                            _context.ActivoEspecificaciones.Add(s);
-                        }
+                        foreach (var s in model.Specs) { s.ActivoId = activo.Id; _context.ActivoEspecificaciones.Add(s); }
                         await _context.SaveChangesAsync();
                     }
 
-                    // 3. Asignación Inicial (Stock)
-                    var asignacion = new ActivoAsignacion
+                    // Movimiento Inicial (Alta a Stock) -> Usando la NUEVA TABLA
+                    var mov = new MovimientoActivo
                     {
-                        ActivoId = activo.Id,
-                        EsStock = true,
-                        FechaAsignacion = DateTime.Now,
-                        UbicacionTexto = "ALMACÉN CENTRAL",
-                        Observacion = "ALTA DE ACTIVO",
-                        Estado = true,
-                        UsuarioRegistroId = UsuarioActualId
+                        CodigoActa = "ALTA-" + activo.Id,
+                        TipoMovimiento = "ALTA",
+                        FechaMovimiento = DateTime.Now,
+                        EmpresaId = EmpresaUsuarioId,
+                        UsuarioRegistroId = UsuarioActualId,
+                        UbicacionDestino = "STOCK",
+                        Observacion = "INGRESO INICIAL AL SISTEMA",
+                        Estado = true
                     };
-                    _context.ActivoAsignaciones.Add(asignacion);
+                    _context.MovimientosActivo.Add(mov);
+                    await _context.SaveChangesAsync();
+
+                    var det = new DMovimientoActivo
+                    {
+                        MovimientoId = mov.Id,
+                        ActivoId = activo.Id,
+                        CondicionItem = activo.Condicion,
+                        ObservacionItem = "Nuevo"
+                    };
+                    _context.DMovimientosActivo.Add(det);
                     await _context.SaveChangesAsync();
 
                     transaction.Commit();
@@ -177,313 +220,338 @@ namespace ERPKardex.Controllers
                 }
             }
         }
-
         #endregion
 
-        #region API: MOVIMIENTOS (ASIGNACIÓN Y DEVOLUCIÓN)
+        #region API: GESTIÓN DE MOVIMIENTOS (EL CAMBIO GRANDE)
 
-        [HttpGet]
-        public async Task<JsonResult> GetDatosAsignacion(int activoId)
+        // DTO para recibir el movimiento complejo (Cabecera + Lista de Items)
+        public class MovimientoDTO
         {
-            var activo = await _context.Activos.FindAsync(activoId);
-            if (activo == null) return Json(new { status = false, message = "No existe" });
+            public string TipoMovimiento { get; set; } // 'ENTREGA' o 'DEVOLUCION'
+            public int? PersonalId { get; set; } // Receptor (si es Entrega) o null (si es Devolución a stock)
+            public string Ubicacion { get; set; }
+            public string Observacion { get; set; }
 
-            // Buscar asignación actual VIGENTE
-            var actual = await _context.ActivoAsignaciones
-                                       .Where(x => x.ActivoId == activoId && x.Estado == true)
-                                       .OrderByDescending(x => x.Id)
-                                       .FirstOrDefaultAsync();
-
-            string responsable = "ALMACÉN / STOCK";
-            if (actual != null && actual.PersonalId != null)
-            {
-                var p = await _context.Personal.FindAsync(actual.PersonalId);
-                responsable = p?.NombresCompletos ?? "DESCONOCIDO";
-            }
-
-            return Json(new
-            {
-                status = true,
-                activo = new { activo.Id, activo.CodigoInterno, activo.Serie, activo.Condicion },
-                actual = new { Responsable = responsable, Ubicacion = actual?.UbicacionTexto ?? "-" }
-            });
+            // Lista de activos seleccionados
+            public List<ItemMovimientoDTO> Items { get; set; }
         }
 
-        // 1. ASIGNACIÓN (Stock -> Persona / Persona A -> Persona B)
-        [HttpPost]
-        public async Task<JsonResult> GuardarAsignacion(int activoId, int personalId, string ubicacion, string observacion)
+        public class ItemMovimientoDTO
         {
+            public int ActivoId { get; set; }
+            public string Condicion { get; set; } // Importante para la devolución
+            public string Observacion { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> GuardarMovimiento([FromBody] MovimientoDTO data)
+        {
+            if (data.Items == null || !data.Items.Any())
+                return Json(new { status = false, message = "No se han seleccionado activos." });
+
             using (var tx = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    // Cerrar anterior
-                    var anteriores = await _context.ActivoAsignaciones.Where(x => x.ActivoId == activoId && x.Estado == true).ToListAsync();
-                    foreach (var a in anteriores) { a.Estado = false; a.FechaDevolucion = DateTime.Now; }
+                    int? responsableIdDetectado = data.PersonalId;
 
-                    // Nueva Asignación
-                    var nueva = new ActivoAsignacion
+                    // LÓGICA DE DETECCIÓN AUTOMÁTICA PARA DEVOLUCIONES
+                    if (data.TipoMovimiento == "DEVOLUCION")
                     {
-                        ActivoId = activoId,
-                        PersonalId = personalId,
-                        EsStock = false,
-                        FechaAsignacion = DateTime.Now,
-                        UbicacionTexto = ubicacion,
-                        Observacion = observacion,
-                        Estado = true,
-                        UsuarioRegistroId = UsuarioActualId
+                        // Tomamos el primer activo del carrito para saber quién lo devuelve
+                        // (Se asume que en un mismo acta de devolución, todos los activos vienen de la misma persona)
+                        int primerActivoId = data.Items.First().ActivoId;
+
+                        // Buscamos el último movimiento vigente de este activo para hallar al responsable
+                        var ultimoMov = await (from d in _context.DMovimientosActivo
+                                               join m in _context.MovimientosActivo on d.MovimientoId equals m.Id
+                                               where d.ActivoId == primerActivoId && m.Estado == true
+                                               orderby m.FechaMovimiento descending, m.Id descending
+                                               select m.PersonalId).FirstOrDefaultAsync();
+
+                        responsableIdDetectado = ultimoMov;
+
+                        if (responsableIdDetectado == null)
+                        {
+                            return Json(new { status = false, message = "No se pudo identificar al responsable actual de los activos para procesar la devolución." });
+                        }
+                    }
+
+                    // 1. Crear Cabecera del Acta
+                    var cabecera = new MovimientoActivo
+                    {
+                        CodigoActa = "ACT-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"),
+                        TipoMovimiento = data.TipoMovimiento,
+                        FechaMovimiento = DateTime.Now,
+                        EmpresaId = EmpresaUsuarioId,
+                        UsuarioRegistroId = UsuarioActualId,
+
+                        // Si es ENTREGA: usa el PersonalId que vino del combo.
+                        // Si es DEVOLUCION: usa el responsableIdDetectado que buscamos arriba.
+                        PersonalId = responsableIdDetectado,
+
+                        UbicacionDestino = data.Ubicacion,
+                        Observacion = data.Observacion,
+                        Estado = true
                     };
-                    _context.ActivoAsignaciones.Add(nueva);
 
-                    // Actualizar Activo
-                    var activo = await _context.Activos.FindAsync(activoId);
-                    activo.Situacion = "EN USO";
+                    _context.MovimientosActivo.Add(cabecera);
+                    await _context.SaveChangesAsync();
 
-                    // Actualizar empresa del activo a la del personal
-                    var persona = await _context.Personal.FindAsync(personalId);
-                    if (persona?.EmpresaId != null) activo.EmpresaId = persona.EmpresaId;
+                    // 2. Procesar cada ítem
+                    foreach (var item in data.Items)
+                    {
+                        // A. Detalle del Movimiento
+                        var detalle = new DMovimientoActivo
+                        {
+                            MovimientoId = cabecera.Id,
+                            ActivoId = item.ActivoId,
+                            CondicionItem = item.Condicion,
+                            ObservacionItem = item.Observacion
+                        };
+                        _context.DMovimientosActivo.Add(detalle);
+
+                        // B. Actualizar Maestro de Activo
+                        var activoDb = await _context.Activos.FindAsync(item.ActivoId);
+                        if (activoDb != null)
+                        {
+                            activoDb.Condicion = item.Condicion;
+
+                            if (data.TipoMovimiento == "ENTREGA")
+                            {
+                                activoDb.Situacion = "EN USO";
+                                if (responsableIdDetectado.HasValue)
+                                {
+                                    var per = await _context.Personal.FindAsync(responsableIdDetectado);
+                                    if (per != null && per.EmpresaId.HasValue) activoDb.EmpresaId = per.EmpresaId;
+                                }
+                            }
+                            else // DEVOLUCION
+                            {
+                                activoDb.Situacion = "EN STOCK";
+                                // Al devolver, el activo vuelve a la empresa del usuario que recibe (TI)
+                                // activoDb.EmpresaId = EmpresaUsuarioId;
+                            }
+                        }
+                    }
 
                     await _context.SaveChangesAsync();
                     tx.Commit();
 
-                    return Json(new { status = true, message = "Asignación realizada", idAsignacion = nueva.Id });
+                    return Json(new { status = true, message = "Movimiento registrado con éxito.", idMovimiento = cabecera.Id });
                 }
-                catch (Exception ex) { tx.Rollback(); return Json(new { status = false, message = ex.Message }); }
-            }
-        }
-
-        // 2. DEVOLUCIÓN (Persona -> Stock)
-        [HttpPost]
-        public async Task<JsonResult> GuardarDevolucion(int activoId, string condicionRetorno, string ubicacion, string observacion)
-        {
-            using (var tx = _context.Database.BeginTransaction())
-            {
-                try
+                catch (Exception ex)
                 {
-                    // Cerrar anterior (El usuario que lo tenía)
-                    var anteriores = await _context.ActivoAsignaciones.Where(x => x.ActivoId == activoId && x.Estado == true).ToListAsync();
-                    foreach (var a in anteriores) { a.Estado = false; a.FechaDevolucion = DateTime.Now; }
-
-                    // Nueva Asignación (A Stock)
-                    var nueva = new ActivoAsignacion
-                    {
-                        ActivoId = activoId,
-                        PersonalId = null, // Nadie
-                        EsStock = true,    // Stock
-                        FechaAsignacion = DateTime.Now,
-                        UbicacionTexto = ubicacion, // Ej: Almacén TI
-                        Observacion = "DEVOLUCIÓN: " + observacion,
-                        Estado = true,
-                        UsuarioRegistroId = UsuarioActualId
-                    };
-                    _context.ActivoAsignaciones.Add(nueva);
-
-                    // Actualizar Activo
-                    var activo = await _context.Activos.FindAsync(activoId);
-                    activo.Situacion = "EN STOCK";
-                    activo.Condicion = condicionRetorno; // Actualizamos si viene roto o bueno
-
-                    await _context.SaveChangesAsync();
-                    tx.Commit();
-
-                    return Json(new { status = true, message = "Devolución registrada", idAsignacion = nueva.Id });
+                    tx.Rollback();
+                    return Json(new { status = false, message = "Error: " + ex.Message });
                 }
-                catch (Exception ex) { tx.Rollback(); return Json(new { status = false, message = ex.Message }); }
             }
         }
 
         #endregion
 
-        #region API: DATOS PARA IMPRIMIR ACTA (Inteligente)
+        #region API: HISTORIAL E IMPRESIÓN (Adaptado a Grupos)
 
         [HttpGet]
-        public async Task<JsonResult> GetDatosActa(int idAsignacion)
+        public async Task<JsonResult> GetHistorial(int activoId)
         {
             try
             {
-                var movimiento = await _context.ActivoAsignaciones.FindAsync(idAsignacion);
-                if (movimiento == null) return Json(new { status = false, message = "Movimiento no encontrado" });
+                // 1. Info del activo para la cabecera del historial
+                var activoHeader = await (from a in _context.Activos
+                                          join t in _context.ActivoTipos on a.TipoId equals t.Id into tj
+                                          from t in tj.DefaultIfEmpty()
+                                          join m in _context.Marcas on a.MarcaId equals m.Id into mj
+                                          from m in mj.DefaultIfEmpty()
+                                          join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
+                                          from mo in moj.DefaultIfEmpty()
+                                          where a.Id == activoId
+                                          select new
+                                          {
+                                              Codigo = a.CodigoInterno,
+                                              Serie = a.Serie,
+                                              FullDesc = (t.Nombre ?? "") + " " + (m.Nombre ?? "") + " " + (mo.Nombre ?? "")
+                                          }).FirstOrDefaultAsync();
 
-                var activo = await _context.Activos.FindAsync(movimiento.ActivoId);
+                // 2. Movimientos: Listamos los DMOVIMIENTOS donde el ID coincide con el ACTIVO
+                var historial = await (from d in _context.DMovimientosActivo
+                                       join m in _context.MovimientosActivo on d.MovimientoId equals m.Id
+                                       join p in _context.Personal on m.PersonalId equals p.Id into pj
+                                       from p in pj.DefaultIfEmpty()
+                                       where d.ActivoId == activoId // Filtro estricto por el activo actual
+                                       orderby m.FechaMovimiento descending
+                                       select new
+                                       {
+                                           m.Id,
+                                           Fecha = m.FechaMovimiento.Value.ToString("dd/MM/yyyy HH:mm"),
+                                           Tipo = m.TipoMovimiento,
+                                           Responsable = (m.TipoMovimiento == "DEVOLUCION") ? "ALMACÉN (REINGRESO)" : (p != null ? p.NombresCompletos : "STOCK"),
+                                           Ubicacion = m.UbicacionDestino,
+                                           Observacion = d.ObservacionItem, // Usamos la observación del ítem, no la general del acta
+                                           RutaActa = m.RutaActaPdf,
+                                           Estado = m.Estado == true ? "VIGENTE" : "ANULADO"
+                                       }).ToListAsync();
 
-                // --- Determinar Tipo de Acta ---
-                bool esDevolucion = (movimiento.EsStock == true);
+                return Json(new { status = true, data = historial, activoInfo = activoHeader });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetDatosActa(int idMovimiento)
+        {
+            try
+            {
+                var movimiento = await _context.MovimientosActivo.FindAsync(idMovimiento);
+                if (movimiento == null) return Json(new { status = false, message = "Acta no encontrada" });
+
+                // 1. Datos Generales y Recuperación de Items (Detalle)
+                bool esDevolucion = movimiento.TipoMovimiento == "DEVOLUCION";
                 string tipoActa = esDevolucion ? "ACTA DE DEVOLUCIÓN" : "ACTA DE ENTREGA";
 
-                // --- Obtener Personas (Emisor y Receptor) ---
+                var items = await (from d in _context.DMovimientosActivo
+                                   join a in _context.Activos on d.ActivoId equals a.Id
+                                   join t in _context.ActivoTipos on a.TipoId equals t.Id into tj
+                                   from t in tj.DefaultIfEmpty()
+                                   join m in _context.Marcas on a.MarcaId equals m.Id into mj
+                                   from m in mj.DefaultIfEmpty()
+                                   join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
+                                   from mo in moj.DefaultIfEmpty()
+                                   where d.MovimientoId == idMovimiento
+                                   select new
+                                   {
+                                       a.Id,
+                                       Tipo = t.Nombre,
+                                       Marca = m.Nombre,
+                                       Modelo = mo.Nombre,
+                                       Serie = a.Serie,
+                                       Condicion = d.CondicionItem,
+                                       Specs = _context.ActivoEspecificaciones.Where(s => s.ActivoId == a.Id).ToList()
+                                   }).ToListAsync();
+
+                var listaItems = items.Select(i => new
+                {
+                    Equipo = $"{i.Tipo} {i.Marca}".Trim(),
+                    Modelo = i.Modelo,
+                    Serie = i.Serie,
+                    Condicion = i.Condicion,
+                    Caracteristicas = string.IsNullOrEmpty(string.Join(", ", i.Specs.Select(s => $"{s.Clave}: {s.Valor}"))) ? "Sin características" : string.Join(", ", i.Specs.Select(s => $"{s.Clave}: {s.Valor}"))
+                }).ToList();
+
+                // 2. Lógica de Personas y sus Empresas
+                // Datos del Usuario del Sistema (TI/Administrador)
+                var usuarioLogueado = await _context.Usuarios.FindAsync(movimiento.UsuarioRegistroId);
+                var empresaLogueado = await _context.Empresas.FindAsync(movimiento.EmpresaId); // Empresa dueña del activo/movimiento
+
+                string nombreUserSys = usuarioLogueado?.Nombre ?? "ADMINISTRADOR";
+                string dniUserSys = usuarioLogueado?.Dni ?? "-";
+                string empresaUserSys = empresaLogueado?.RazonSocial ?? "YNNOVACORP";
+
+                // Variables para el Acta
                 string nombreEmisor = "", dniEmisor = "", cargoEmisor = "", empresaEmisor = "";
-                string nombreReceptor = "", dniReceptor = "", cargoReceptor = "", ubicacion = "";
-
-                // Usuario del Sistema (Generalmente IT/Logística - Quien está logueado haciendo la operación)
-                var usuarioLogueado = await _context.Usuarios.FindAsync(UsuarioActualId);
-                string nombreUserSys = usuarioLogueado?.Nombre ?? "ADMINISTRADOR SISTEMA";
-                string dniUserSys = usuarioLogueado?.Dni ?? "-"; // Recuperamos el DNI de la tabla usuario
-
-                // Empresa del Sistema (Hardcodeada o recuperada)
-                string empresaSys = "YNNOVACORP";
+                string nombreReceptor = "", dniReceptor = "", cargoReceptor = "", empresaReceptor = "";
 
                 if (esDevolucion)
                 {
-                    // CASO DEVOLUCIÓN:
-                    // EMISOR (Quien devuelve): El usuario que tenía el activo ANTES.
-                    // RECEPTOR (Quien recibe): El usuario del sistema (IT/Logística).
-
-                    // Buscamos el movimiento INMEDIATAMENTE ANTERIOR a este
-                    var movAnterior = await _context.ActivoAsignaciones
-                                                    .Where(x => x.ActivoId == movimiento.ActivoId && x.Id < movimiento.Id)
-                                                    .OrderByDescending(x => x.Id)
-                                                    .FirstOrDefaultAsync();
-
-                    if (movAnterior != null && movAnterior.PersonalId != null)
+                    // DEVOLUCIÓN: Emisor (Devuelve) = Personal | Receptor (Recibe) = Usuario TI
+                    if (movimiento.PersonalId.HasValue)
                     {
-                        var pDevuelve = await _context.Personal.FindAsync(movAnterior.PersonalId);
-                        // Opcional: recuperar empresa del personal si es necesario
-                        var empDevuelve = await _context.Empresas.FindAsync(pDevuelve.EmpresaId);
+                        var pDevuelve = await _context.Personal.FindAsync(movimiento.PersonalId);
+                        var eDevuelve = await _context.Empresas.FindAsync(pDevuelve?.EmpresaId);
 
-                        nombreEmisor = pDevuelve.NombresCompletos;
-                        dniEmisor = pDevuelve.Dni;
-                        cargoEmisor = pDevuelve.Cargo;
-                        empresaEmisor = empDevuelve?.RazonSocial ?? "-";
-                    }
-                    else
-                    {
-                        nombreEmisor = "USUARIO DESCONOCIDO";
-                        dniEmisor = "-";
+                        nombreEmisor = pDevuelve?.NombresCompletos;
+                        dniEmisor = pDevuelve?.Dni;
+                        cargoEmisor = pDevuelve?.Cargo;
+                        empresaEmisor = eDevuelve?.RazonSocial ?? "-";
                     }
 
-                    nombreReceptor = nombreUserSys; // IT Recibe
+                    nombreReceptor = nombreUserSys;
                     dniReceptor = dniUserSys;
-                    cargoReceptor = "SOPORTE TI / LOGÍSTICA";
-                    ubicacion = movimiento.UbicacionTexto;
+                    cargoReceptor = "LOGÍSTICA / TI";
+                    empresaReceptor = empresaUserSys;
                 }
                 else
                 {
-                    // CASO ENTREGA:
-                    // EMISOR (Quien entrega): El usuario del sistema (IT).
-                    // RECEPTOR (Quien recibe): El personal seleccionado.
-
-                    nombreEmisor = nombreUserSys; // IT Entrega
+                    // ENTREGA: Emisor (Entrega) = Usuario TI | Receptor (Recibe) = Personal
+                    nombreEmisor = nombreUserSys;
                     dniEmisor = dniUserSys;
-                    cargoEmisor = "EQUIPO DE TI";
-                    empresaEmisor = empresaSys;
+                    cargoEmisor = "LOGÍSTICA / TI";
+                    empresaEmisor = empresaUserSys;
 
-                    var pRecibe = await _context.Personal.FindAsync(movimiento.PersonalId);
-                    nombreReceptor = pRecibe?.NombresCompletos ?? "EXTERNO";
-                    cargoReceptor = pRecibe?.Cargo ?? "-";
-                    dniReceptor = pRecibe?.Dni ?? "-";
-                    ubicacion = movimiento.UbicacionTexto;
+                    if (movimiento.PersonalId.HasValue)
+                    {
+                        var pRecibe = await _context.Personal.FindAsync(movimiento.PersonalId);
+                        var eRecibe = await _context.Empresas.FindAsync(pRecibe?.EmpresaId);
+
+                        nombreReceptor = pRecibe?.NombresCompletos;
+                        dniReceptor = pRecibe?.Dni;
+                        cargoReceptor = pRecibe?.Cargo;
+                        empresaReceptor = eRecibe?.RazonSocial ?? "-";
+                    }
                 }
 
-                // --- Construir Características ---
-                var marca = await _context.Marcas.FindAsync(activo.MarcaId);
-                var modelo = await _context.Modelos.FindAsync(activo.ModeloId);
-                var tipo = await _context.ActivoTipos.FindAsync(activo.TipoId);
-                var specs = await _context.ActivoEspecificaciones.Where(x => x.ActivoId == activo.Id).ToListAsync();
-
-                List<string> listaSpecs = new List<string>();
-                if (modelo != null) listaSpecs.Add($"Modelo: {modelo.Nombre}");
-                if (!string.IsNullOrEmpty(activo.Serie)) listaSpecs.Add($"S/N: {activo.Serie}");
-
-                foreach (var s in specs)
-                {
-                    listaSpecs.Add($"{s.Clave}: {s.Valor}");
-                }
-
-                string caracteristicasTexto = string.Join(", ", listaSpecs);
-
-                // --- Retorno Final ---
                 return Json(new
                 {
                     status = true,
                     data = new
                     {
                         Titulo = tipoActa,
-                        Fecha = movimiento.FechaAsignacion?.ToString("dd/MM/yyyy"),
+                        CodigoActa = movimiento.CodigoActa,
+                        Fecha = movimiento.FechaMovimiento?.ToString("dd/MM/yyyy"),
+                        Ubicacion = movimiento.UbicacionDestino,
 
-                        // Cabecera Acta
-                        EmisorNombre = nombreEmisor,
-                        EmisorDni = dniEmisor, // ¡Aquí va el DNI corregido!
-                        EmisorCargo = cargoEmisor,
-                        EmisorEmpresa = empresaEmisor,
+                        // Objetos con Empresa incluida
+                        Emisor = new
+                        {
+                            Nombre = nombreEmisor,
+                            Dni = dniEmisor,
+                            Cargo = cargoEmisor,
+                            Empresa = empresaEmisor
+                        },
+                        Receptor = new
+                        {
+                            Nombre = nombreReceptor,
+                            Dni = dniReceptor,
+                            Cargo = cargoReceptor,
+                            Empresa = empresaReceptor
+                        },
 
-                        ReceptorNombre = nombreReceptor,
-                        ReceptorDni = dniReceptor,
-                        ReceptorCargo = cargoReceptor,
-
-                        // Tabla
-                        EquipoTipo = tipo?.Nombre ?? "EQUIPO",
-                        EquipoMarca = marca?.Nombre ?? "",
-                        Caracteristicas = caracteristicasTexto,
-                        Cantidad = "1",
-
-                        // Firmas (Para poner debajo de la línea)
-                        FirmaEntrega = nombreEmisor,
-                        FirmaEntregaDni = dniEmisor, // DNI para la firma izquierda
-
-                        FirmaRecibe = nombreReceptor,
-                        FirmaRecibeDni = dniReceptor // DNI para la firma derecha
+                        Items = listaItems
                     }
                 });
             }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
-        }
-
-        #endregion
-
-        #region API: HISTORIAL Y SUBIDA
-        [HttpGet]
-        public async Task<JsonResult> GetHistorial(int activoId)
-        {
-            var hist = await (from h in _context.ActivoAsignaciones
-                              join p in _context.Personal on h.PersonalId equals p.Id into pj
-                              from p in pj.DefaultIfEmpty()
-                              where h.ActivoId == activoId
-                              orderby h.FechaAsignacion descending
-                              select new
-                              {
-                                  h.Id,
-                                  Fecha = h.FechaAsignacion.Value.ToString("dd/MM/yyyy HH:mm"),
-                                  Tipo = (h.EsStock == true) ? "EN STOCK" : "ASIGNADO",
-                                  Responsable = (h.EsStock == true) ? "ALMACÉN" : p.NombresCompletos,
-                                  Ubicacion = h.UbicacionTexto,
-                                  Observacion = h.Observacion,
-                                  RutaActa = h.RutaActa,
-                                  Estado = h.Estado == true ? "VIGENTE" : "HISTÓRICO"
-                              }).ToListAsync();
-
-            return Json(new { status = true, data = hist });
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
         [HttpPost]
-        public async Task<JsonResult> SubirActa(int idAsignacion, IFormFile archivo)
+        public async Task<JsonResult> SubirActa(int idMovimiento, IFormFile archivo)
         {
+            // Guarda el PDF en la cabecera del movimiento
             try
             {
                 if (archivo == null) return Json(new { status = false, message = "Sin archivo" });
-                var asig = await _context.ActivoAsignaciones.FindAsync(idAsignacion);
+                var mov = await _context.MovimientosActivo.FindAsync(idMovimiento);
 
                 var path = Path.Combine(_env.WebRootPath, "uploads", "actas");
                 if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
-                string fileName = $"ACTA_{asig.Id}_{DateTime.Now.Ticks}.pdf";
+                string fileName = $"ACTA_{mov.Id}_{DateTime.Now.Ticks}.pdf";
                 using (var stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
                 {
                     await archivo.CopyToAsync(stream);
                 }
 
-                asig.RutaActa = "uploads/actas/" + fileName;
+                mov.RutaActaPdf = "uploads/actas/" + fileName;
                 await _context.SaveChangesAsync();
 
                 return Json(new { status = true, message = "Archivo subido" });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
+
         #endregion
 
-        #region COMBOS
+        #region COMBOS AUXILIARES
         [HttpGet]
         public JsonResult GetCombosRegistro()
         {
@@ -500,12 +568,19 @@ namespace ERPKardex.Controllers
         [HttpGet]
         public JsonResult GetPersonalCombo()
         {
-            var p = _context.Personal
-                            .Where(x => x.Estado == true && x.EmpresaId == EmpresaUsuarioId)
+            var p = _context.Personal.Where(x => x.Estado == true && x.EmpresaId == EmpresaUsuarioId)
                             .Select(x => new { x.Id, x.NombresCompletos })
-                            .OrderBy(x => x.NombresCompletos)
-                            .ToList();
+                            .OrderBy(x => x.NombresCompletos).ToList();
             return Json(new { status = true, data = p });
+        }
+
+        [HttpGet]
+        public JsonResult GetEmpresasCombo()
+        {
+            // Solo para Admin Global
+            if (!EsAdminGlobal) return Json(new { status = false });
+            var e = _context.Empresas.Where(x => x.Estado == true).Select(x => new { x.Id, x.RazonSocial }).ToList();
+            return Json(new { status = true, data = e });
         }
         #endregion
     }

@@ -54,7 +54,8 @@ namespace ERPKardex.Data
         public DbSet<Activo> Activos { get; set; }
         public DbSet<ActivoTipo> ActivoTipos { get; set; }
         public DbSet<ActivoGrupo> ActivoGrupos { get; set; }
-        public DbSet<ActivoAsignacion> ActivoAsignaciones { get; set; }
+        public DbSet<MovimientoActivo> MovimientosActivo { get; set; }
+        public DbSet<DMovimientoActivo> DMovimientosActivo { get; set; }
         public DbSet<ActivoEspecificacion> ActivoEspecificaciones { get; set; }
         public DbSet<Personal> Personal { get; set; }
 
