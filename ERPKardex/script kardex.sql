@@ -43,6 +43,12 @@ drop table if exists ordencompra;
 drop table if exists dordencompra;
 drop table if exists ordenservicio;
 drop table if exists dordenservicio;
+drop table if exists personal;
+drop table if exists activo_grupo;
+drop table if exists activo_tipo;
+drop table if exists activo;
+drop table if exists activo_especificacion;
+drop table if exists activo_asignacion;
 
 GO
 
@@ -663,6 +669,68 @@ CREATE TABLE dordenservicio (
     empresa_id INT
 );
 
+-- Tabla para empleados/colaboradores que NO necesariamente acceden al sistema
+CREATE TABLE personal (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    dni CHAR(8),
+    nombres_completos VARCHAR(255),
+    cargo VARCHAR(255),
+    empresa_id INT, -- Se llenará en el siguiente paso
+    estado BIT DEFAULT 1,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+-- Creación
+CREATE TABLE activo_grupo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100),
+    estado BIT DEFAULT 1
+);
+
+CREATE TABLE activo_tipo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100),
+    grupo_id INT,
+    estado BIT DEFAULT 1
+);
+
+CREATE TABLE activo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    codigo_interno VARCHAR(50), 
+    grupo_id INT, 
+    tipo_id INT,
+    marca_id INT,  -- Relacionado a tu tabla marca existente
+    modelo_id INT, -- Relacionado a tu tabla modelo existente
+    serie VARCHAR(100),
+    condicion VARCHAR(50), -- OPERATIVO, MALOGRADO
+    situacion VARCHAR(50), -- EN USO, EN STOCK
+    empresa_id INT, 
+    sucursal_id INT, 
+    fecha_registro DATETIME DEFAULT GETDATE(),
+    estado BIT DEFAULT 1
+);
+
+CREATE TABLE activo_especificacion (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    activo_id INT NOT NULL,
+    clave VARCHAR(50),  
+    valor VARCHAR(MAX), 
+);
+
+CREATE TABLE activo_asignacion (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    activo_id INT NOT NULL,
+    personal_id INT,      
+    centro_costo_id INT,  
+    es_stock BIT DEFAULT 0, 
+    fecha_asignacion DATE DEFAULT GETDATE(),
+    fecha_devolucion DATE, 
+    ubicacion_texto VARCHAR(500), 
+    observacion VARCHAR(500),
+    estado BIT DEFAULT 1,     
+    usuario_registro_id INT
+);
+
 GO
 
 -- ==========================================
@@ -800,8 +868,8 @@ INSERT INTO formulacion_quimica (codigo, nombre, descripcion, ejemplo) VALUES ('
 
 -- inserts de 'empresa'
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20607778338', 'CONTROL SCIENCE DEL PERU S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S.A.C', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRÍCOLA S.A.C.', 1);
+INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S.A.C.', 1);
+INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRICOLA S.A.C.', 1);
 INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20615184153', 'SUPPLY BIOTECHNOLOGY LOGISTIC WORLD S.A.C.S.', 1);
 
 GO
