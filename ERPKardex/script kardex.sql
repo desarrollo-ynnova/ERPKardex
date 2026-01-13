@@ -714,7 +714,7 @@ CREATE TABLE activo_especificacion (
     id INT IDENTITY(1,1) PRIMARY KEY,
     activo_id INT NOT NULL,
     clave VARCHAR(50),  
-    valor VARCHAR(MAX), 
+    valor VARCHAR(MAX),
 );
 
 CREATE TABLE activo_asignacion (
@@ -727,8 +727,9 @@ CREATE TABLE activo_asignacion (
     fecha_devolucion DATE, 
     ubicacion_texto VARCHAR(500), 
     observacion VARCHAR(500),
-    estado BIT DEFAULT 1,     
-    usuario_registro_id INT
+    estado BIT DEFAULT 1,
+    usuario_registro_id INT,
+    ruta_acta VARCHAR(MAX)
 );
 
 GO

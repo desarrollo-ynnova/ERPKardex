@@ -110,4 +110,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\actas\" />
+  </ItemGroup>
+
 </Project>

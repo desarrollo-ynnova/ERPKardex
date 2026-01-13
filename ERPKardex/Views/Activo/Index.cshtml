@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "Inventario de Activos";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Gestión de Activos Fijos</h1>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">Listado General de Equipos</h3>
+                    </div>
+                    <div class="card-body">
+                        <table id="tbl_Activos" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">CÓDIGO</th>
+                                    <th class="text-center">EQUIPO</th>
+                                    <th class="text-center">SERIE</th>
+                                    <th class="text-center">CONDICIÓN</th>
+                                    <th class="text-center">SITUACIÓN</th>
+                                    <th class="text-center">ASIGNADO A</th>
+                                    <th class="text-center">UBICACIÓN</th>
+                                    <th class="text-center">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        var dtActivos;
+
+        $(document).ready(function () {
+            // $('body').addClass('sidebar-collapse');
+            var windowHeight = $('body > div.wrapper > div.content-wrapper').height() / 2;
+            //CONFIGURACION POR DEFECTO DATATABLES
+            $.extend($.fn.dataTable.defaults, {
+                dom: "<'row align-items-center'<'col-sm-8 justify-content-start'f><'col-sm-4 c1 d-flex justify-content-end'>>" + "<'row align-items-center'<'col-sm-6'l><'col-sm-6 my-3 justify-content-start d-flex'B>" + "<'col-sm-6'i><'col-sm-6 mb-3 d-flex justify-content-end'p>" + "rt" + "<'col-sm-6'i><'col-sm-6 mt-1 d-flex justify-content-end'p>",
+                // dom: "<'row pb-1'<'col-sm-9 d-flex'B><'col-sm-3 c1 d-flex justify-content-end'>>" + "<'row'<'col-sm-4'l><'col-sm-8 justify-content-start'f>>" + "<'row'<'col-sm-6'i><'col-sm-6 d-flex justify-content-end'p>>" + "rt" + "<'row'<'col-sm-6'i><'col-sm-6 mt-1 d-flex justify-content-end'p>>",
+                // dom: "<'row pb-1'<'col-sm-9'B><'col-sm-3 c1 d-flex justify-content-end'>>" + "<'row'<'col-sm-10'l><'col-sm-2'f>>" + "<'row'<'col-sm-6'i><'col-sm-6'p>>" + "rt" + "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                // dom: "<'row pb-1'<'col-sm-10'B><'col-sm-2 c1 d-flex justify-content-end'>>" + "<'row'<'col-sm-11'l><'col-sm-1'f>>" + "<'row'<'col-sm-10'i><'col-sm-2'p>>" + "rt" + "<'row'<'col-sm-10'i><'col-sm-2'p>>",
+                paging: true,
+                select: true,
+                scroller: false,
+                deferRender: true,
+                scrollY: windowHeight,
+                scrollX: true,
+                fixedHeader: true,
+                ordering: true,
+                destroy: true,
+                responsive: true,
+                autoWidth: false,
+                processing: true,
+                filter: true,
+                orderMulti: true,
+                stateSave: false,
+                serverSide: false,
+                language: {
+                    processing: "Procesando...",
+                    sSearch: "Buscar:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando del _START_ al _END_ de un total de _TOTAL_ registros",
+                    infoEmpty: "Sin registros encontrados.",
+                    infoFiltered: "(Total de _MAX_ registros filtrados)",
+                    loadingRecords: "Cargando...",
+                    zeroRecords: "No se encontraron registros",
+                    emptyTable: "No hay datos disponibles en la tabla",
+                    paginate: {
+                        previous: "Anterior",
+                        next: "Siguiente",
+                        first: "Primero",
+                        last: "Último",
+                    },
+                    aria: {
+                        sortAscending: ": Activar para ordenar la columna de manera ascendente",
+                        sortDescending: ": Activar para ordenar la columna de manera descendente"
+                    },
+                    select: {
+                        rows: {
+                            _: "%d filas seleccionadas",
+                            0: "Haz clic en una fila para seleccionarla",
+                            1: "1 fila seleccionada"
+                        }
+                    },
+                    buttons: {
+                        copyTitle: 'Copiado en el portapapeles',
+                        copyKeys: 'Presiona <i>ctrl</i> o <i>\u2318</i> + <i>C</i> para copiar los datos de la tabla a tu portapapeles. <br><br>Para cancelar, haga clic en este mensaje o presione Esc.',
+                        copySuccess: {
+                            _: '%d registros copiados correctamente',
+                            1: '1 registro copiado correctamente'
+                        }
+                    }
+                },
+                lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
+            });
+
+            // Configuración DataTables (Estilo AdminLTE)
+            dtActivos = $('#tbl_Activos').DataTable({
+                buttons: [
+                    {
+                        extend: 'copy',
+                        text: '<i class="bi bi-back"></i>',
+                        titleAttr: 'Copiar en portapapeles',
+                        className: 'btn btn-primary',
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="bi bi-file-earmark-excel"></i>',
+                        titleAttr: 'Exportar a Excel',
+                        className: 'btn btn-success',
+                        filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                        footer: true,
+                        exportOptions:
+                        {
+                            stripHtml: true,
+                            columns: ':not(:last-child)'
+                        },
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="bi bi-file-earmark-pdf"></i>',
+                        titleAttr: 'Exportar a PDF',
+                        className: 'btn btn-danger',
+                        filename: 'Movimientos ' + moment().format('DD-MM-YYYY HH_mm'),
+                        exportOptions:
+                        {
+                            stripHtml: true,
+                            columns: ':not(:last-child)'
+                        },
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="bi bi-printer-fill"></i>',
+                        titleAttr: 'Imprimir',
+                        className: 'btn btn-info',
+                        exportOptions:
+                        {
+                            stripHtml: true,
+                            columns: ':not(:last-child)'
+                        },
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="bi bi-ui-checks"></i>',
+                        titleAttr: 'Seleccionar',
+                        className: 'btn btn-warning',
+                        columns: ':not(.noVis)',
+                    },
+                    {
+                        text: '<i class="fas fa-plus"></i> Nuevo Activo',
+                        className: 'btn btn-success',
+                        titleAttr: 'Nuevo',
+                        action: function () { window.location.href = '/Activo/Registro'; }
+                    },
+                ],
+                ajax: {
+                    url: "/Activo/GetActivos",
+                    type: "GET",
+                    datatype: "json",
+                    dataSrc: function (json) {
+                        if (!json.status) {
+                            toastr.error(json.message);
+                            return [];
+                        }
+                        return json.data;
+                    }
+                },
+                columns: [
+                    { data: "codigo", className: "font-weight-bold" },
+                    { data: "equipo" }, // Concatenado en Backend (Tipo + Marca + Modelo)
+                    { data: "serie" },
+                    { data: "condicion" },
+                    {
+                        data: "situacion",
+                        render: function(data) {
+                            let color = data === 'EN USO' ? 'success' : 'warning';
+                            return `<span class="badge badge-${color}">${data}</span>`;
+                        }
+                    },
+                    { data: "asignadoA" },
+                    { data: "ubicacion" },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            return `
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/Activo/Asignacion?id=${data}" class="btn btn-info" title="Asignar / Devolver"><i class="fas fa-exchange-alt"></i></a>
+                                    <a href="/Activo/Historial?id=${data}" class="btn btn-secondary" title="Historial"><i class="fas fa-history"></i></a>
+                                </div>`;
+                        },
+                        className: "text-center"
+                    }
+                ],
+                lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
+                initComplete: function (data, row, cell, start, end, display) {
+                    $('.dt-buttons button').addClass('m-1');
+                    $('.dt-button-collection').appendTo('.dt-buttons');
+                    $('.btn.btn-success').removeClass('dt-button btn-secondary buttons-excel buttons-html5');
+                    $('.btn.btn-danger').removeClass('dt-button btn-secondary buttons-pdf buttons-html5');
+                    $('.btn.btn-primary').removeClass('dt-button btn-secondary buttons-copy buttons-html5');
+                    $('.btn.btn-info').removeClass('dt-button btn-secondary buttons-print');
+                    $('.btn.btn-warning').removeClass('dt-button btn-secondary buttons-collection buttons-colvis');
+                    //Botón Nuevo
+                    $('button[title="Nuevo"]').attr('id', 'btn_Nuevo');
+                    $('#btn_Nuevo').removeClass('dt-button');
+                    $('#btn_Nuevo').appendTo('div.col-sm-4.c1.d-flex.justify-content-end');
+                },
+            });
+        });
+
+        function ShowSpinner() { $('#efec-cargando').removeClass('d-none'); }
+        function HideSpinner() { $('#efec-cargando').addClass('d-none'); }
+    </script>
+}

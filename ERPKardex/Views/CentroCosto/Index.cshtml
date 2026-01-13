@@ -1,6 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Gestión de Centros de Costo";
     var empresaId = User.FindFirst("EmpresaId")?.Value;
+    bool esAdmin = ViewBag.EsAdmin ?? false;
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
@@ -22,9 +23,12 @@
         <div class="card shadow">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fa fa-list"></i> Listado General</h5>
-                <button class="btn btn-success btn-sm" onclick="fct_Nuevo()">
-                    <i class="fa fa-plus"></i> Nuevo Centro Costo
-                </button>
+                @if (esAdmin)
+                {
+                    <button class="btn btn-success btn-sm" onclick="fct_Nuevo()">
+                        <i class="fa fa-plus"></i> Nuevo Centro Costo
+                    </button>
+                }
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -58,8 +62,8 @@
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
     <script>
-                var tabla;
-
+        var esAdmin = @(esAdmin ? "true" : "false");
+        var tabla;
         $(document).ready(function () {
             var windowHeight = $('body > div.wrapper > div.content-wrapper').height() / 2;
             //CONFIGURACION POR DEFECTO DATATABLES
@@ -271,9 +275,14 @@
                     { "data": "cuentaCargo" },
                     {
                         "data": "id",
+                        "className": "text-center align-middle",
                         "render": function (data) {
-                            return `<button class="btn btn-primary btn-sm" onclick="fct_Editar(${data})"><i class="fa fa-edit"></i></button>
-                                    <button class="btn btn-danger btn-sm" onclick="fct_Eliminar(${data})"><i class="fa fa-trash"></i></button>`;
+                            if (esAdmin) {
+                                return `<button class="btn btn-primary btn-sm" onclick="fct_Editar(${data})"><i class="fa fa-edit"></i></button>
+                                        <button class="btn btn-danger btn-sm" onclick="fct_Eliminar(${data})"><i class="fa fa-trash"></i></button>`;
+                            } else {
+                                return `<span class="text-muted small"><i class="fas fa-lock"></i></span>`;
+                            }
                         }
                     }
                 ],

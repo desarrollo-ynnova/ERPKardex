@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "Historial del Activo";
+    // Recuperamos el ID de la URL
+    int activoId = 0;
+    if (!string.IsNullOrEmpty(Context.Request.Query["id"]))
+    {
+        activoId = int.Parse(Context.Request.Query["id"]);
+    }
+}
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Línea de Tiempo del Activo</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="/Activo/Index" class="btn btn-default">
+                    <i class="fas fa-arrow-left"></i> Volver al Listado
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+
+        <div class="callout callout-info">
+            <h5><i class="fas fa-info-circle"></i> Información del Equipo:</h5>
+            <p id="lbl_InfoActivo" class="mb-0 font-weight-bold">Cargando datos...</p>
+        </div>
+
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Movimientos Registrados</h3>
+            </div>
+            <div class="card-body">
+                <table id="tbl_Historial" class="table table-bordered table-striped" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 15%">FECHA</th>
+                            <th class="text-center" style="width: 10%">TIPO</th>
+                            <th class="text-center" style="width: 30%">RESPONSABLE / UBICACIÓN</th>
+                            <th class="text-center" style="width: 10%">ESTADO</th>
+                            <th class="text-center" style="width: 20%">OBSERVACIÓN</th>
+                            <th class="text-center" style="width: 15%">ACTA</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="modalSubida" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Subir Acta Firmada</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formSubida" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" id="hdnIdAsignacion" name="idAsignacion">
+
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-exclamation-circle"></i> Suba el documento escaneado con las firmas correspondientes (PDF o Imagen).</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Seleccionar Archivo</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" name="archivo" id="fileInput" accept=".pdf, .jpg, .png, .jpeg" required>
+                            <label class="custom-file-label" for="fileInput">Elegir archivo...</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Subir Documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
+
+    <script>
+        var dtHistorial;
+        const ID_ACTIVO = @activoId;
+
+        $(document).ready(function () {
+            // Inicializar inputs file de Bootstrap
+            bsCustomFileInput.init();
+
+            if(ID_ACTIVO === 0) {
+                window.location.href = '/Activo/Index';
+                return;
+            }
+
+            // 1. Cargar Info Cabecera del Activo
+            $.get('/Activo/GetDatosAsignacion?activoId=' + ID_ACTIVO, function(res) {
+                if(res.status) {
+                    $('#lbl_InfoActivo').text(`${res.activo.codigoInterno} - SERIE: ${res.activo.serie} (${res.activo.condicion})`);
+                }
+            });
+
+            // 2. Configurar DataTable
+            dtHistorial = $('#tbl_Historial').DataTable({
+                responsive: true,
+                autoWidth: false,
+                ordering: false, // Ya viene ordenado del backend
+                dom: "<'row'<'col-sm-12'tr>>", // Solo tabla
+                ajax: {
+                    url: "/Activo/GetHistorial?activoId=" + ID_ACTIVO,
+                    type: "GET",
+                    datatype: "json",
+                    dataSrc: function (json) {
+                        if (!json.status) {
+                            toastr.error(json.message);
+                            return [];
+                        }
+                        return json.data;
+                    }
+                },
+                columns: [
+                    // FECHA (Backend: 'fecha')
+                    {
+                        data: "fecha",
+                        className: "text-center align-middle"
+                    },
+                    // TIPO (Backend: 'tipo') - Badge
+                    {
+                        data: "tipo",
+                        className: "text-center align-middle",
+                        render: function(data) {
+                            let color = data === 'EN STOCK' ? 'secondary' : 'info';
+                            return `<span class="badge badge-${color}">${data}</span>`;
+                        }
+                    },
+                    // RESPONSABLE / UBICACIÓN (Backend: 'responsable', 'ubicacion')
+                    {
+                        data: null,
+                        className: "align-middle",
+                        render: function(row) {
+                            return `<strong class="d-block text-truncate" style="max-width: 250px;">${row.responsable}</strong>
+                                    <small class="text-muted"><i class="fas fa-map-marker-alt"></i> ${row.ubicacion || '-'}</small>`;
+                        }
+                    },
+                    // ESTADO (Backend: 'estado') - Badge
+                    {
+                        data: "estado",
+                        className: "text-center align-middle",
+                        render: function(data) {
+                            let color = data === 'VIGENTE' ? 'success' : 'secondary';
+                            return `<span class="badge badge-${color}">${data}</span>`;
+                        }
+                    },
+                    // OBSERVACIÓN (Backend: 'observacion')
+                    {
+                        data: "observacion",
+                        className: "align-middle",
+                        render: function(data) { return data || '-'; }
+                    },
+                    // ACCIONES / ACTA (Backend: 'id', 'rutaActa')
+                    {
+                        data: null,
+                        className: "text-center align-middle",
+                        render: function (row) {
+                            let btn = '';
+
+                            // 1. Botón Imprimir (Siempre visible para reimprimir)
+                            btn += `<a href="/Activo/ActaImpresion?id=${row.id}" target="_blank" class="btn btn-xs btn-default mr-1" title="Imprimir Formato"><i class="fas fa-print"></i></a>`;
+
+                            if (row.rutaActa) {
+                                // 2a. Si hay ruta -> Botón VER (Verde)
+                                // Nota: row.rutaActa viene del back tal cual se guardó
+                                btn += `<a href="/${row.rutaActa}" target="_blank" class="btn btn-xs btn-success" title="Ver Documento"><i class="fas fa-file-pdf"></i> Ver</a>`;
+                            } else {
+                                // 2b. Si no hay ruta -> Botón SUBIR (Azul)
+                                btn += `<button type="button" class="btn btn-xs btn-primary" onclick="fct_AbrirModalSubida(${row.id})" title="Subir Escaneado"><i class="fas fa-upload"></i></button>`;
+                            }
+                            return btn;
+                        }
+                    }
+                ],
+                language: { url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json" }
+            });
+        });
+
+        // Abrir Modal
+        function fct_AbrirModalSubida(idAsignacion) {
+            $('#hdnIdAsignacion').val(idAsignacion);
+            $('#fileInput').val('');
+            $('.custom-file-label').html('Elegir archivo...');
+            $('#modalSubida').modal('show');
+        }
+
+        // Subir Archivo
+        $('#formSubida').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/Activo/SubirActa',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    if(response.status) {
+                        $('#modalSubida').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Subido!',
+                            text: response.message,
+                            timer: 1500
+                        });
+                        dtHistorial.ajax.reload(); // Refrescar tabla
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function() {
+                    toastr.error("Error de conexión al subir el archivo.");
+                }
+            });
+        });
+    </script>
+}

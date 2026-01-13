@@ -1,0 +1,175 @@
+﻿@{
+    ViewData["Title"] = "Registro de Activo";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow card-success card-outline">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-laptop-medical"></i> Registro de Nuevo Activo</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label>Grupo</label>
+                    <select id="cbx_Grupo" class="form-control select2-busqueda"></select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Tipo</label>
+                    <select id="cbx_Tipo" class="form-control select2-busqueda"></select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Marca</label>
+                    <select id="cbx_Marca" class="form-control select2-busqueda"></select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Modelo</label>
+                    <select id="cbx_Modelo" class="form-control select2-busqueda"></select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>N° Serie</label>
+                    <input type="text" id="txt_Serie" class="form-control" placeholder="Ingrese serie del equipo">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Condición Inicial</label>
+                    <select id="cbx_Condicion" class="form-control">
+                        <option value="NUEVO">NUEVO</option>
+                        <option value="OPERATIVO">OPERATIVO</option>
+                        <option value="MALOGRADO">MALOGRADO</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h5><i class="fas fa-list"></i> Especificaciones Técnicas</h5>
+                </div>
+            </div>
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label>Característica (Clave)</label>
+                    <input type="text" id="txt_SpecClave" class="form-control" placeholder="Ej: Procesador, RAM, Color">
+                </div>
+                <div class="col-md-6">
+                    <label>Descripción (Valor)</label>
+                    <input type="text" id="txt_SpecValor" class="form-control" placeholder="Ej: Intel Core i7 10ma Gen">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-info btn-block" onclick="fct_AgregarSpec()">
+                        <i class="fas fa-plus"></i> Agregar
+                    </button>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Característica</th>
+                                <th>Descripción</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_SpecsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <a href="/Activo/Index" class="btn btn-secondary">Cancelar</a>
+            <button type="button" class="btn btn-success" onclick="fct_GuardarActivo()">
+                <i class="fas fa-save"></i> Guardar Activo
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var LISTA_SPECS = [];
+
+        $(document).ready(function () {
+            $('.select2-busqueda').select2({ theme: 'bootstrap4' });
+            fct_CargarCombos();
+        });
+
+        function fct_CargarCombos() {
+            $.get('/Activo/GetCombosRegistro', function(res) {
+                if(res.status) {
+                    fct_LlenarSelect('#cbx_Grupo', res.grupos);
+                    fct_LlenarSelect('#cbx_Tipo', res.tipos);
+                    fct_LlenarSelect('#cbx_Marca', res.marcas);
+                    fct_LlenarSelect('#cbx_Modelo', res.modelos);
+                }
+            });
+        }
+
+        function fct_LlenarSelect(selector, data) {
+            let h = '<option value="">-- SELECCIONE --</option>';
+            data.forEach(x => h += `<option value="${x.id}">${x.nombre}</option>`);
+            $(selector).html(h);
+        }
+
+        function fct_AgregarSpec() {
+            let clave = $('#txt_SpecClave').val();
+            let valor = $('#txt_SpecValor').val();
+            if(!clave || !valor) { toastr.warning("Complete ambos campos"); return; }
+
+            LISTA_SPECS.push({ Clave: clave, Valor: valor });
+            fct_RenderSpecs();
+            $('#txt_SpecClave').val('').focus();
+            $('#txt_SpecValor').val('');
+        }
+
+        function fct_RenderSpecs() {
+            let h = '';
+            LISTA_SPECS.forEach((s, i) => {
+                h += `<tr><td>${s.Clave}</td><td>${s.Valor}</td><td><button class="btn btn-xs btn-danger" onclick="fct_BorrarSpec(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            $('#tbl_SpecsBody').html(h);
+        }
+
+        function fct_BorrarSpec(i) { LISTA_SPECS.splice(i, 1); fct_RenderSpecs(); }
+
+        function fct_GuardarActivo() {
+            // Construcción manual del objeto para evitar NULLs en backend
+            let modelo = {
+                GrupoId: parseInt($('#cbx_Grupo').val()) || null,
+                TipoId: parseInt($('#cbx_Tipo').val()) || null,
+                MarcaId: parseInt($('#cbx_Marca').val()) || null,
+                ModeloId: parseInt($('#cbx_Modelo').val()) || null,
+                Serie: $('#txt_Serie').val(),
+                Condicion: $('#cbx_Condicion').val(),
+                Specs: LISTA_SPECS // Enviamos el array directamente
+            };
+
+            if(!modelo.Serie) { toastr.warning("La serie es obligatoria"); return; }
+
+            Swal.fire({
+                title: '¿Guardar Activo?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, guardar'
+            }).then((r) => {
+                if(r.isConfirmed) {
+                    $.ajax({
+                        url: '/Activo/GuardarActivo',
+                        type: 'POST',
+                        data: modelo, // jQuery serializa esto correctamente si los nombres coinciden
+                        success: function(res) {
+                            if(res.status) {
+                                Swal.fire('Éxito', res.message, 'success').then(() => window.location.href = '/Activo/Index');
+                            } else {
+                                toastr.error(res.message);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

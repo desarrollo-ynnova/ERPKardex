@@ -2958,6 +2958,7 @@ USE erp_kardex_dev;
 GO
 
 -- Tabla temporal de carga (Refleja tu Excel/TXT exacto)
+IF OBJECT_ID('tempdb..#DataCarga') IS NOT NULL DROP TABLE #DataCarga;
 CREATE TABLE #DataCarga (
     RUC VARCHAR(20),
     EmpresaNombre VARCHAR(255),

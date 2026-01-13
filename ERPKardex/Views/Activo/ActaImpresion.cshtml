@@ -1,0 +1,205 @@
+﻿@{
+    Layout = null;
+    int idAsignacion = ViewBag.IdAsignacion;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Impresión de Acta</title>
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 11pt;
+            padding: 40px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+
+        .titulo-doc {
+            font-size: 16pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            row-gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .signatures {
+            margin-top: 100px;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
+        }
+
+        .sig-block {
+            text-align: center;
+            width: 40%;
+        }
+
+        .line {
+            border-top: 1px solid black;
+            margin-bottom: 5px;
+        }
+
+        @@media print {
+            body {
+                padding: 0;
+                margin: 2cm;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">🖨️ IMPRIMIR</button>
+    </div>
+
+    <div class="header">
+        <img src="/img/logo_ynnova.png" alt="LOGO" class="logo" onerror="this.style.display='none'">
+        <div class="titulo-doc" id="txt_Titulo">ACTA DE ENTREGA</div>
+    </div>
+
+    <div class="info-grid">
+        <div class="label" id="lbl_Emisor">ENTREGADO POR:</div>
+        <div id="txt_EmisorNombre"></div>
+
+        <div class="label">CARGO:</div>
+        <div id="txt_EmisorCargo"></div>
+
+        <div class="label">EMPRESA:</div>
+        <div id="txt_EmisorEmpresa"></div>
+
+        <div class="label">RECEPCIÓN:</div>
+        <div id="txt_ReceptorNombre"></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>EQUIPO</th>
+                <th>CARACTERÍSTICAS</th>
+                <th>CANTIDAD</th>
+                <th>FECHA DE RECEPCIÓN</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="col_Equipo"></td>
+                <td id="col_Caracteristicas" style="text-align: left;"></td>
+                <td>1</td>
+                <td id="col_Fecha"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="font-size: 10pt; font-style: italic;">
+        * El receptor asume la responsabilidad del cuidado y custodia del bien asignado.
+    </p>
+
+    <div class="signatures">
+        <div class="sig-block">
+            <div class="line"></div>
+            <div style="font-weight: bold;">ENTREGA:</div>
+            <div id="sig_EntregaNombre" style="font-size: 9pt;"></div>
+        </div>
+        <div class="sig-block">
+            <div class="line"></div>
+            <div style="font-weight: bold;">RECIBE:</div>
+            <div id="sig_RecibeNombre" style="font-size: 9pt;"></div>
+            <div id="sig_RecibeDni" style="font-size: 9pt;"></div>
+        </div>
+    </div>
+
+    <script>
+        const idAsignacion = @idAsignacion;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch('/Activo/GetDatosActa?idAsignacion=' + idAsignacion)
+                .then(r => r.json())
+                .then(res => {
+                    if(res.status) {
+                        const d = res.data;
+
+                        // Títulos y Etiquetas dinámicas según si es Devolución o Entrega
+                        document.getElementById('txt_Titulo').innerText = d.titulo;
+
+                        // Si el título es DEVOLUCIÓN, cambiamos la etiqueta
+                        if(d.titulo.includes("DEVOLUCIÓN")) {
+                            document.getElementById('lbl_Emisor').innerText = "DEVUELTO POR:";
+                        }
+
+                        // Llenar Datos
+                        document.getElementById('txt_EmisorNombre').innerText = d.emisorNombre;
+                        document.getElementById('txt_EmisorCargo').innerText = d.emisorCargo || "";
+                        document.getElementById('txt_EmisorEmpresa').innerText = d.emisorEmpresa || "";
+                        document.getElementById('txt_ReceptorNombre').innerText = d.receptorNombre;
+
+                        // Llenar Tabla
+                        // Equipo: Tipo + Marca
+                        document.getElementById('col_Equipo').innerText = (d.equipoTipo || "") + "\n" + (d.equipoMarca || "").toUpperCase();
+
+                        // Características: El string largo concatenado que hicimos en el controller
+                        // Reemplazamos las comas por saltos de línea para que se vea como en el Word
+                        document.getElementById('col_Caracteristicas').innerHTML = d.caracteristicas.replace(/, /g, '<br>');
+
+                        document.getElementById('col_Fecha').innerText = d.fecha;
+
+                        // Firmas
+                        document.getElementById('sig_EntregaNombre').innerText = d.firmaEntrega;
+                        document.getElementById('sig_RecibeNombre').innerText = d.firmaRecibe;
+                        document.getElementById('sig_RecibeDni').innerText = d.receptorDni ? "DNI: " + d.receptorDni : "";
+
+                        // Auto-imprimir tras 1 segundo
+                        setTimeout(() => window.print(), 1000);
+                    } else {
+                        alert("Error cargando datos: " + res.message);
+                    }
+                });
+        });
+    </script>
+</body>
+</html>
