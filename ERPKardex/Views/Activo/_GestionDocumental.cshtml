@@ -1,0 +1,147 @@
+﻿<div class="modal-header bg-warning text-dark">
+    <h5 class="modal-title"><i class="fas fa-folder-open"></i> Legajo Documentario</h5>
+    <button type="button" class="close" data-dismiss="modal">&times;</button>
+</div>
+<div class="modal-body">
+    <input type="hidden" id="hdn_ActivoId_Docs" value="@ViewBag.ActivoId">
+
+    <div class="card border-left-warning shadow-sm h-100 py-2 mb-3">
+        <div class="card-body py-2">
+            <h6 class="text-warning font-weight-bold mb-3">Nuevo Documento</h6>
+            <form id="frmSubirDoc" enctype="multipart/form-data" autocomplete="off">
+                <div class="form-row">
+                    <div class="col-md-6 mb-2">
+                        <label class="small font-weight-bold">Tipo Documento</label>
+                        <select name="tipoDoc" class="form-control form-control-sm">
+                            <option value="SOAT">SOAT</option>
+                            <option value="REV_TECNICA">REVISIÓN TÉCNICA</option>
+                            <option value="SEGURO">PÓLIZA SEGURO</option>
+                            <option value="TARJETA_PROPIEDAD">TARJETA PROPIEDAD</option>
+                            <option value="PERMISO_LUNAS">PERMISO LUNAS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="small font-weight-bold">N° Documento / Póliza <span class="text-danger">*</span></label>
+                        <input type="text" name="nroDoc" class="form-control form-control-sm text-uppercase" placeholder="Ej: 80005412" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-6 mb-2">
+                        <label class="small font-weight-bold">Fecha Vencimiento <span class="text-danger">*</span></label>
+                        <input type="date" name="fechaVenc" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="small font-weight-bold">Archivo (PDF/IMG)</label>
+                        <input type="file" name="archivo" class="form-control-file small" required accept=".pdf,.jpg,.png,.jpeg">
+                    </div>
+                </div>
+                <div class="text-right mt-2">
+                    <button type="button" class="btn btn-warning btn-sm shadow-sm font-weight-bold" onclick="fct_SubirDoc()">
+                        <i class="fas fa-cloud-upload-alt"></i> Subir Documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <hr>
+
+    <h6 class="font-weight-bold text-secondary mb-2">Documentos Registrados</h6>
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm table-hover" width="100%">
+            <thead class="thead-light">
+                <tr>
+                    <th>Tipo</th>
+                    <th>N° Doc.</th>
+                    <th class="text-center">Vence</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="tbl_DocsModal">
+                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        fct_CargarListaDocumentos();
+    });
+
+    function fct_SubirDoc() {
+        // Validaciones simples antes de enviar
+        let form = document.getElementById("frmSubirDoc");
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        var formData = new FormData(form);
+        formData.append("activoId", $('#hdn_ActivoId_Docs').val());
+
+        // Deshabilitar botón
+        let btn = $(event.target);
+        let htmlOriginal = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Subiendo...');
+
+        $.ajax({
+            url: '/Activo/GuardarDocumento',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if(res.status) {
+                    toastr.success('Documento registrado correctamente');
+                    form.reset(); // Limpiar formulario
+                    fct_CargarListaDocumentos(); // Recargar la tabla
+                } else {
+                    toastr.error(res.message);
+                }
+            },
+            error: function() {
+                toastr.error("Error de conexión");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(htmlOriginal);
+            }
+        });
+    }
+
+    function fct_CargarListaDocumentos() {
+        let id = $('#hdn_ActivoId_Docs').val();
+
+        // Reutilizamos la API que creamos para el Historial, sirve igual aquí
+        $.get('/Activo/GetDocumentosActivo?activoId=' + id, function(res) {
+            if(res.status) {
+                let html = '';
+                if(res.data.length === 0) {
+                    html = '<tr><td colspan="5" class="text-center text-muted small">No hay documentos registrados.</td></tr>';
+                } else {
+                    res.data.forEach(d => {
+                        let badge = d.estadoVenc === 'VENCIDO'
+                            ? '<span class="badge badge-danger">VENCIDO</span>'
+                            : '<span class="badge badge-success">VIGENTE</span>';
+
+                        let btnVer = d.rutaArchivo
+                            ? `<a href="/${d.rutaArchivo}" target="_blank" class="btn btn-xs btn-info" title="Ver PDF"><i class="fas fa-eye"></i></a>`
+                            : '<span class="text-muted">-</span>';
+
+                        html += `
+                            <tr>
+                                <td><small class="font-weight-bold">${d.tipo}</small></td>
+                                <td><small>${d.nro}</small></td>
+                                <td class="text-center"><small>${d.vence}</small></td>
+                                <td class="text-center">${badge}</td>
+                                <td class="text-center">${btnVer}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                $('#tbl_DocsModal').html(html);
+            }
+        });
+    }
+</script>

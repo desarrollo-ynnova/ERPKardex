@@ -4,37 +4,37 @@ using ERPKardex.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace ERPKardex.Controllers
 {
-    public class IngresoSalidaAlmController : Controller
+    // 1. Heredamos de BaseController
+    public class IngresoSalidaAlmController : BaseController
     {
         private readonly ApplicationDbContext _context;
+
         public IngresoSalidaAlmController(ApplicationDbContext context)
         {
             _context = context;
         }
+
         #region VISTAS
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
         public IActionResult ReporteKardex() => View();
         public IActionResult ObtenerVistaRegistroEntidad()
         {
-            // Retorna una vista parcial (_RegistroEntidad.cshtml) solo con los campos RUC y Razon Social
             return PartialView("_RegistroEntidad");
         }
-        #endregion 
+        #endregion
 
         #region APIs Maestro-Detalle
+
         [HttpGet]
         public JsonResult GetMovimientosData()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
+                // Usamos la propiedad heredada
                 var movimientos = (from isa in _context.IngresoSalidaAlms
                                    join mot in _context.Motivos on isa.MotivoId equals mot.Id
                                    join est in _context.Estados on isa.EstadoId equals est.Id
@@ -46,8 +46,8 @@ namespace ERPKardex.Controllers
                                    from tc in joinDoc.DefaultIfEmpty()
                                    join mon in _context.Monedas on isa.MonedaId equals mon.Id into joinMon
                                    from mo in joinMon.DefaultIfEmpty()
-                                   where isa.EmpresaId == empresaId
-                                   // where emp.Id == 1
+                                   where isa.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
+                                   orderby isa.Fecha descending, isa.Numero descending // Orden sugerido
                                    select new IngresoSalidaAlmViewModel
                                    {
                                        Id = isa.Id,
@@ -81,14 +81,12 @@ namespace ERPKardex.Controllers
                 return Json(new ApiResponse { data = null, message = ex.Message, status = false });
             }
         }
-        // GET: Obtener detalles para el modal (Ojito)
+
         [HttpGet]
         public JsonResult GetDetalleMovimiento(int id)
         {
             try
             {
-                // Consultamos directamente la tabla de detalles
-                // Aprovechamos que ya guardaste los snapshots (descripción, unidad) al momento del registro
                 var detalles = _context.DIngresoSalidaAlms
                     .Where(d => d.IngresoSalidaAlmId == id)
                     .Select(d => new
@@ -98,7 +96,6 @@ namespace ERPKardex.Controllers
                         Producto = d.DescripcionProducto,
                         Unidad = d.CodUnidadMedida,
                         d.Cantidad,
-                        // Si quieres mostrar costos, inclúyelos; si es solo logístico, puedes quitarlos
                         d.Precio,
                         d.Total
                     })
@@ -112,6 +109,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = "Error al obtener detalles: " + ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult GuardarMovimiento(IngresoSalidaAlm cabecera, string detallesJson)
         {
@@ -119,43 +117,27 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-                    int usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-
-                    // =================================================================================
-                    // 1. DETERMINAR TIPO DE DOCUMENTO Y OBTENER SU ID
-                    // =================================================================================
-
-                    // Definimos el código según el tipo de movimiento (1: IALM, 0: SALM)
+                    // 1. DETERMINAR TIPO DE DOCUMENTO
                     string codigoDoc = (cabecera.TipoMovimiento == true) ? "IALM" : "SALM";
                     var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "INGRESOSALIDAALM");
 
                     if (estadoAprobado == null) throw new Exception("Estado Aprobado no configurado.");
 
-                    // Buscamos el ID del tipo de documento en la maestra (Global)
                     var tipoDocInterno = _context.TiposDocumentoInterno
                         .FirstOrDefault(t => t.Codigo == codigoDoc && t.Estado == true);
 
-                    if (tipoDocInterno == null)
-                        throw new Exception($"No se encontró el tipo de documento interno '{codigoDoc}'.");
+                    if (tipoDocInterno == null) throw new Exception($"No se encontró el tipo de documento interno '{codigoDoc}'.");
 
-                    // =================================================================================
-                    // 2. CALCULAR CORRELATIVO (Manual, por Empresa y Tipo)
-                    // =================================================================================
-
-                    // Buscamos el último movimiento de ESTA EMPRESA y de ESTE TIPO (IALM o SALM)
+                    // 2. CALCULAR CORRELATIVO
                     var ultimoRegistro = _context.IngresoSalidaAlms
-                        .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDocInterno.Id)
+                        .Where(x => x.EmpresaId == EmpresaUsuarioId && x.TipoDocumentoInternoId == tipoDocInterno.Id) // <--- CAMBIO AQUÍ
                         .OrderByDescending(x => x.Numero)
                         .Select(x => x.Numero)
                         .FirstOrDefault();
 
                     int nuevoCorrelativo = 1;
-
                     if (!string.IsNullOrEmpty(ultimoRegistro))
                     {
-                        // El formato es "IALM-0000000005". Separamos por guion y tomamos la parte derecha.
                         var partes = ultimoRegistro.Split('-');
                         if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
                         {
@@ -163,42 +145,34 @@ namespace ERPKardex.Controllers
                         }
                     }
 
-                    // Formateamos el nuevo número: IALM-0000000001
                     string numeroGenerado = $"{codigoDoc}-{nuevoCorrelativo.ToString("D10")}";
 
-                    // Asignamos a la cabecera
+                    // Asignamos datos de sesión y calculados
                     cabecera.TipoDocumentoInternoId = tipoDocInterno.Id;
                     cabecera.Numero = numeroGenerado;
                     cabecera.FechaRegistro = DateTime.Now;
-                    cabecera.EstadoId = estadoAprobado?.Id ?? 1;
-                    cabecera.UsuarioId = usuarioId;
-                    cabecera.EmpresaId = empresaId;
+                    cabecera.EstadoId = estadoAprobado.Id;
+                    cabecera.UsuarioId = UsuarioActualId; // <--- CAMBIO AQUÍ
+                    cabecera.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
 
-                    // =================================================================================
                     // 3. GUARDAR CABECERA
-                    // =================================================================================
-
                     _context.IngresoSalidaAlms.Add(cabecera);
                     _context.SaveChanges();
 
-                    // =================================================================================
-                    // 4. PROCESAR DETALLES Y STOCK (Igual que antes)
-                    // =================================================================================
-
+                    // 4. PROCESAR DETALLES Y STOCK
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
                         var listaDetalles = JsonConvert.DeserializeObject<List<DIngresoSalidaAlm>>(detallesJson);
 
                         foreach (var detalle in listaDetalles)
                         {
-                            // Lógica de Stock (se mantiene intacta)
                             var registroStock = _context.StockAlmacenes
-                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId && s.EmpresaId == empresaId);
+                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId && s.EmpresaId == EmpresaUsuarioId); // <--- CAMBIO AQUÍ
 
                             if (registroStock == null)
                             {
                                 if (cabecera.TipoMovimiento == false)
-                                    throw new Exception($"No existe registro de stock para el producto ID {detalle.ProductoId} en este almacén.");
+                                    throw new Exception($"No existe registro de stock para el producto ID {detalle.ProductoId}.");
 
                                 registroStock = new StockAlmacen
                                 {
@@ -206,11 +180,12 @@ namespace ERPKardex.Controllers
                                     ProductoId = detalle.ProductoId ?? 0,
                                     StockActual = 0,
                                     UltimaActualizacion = DateTime.Now,
-                                    EmpresaId = empresaId,
+                                    EmpresaId = EmpresaUsuarioId, // <--- CAMBIO AQUÍ
                                 };
                                 _context.StockAlmacenes.Add(registroStock);
                             }
 
+                            // ACTUALIZAR STOCK
                             if (cabecera.TipoMovimiento == true)
                             {
                                 registroStock.StockActual += detalle.Cantidad ?? 0;
@@ -226,11 +201,11 @@ namespace ERPKardex.Controllers
                             }
                             registroStock.UltimaActualizacion = DateTime.Now;
 
-                            // Guardado del Detalle
+                            // GUARDAR DETALLE
                             detalle.Id = 0;
                             detalle.IngresoSalidaAlmId = cabecera.Id;
                             detalle.FechaRegistro = DateTime.Now;
-                            detalle.EmpresaId = empresaId;
+                            detalle.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
 
                             var prodData = _context.Productos
                                 .Where(p => p.Id == detalle.ProductoId)
@@ -258,6 +233,80 @@ namespace ERPKardex.Controllers
                 }
             }
         }
+
+        #endregion
+
+        #region API: ANULACIÓN DE MOVIMIENTO (NUEVO)
+
+        [HttpPost]
+        public JsonResult AnularMovimiento(int id)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    // 1. Obtener el movimiento y validar permisos
+                    var cabecera = _context.IngresoSalidaAlms
+                                           .FirstOrDefault(x => x.Id == id && x.EmpresaId == EmpresaUsuarioId);
+
+                    if (cabecera == null) return Json(new { status = false, message = "Movimiento no encontrado o no autorizado." });
+
+                    // 2. Validar Estado
+                    var estadoAnulado = _context.Estados.FirstOrDefault(e => e.Nombre == "Anulado" && e.Tabla == "INGRESOSALIDAALM");
+                    if (estadoAnulado == null) return Json(new { status = false, message = "Estado 'Anulado' no configurado en BD." });
+
+                    if (cabecera.EstadoId == estadoAnulado.Id) return Json(new { status = false, message = "El movimiento ya se encuentra anulado." });
+
+                    // 3. Obtener Detalles para revertir stock
+                    var detalles = _context.DIngresoSalidaAlms.Where(d => d.IngresoSalidaAlmId == id).ToList();
+
+                    foreach (var detalle in detalles)
+                    {
+                        var stock = _context.StockAlmacenes
+                                            .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId && s.EmpresaId == EmpresaUsuarioId);
+
+                        if (stock == null) throw new Exception($"Error crítico: No se encontró registro de stock para el producto {detalle.CodProducto}.");
+
+                        decimal cantidad = detalle.Cantidad ?? 0;
+
+                        // LÓGICA INVERSA AL REGISTRO
+                        if (cabecera.TipoMovimiento == true)
+                        {
+                            // Si FUE ENTRADA (True), al anular debemos RESTAR
+                            if (stock.StockActual - cantidad < 0)
+                            {
+                                throw new Exception($"No se puede anular el ingreso {cabecera.Numero} porque el producto {detalle.CodProducto} ya fue consumido. Stock actual insuficiente para reversión.");
+                            }
+                            stock.StockActual -= cantidad;
+                        }
+                        else
+                        {
+                            // Si FUE SALIDA (False), al anular debemos SUMAR (Devolver al almacén)
+                            stock.StockActual += cantidad;
+                        }
+
+                        stock.UltimaActualizacion = DateTime.Now;
+                    }
+
+                    // 4. Actualizar Estado Cabecera
+                    cabecera.EstadoId = estadoAnulado.Id;
+                    // Opcional: Podrías guardar quién anuló y cuándo en campos nuevos si los tuvieras
+                    cabecera.UsuarioAnulacionId = UsuarioActualId;
+                    cabecera.FechaAnulacion = DateTime.Now;
+
+                    _context.SaveChanges();
+                    transaction.Commit();
+
+                    return Json(new { status = true, message = $"Movimiento {cabecera.Numero} anulado correctamente y stocks revertidos." });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = "Error al anular: " + ex.Message });
+                }
+            }
+        }
+
         #endregion
 
         #region APIs Combos Cabecera
@@ -282,22 +331,27 @@ namespace ERPKardex.Controllers
         public JsonResult GetTipoDocumentoData() => Json(new { data = _context.TipoDocumentos.Where(t => t.Estado == true).ToList(), status = true });
         #endregion
 
-        #region APIs Filtrado de Productos (Cascada)
+        #region APIs Filtrado de Productos
         [HttpGet]
         public JsonResult GetProductos()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                return Json(new { data = _context.Productos.Where(p => p.EmpresaId == empresaId).Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.DescripcionComercial, p.CodUnidadMedida }).ToList(), status = true });
+                return Json(new
+                {
+                    data = _context.Productos
+                        .Where(p => p.EmpresaId == EmpresaUsuarioId) // <--- CAMBIO AQUÍ
+                        .Select(p => new { p.Id, p.Codigo, p.DescripcionProducto, p.DescripcionComercial, p.CodUnidadMedida })
+                        .ToList(),
+                    status = true
+                });
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
+                return Json(new { data = (object)null, status = false, message = ex.Message });
             }
         }
+
         [HttpGet]
         public JsonResult GetStockProductoAlmacen(int? almacenId, int? productoId)
         {
@@ -305,67 +359,44 @@ namespace ERPKardex.Controllers
             {
                 if (almacenId != null && productoId != null)
                 {
-                    var stockProducto = _context.StockAlmacenes.Where(sa => sa.AlmacenId == almacenId && sa.ProductoId == productoId).Select(sa => sa.StockActual).FirstOrDefault();
-                    return Json(new { data = stockProducto, status = true, message = "Stock de almacén recuperado exitosamente." });
-                }
+                    // Validamos también por empresa para mayor seguridad
+                    var stockProducto = _context.StockAlmacenes
+                        .Where(sa => sa.AlmacenId == almacenId && sa.ProductoId == productoId && sa.EmpresaId == EmpresaUsuarioId) // <--- CAMBIO AQUÍ
+                        .Select(sa => sa.StockActual)
+                        .FirstOrDefault();
 
-                return Json(new ApiResponse { data = null, status = false, message = "Falta escoger almacén y/o producto." });
+                    return Json(new { data = stockProducto, status = true, message = "Stock recuperado." });
+                }
+                return Json(new ApiResponse { data = null, status = false, message = "Datos incompletos." });
             }
             catch (Exception ex)
             {
                 return Json(new ApiResponse { data = null, status = false, message = ex.Message });
             }
-
         }
-
         #endregion
+
+        #region APIs Auxiliares (Centros Costo, Actividades, Entidades, Kardex)
         [HttpGet]
         public JsonResult GetCentrosCosto()
         {
-            try
-            {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var centrosCostosData = _context.CentroCostos.Where(c => c.EsImputable == true && c.Estado == true && c.EmpresaId == empresaId).ToList();
-                return Json(new { data = centrosCostosData, status = true, message = "Centros de costo retornados exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
-            }
+            var data = _context.CentroCostos.Where(c => c.EsImputable == true && c.Estado == true && c.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
+            return Json(new { data = data, status = true });
         }
+
         [HttpGet]
         public JsonResult GetActividades()
         {
-            try
-            {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var actividadesData = _context.Actividades.Where(a => a.Estado == true && a.EmpresaId == empresaId).ToList();
-                return Json(new { data = actividadesData, status = true, message = "Actividades retornadas exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
-            }
+            var data = _context.Actividades.Where(a => a.Estado == true && a.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
+            return Json(new { data = data, status = true });
         }
+
         [HttpGet]
         public JsonResult GetEntidades()
         {
-            try
-            {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var entidadesData = _context.Entidades.Where(a => a.Estado == true).ToList();
-                return Json(new { data = entidadesData, status = true, message = "Entidades retornadas exitosamente" });
-            }
-            catch (Exception ex)
-            {
-                return Json(new ApiResponse { data = null, status = false, message = ex.Message });
-            }
+            // Entidades generalmente son globales o filtradas por empresa según tu lógica. Asumiré filtradas.
+            var data = _context.Entidades.Where(a => a.Estado == true && a.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
+            return Json(new { data = data, status = true });
         }
         [HttpGet]
         public JsonResult GenerarKardexValorizado(DateTime fechaInicio, DateTime fechaFin, int almacenId, int productoId, string metodo)
@@ -532,7 +563,7 @@ namespace ERPKardex.Controllers
 
                         reporte.Add(new
                         {
-                            fecha = mov.Fecha.Value.ToString("dd/MM/yyyy"),
+                            fecha = mov.Fecha.GetValueOrDefault().ToString("dd/MM/yyyy"),
                             // AQUÍ USAMOS EL CÓDIGO PARA SUNAT (TABLA 10)
                             tipoDoc = mov.CodigoTipoDoc + " - " + mov.TipoDoc,
                             doc = $"{(mov.SerieDocumento ?? "---")}-{(mov.NumeroDocumento ?? "---")}",
@@ -581,22 +612,15 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. Recuperamos el ID de la empresa de la sesión (Opción 3 que elegiste)
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                if (string.IsNullOrEmpty(empresaIdClaim))
-                    return Json(new { status = false, message = "Sesión expirada" });
-
-                int empresaId = int.Parse(empresaIdClaim);
-
                 // 2. Validar si ya existe en esta empresa
                 var existe = await _context.Entidades
-                    .AnyAsync(x => x.Ruc == modelo.Ruc && x.EmpresaId == empresaId);
+                    .AnyAsync(x => x.Ruc == modelo.Ruc && x.EmpresaId == EmpresaUsuarioId);
 
                 if (existe)
                     return Json(new { status = false, message = "El RUC ya está registrado en su empresa." });
 
                 // 3. Asignar valores por defecto
-                modelo.EmpresaId = empresaId;
+                modelo.EmpresaId = EmpresaUsuarioId;
                 modelo.Estado = true;
 
                 _context.Entidades.Add(modelo);
@@ -615,5 +639,6 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = "Error: " + ex.Message });
             }
         }
+        #endregion
     }
 }

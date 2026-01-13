@@ -13,8 +13,8 @@ namespace ERPKardex.Models
         [Column("nombre")]
         public string? Nombre { get; set; }
 
-        [Column("grupo_id")]
-        public int? GrupoId { get; set; }
+        [Column("activo_grupo_id")]
+        public int? ActivoGrupoId { get; set; }
 
         [Column("estado")]
         public bool? Estado { get; set; }

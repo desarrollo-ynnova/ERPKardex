@@ -1,6 +1,9 @@
 ﻿USE erp_kardex_dev;
 GO
 
+SET DATEFORMAT ymd;
+GO
+
 PRINT 'Iniciando Migracion Masiva Optimizada (Multiempresa)...'
 
 DECLARE @EmpresaID INT = 1; -- CONTROL SCIENCE
@@ -2945,7 +2948,7 @@ INSERT INTO activo_grupo (id, nombre) VALUES
 SET IDENTITY_INSERT activo_grupo OFF;
 
 -- Tipos (Mapeo manual para orden, el resto se puede insertar dinámico)
-INSERT INTO activo_tipo (nombre, grupo_id) VALUES 
+INSERT INTO activo_tipo (nombre, activo_grupo_id) VALUES 
 ('LAPTOP', 1), ('PC ESCRITORIO', 1), ('TABLET', 1), ('IMPRESORA', 1), ('CÁMARA', 1), ('LENTE', 1), ('LUCES', 1), ('TRÍPODE', 1),
 ('CARGADOR DE LAPTOP', 2), ('MOUSE', 2), ('TECLADO', 2), ('PANTALLA', 2), ('ESTABILIZADOR', 2), ('REFRIGERACIÓN DE LAPTOP', 2), ('PARLANTES', 2), ('USB', 2), ('SUPRESOR DE PICOS', 2), ('EXTENSIÓN', 2), ('CABLE DE PODER', 2), ('CABLE VGA', 2), ('CABLE DE IMPRESORA', 2), ('CABLE HDMI', 2), ('MICRÓFONO', 2), ('ADAPTADOR HDMI', 2), ('ADAPTADOR DE ENCHUFE', 2), ('BOCINAS', 2), ('PONCHADOR', 2),
 ('CELULARES', 3),
@@ -3322,12 +3325,14 @@ WITH Exploder AS (
 )
 SELECT *, NEWID() AS GuidActivo INTO #DataIndividual FROM Exploder;
 
+GO
 -- 3. INSERTAR LOS 326 ACTIVOS (Capturando el GuidActivo para el amarre)
 -- Añadimos temporalmente una columna para no perder el rastro del Guid
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('activo') AND name = 'temp_guid')
-    ALTER TABLE activo ADD temp_guid UNIQUEIDENTIFIER;
+ALTER TABLE activo ADD temp_guid UNIQUEIDENTIFIER;
 
-INSERT INTO activo (codigo_interno, grupo_id, tipo_id, marca_id, modelo_id, serie, condicion, situacion, empresa_id, temp_guid)
+GO
+
+INSERT INTO activo (codigo_interno, activo_grupo_id, activo_tipo_id, marca_id, modelo_id, serie, condicion, situacion, empresa_id, temp_guid)
 SELECT 
     CASE 
         WHEN de.Serie IN ('-', 'NO ESPECIFICADO') OR de.Serie IS NULL 
@@ -3375,7 +3380,7 @@ JOIN empresa e ON e.razon_social = m.EmpresaNombre
 JOIN personal p ON p.dni = m.DNI;
 
 -- 5. DETALLES (AMARRE 1-A-1 USANDO EL GUID TEMPORAL)
-INSERT INTO dmovimiento_activo (movimiento_id, activo_id, condicion_item, observacion_item)
+INSERT INTO dmovimiento_activo (movimiento_activo_id, activo_id, condicion_item, observacion_item)
 SELECT 
     ma.id, 
     a.id,
@@ -3401,4 +3406,439 @@ GO
 
 UPDATE activo set situacion = 'EN STOCK' WHERE id in (select id from activo where id not in (select activo_id from dmovimiento_activo));
 
+GO
+
+-- ====================================================================================
+-- SCRIPT MAESTRO V4 (AJUSTADO A MODELO DESNORMALIZADO)
+-- ====================================================================================
+SET NOCOUNT ON;
+
+-- 1. PREPARACIÓN: UNIDAD DE MEDIDA GLOBAL (ZZ)
+-- Al no tener empresa_id, se verifica una sola vez al inicio.
+IF NOT EXISTS (SELECT 1 FROM unidad_medida WHERE codigo = 'ZZ')
+BEGIN
+    PRINT 'Creando Unidad de Medida Global: ZZ';
+    INSERT INTO unidad_medida (codigo, descripcion) VALUES ('ZZ', 'SERVICIO');
+END
+
+-- 2. DEFINICIÓN DE SERVICIOS A CARGAR
+IF OBJECT_ID('tempdb..#ListaServicios') IS NOT NULL DROP TABLE #ListaServicios;
+CREATE TABLE #ListaServicios (
+    CodigoSub CHAR(3),
+    NombreSub VARCHAR(100),
+    NombreServicio VARCHAR(150)
+);
+
+INSERT INTO #ListaServicios (CodigoSub, NombreSub, NombreServicio) VALUES
+('001', 'SERVICIOS DE ALQUILER', 'ALQUILER DE RETROEXCAVADORA'),
+('002', 'SERVICIOS DE ASESORÍA TÉCNICA Y REGULATORIA', 'ASESORIA LEGAL'),
+('003', 'SERVICIOS DE LABORATORIO EXTERNO', 'ANALISIS DE SUELOS'),
+('004', 'SERVICIOS DE MANTENIMIENTO', 'MANTENIMIENTO VEHICULAR'),
+('005', 'SERVICIOS DE REPARACION', 'REPARACION VEHICULAR'),
+('006', 'SERVICIOS DE SEGURIDAD Y VIGILANCIA', 'VIGILANCIA Y SEGURIDAD PATRIMONIAL'),
+('007', 'SERVICIOS DE TRANSPORTE Y FLETES', 'TRANSPORTE DE CARGA GENERAL'),
+('008', 'SERVICIOS INFORMÁTICOS', 'SERVICIO DE HOSTING Y SERVIDORES'),
+('009', 'OTROS SERVICIOS', 'LIMPIEZA DE OFICINAS');
+
+-- VARIABLES
+DECLARE @EmpresaId INT;
+DECLARE @CuentaId INT;
+DECLARE @GrupoId INT;
+DECLARE @SubgrupoId INT;
+DECLARE @UnidadMedida VARCHAR(10) = 'ZZ'; 
+
+-- CONSTANTES DE JERARQUÍA 63
+DECLARE @CodigoCuenta VARCHAR(20) = '63';
+DECLARE @NombreCuenta VARCHAR(100) = 'GASTOS DE SERVICIOS PRESTADOS POR TERCEROS';
+DECLARE @CodigoGrupo VARCHAR(20) = '6307';
+DECLARE @NombreGrupo VARCHAR(100) = 'SERVICIOS';
+
+-- VARIABLES ITERATIVAS
+DECLARE @CodSubSuffix CHAR(3);
+DECLARE @NomSub VARCHAR(100);
+DECLARE @NomServ VARCHAR(150);
+DECLARE @CodSubCompleto VARCHAR(20);
+DECLARE @CodProducto VARCHAR(20);
+
+-- RECORRER EMPRESAS
+DECLARE curEmpresas CURSOR FOR SELECT id FROM empresa; -- Asumo todas, filtra por estado si tienes la columna en empresa
+
+OPEN curEmpresas;
+FETCH NEXT FROM curEmpresas INTO @EmpresaId;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT '------------------------------------------------';
+    PRINT 'Procesando Empresa ID: ' + CAST(@EmpresaId AS VARCHAR);
+
+    SET @CuentaId = NULL;
+    SET @GrupoId = NULL;
+
+    -- ==============================================================================
+    -- PASO 1: CUENTA (Modelo: codigo, descripcion, empresa_id)
+    -- ==============================================================================
+    SELECT @CuentaId = id FROM cuenta WHERE codigo = @CodigoCuenta AND empresa_id = @EmpresaId;
+
+    IF @CuentaId IS NULL
+    BEGIN
+        INSERT INTO cuenta (codigo, descripcion, empresa_id)
+        VALUES (@CodigoCuenta, @NombreCuenta, @EmpresaId);
+        SET @CuentaId = SCOPE_IDENTITY();
+        PRINT '  > Cuenta 63 creada.';
+    END
+
+    -- ==============================================================================
+    -- PASO 2: GRUPO (Modelo: codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id)
+    -- ==============================================================================
+    SELECT @GrupoId = id FROM grupo WHERE codigo = @CodigoGrupo AND empresa_id = @EmpresaId;
+
+    IF @GrupoId IS NULL
+    BEGIN
+        INSERT INTO grupo (codigo, descripcion, cuenta_id, empresa_id, tipo_existencia_id)
+        VALUES (@CodigoGrupo, @NombreGrupo, @CuentaId, @EmpresaId, NULL); -- NULL en tipo_existencia si no hay dato
+        SET @GrupoId = SCOPE_IDENTITY();
+        PRINT '  > Grupo 6307 creado.';
+    END
+
+    -- ==============================================================================
+    -- PASO 3: SUBGRUPOS Y PRODUCTOS
+    -- ==============================================================================
+    DECLARE curDatos CURSOR FOR SELECT CodigoSub, NombreSub, NombreServicio FROM #ListaServicios;
+    OPEN curDatos;
+    FETCH NEXT FROM curDatos INTO @CodSubSuffix, @NomSub, @NomServ;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @SubgrupoId = NULL;
+        SET @CodSubCompleto = @CodigoGrupo + @CodSubSuffix; -- Ej: 6307001
+
+        -- A. SUBGRUPO (Modelo: codigo, descripcion, grupo_id, cod_grupo, descripcion_grupo, observacion, empresa_id)
+        SELECT @SubgrupoId = id FROM subgrupo WHERE codigo = @CodSubCompleto AND empresa_id = @EmpresaId;
+
+        IF @SubgrupoId IS NULL
+        BEGIN
+            INSERT INTO subgrupo (
+                codigo, 
+                descripcion, 
+                grupo_id, 
+                cod_grupo,          -- Redundante requerido
+                descripcion_grupo,  -- Redundante requerido
+                observacion, 
+                empresa_id
+            )
+            VALUES (
+                @CodSubCompleto, 
+                @NomSub, 
+                @GrupoId, 
+                @CodigoGrupo, 
+                @NombreGrupo, 
+                'Carga Masiva Servicios', 
+                @EmpresaId
+            );
+            SET @SubgrupoId = SCOPE_IDENTITY();
+        END
+
+        -- B. PRODUCTO (Asumiendo modelo previo con campos redundantes también)
+        SET @CodProducto = @CodSubCompleto + '00001';
+
+        IF NOT EXISTS (SELECT 1 FROM producto WHERE codigo = @CodProducto AND empresa_id = @EmpresaId)
+        BEGIN
+            INSERT INTO producto (
+                codigo, 
+                descripcion_producto, 
+                descripcion_comercial,
+                cod_grupo, 
+                descripcion_grupo,
+                cod_subgrupo, 
+                descripcion_subgrupo,
+                grupo_id, 
+                subgrupo_id, 
+                cod_unidad_medida, 
+                empresa_id, 
+                estado, 
+                es_activo_fijo,
+                fecha_registro
+            )
+            VALUES (
+                @CodProducto,
+                @NomServ,
+                @NomServ,
+                @CodigoGrupo,
+                @NombreGrupo,
+                @CodSubCompleto,
+                @NomSub,
+                @GrupoId,
+                @SubgrupoId,
+                @UnidadMedida, -- 'ZZ'
+                @EmpresaId,
+                1, -- Estado (Si producto tiene columna estado)
+                0, -- No es Activo Fijo
+                GETDATE()
+            );
+        END
+
+        FETCH NEXT FROM curDatos INTO @CodSubSuffix, @NomSub, @NomServ;
+    END
+    CLOSE curDatos;
+    DEALLOCATE curDatos;
+
+    FETCH NEXT FROM curEmpresas INTO @EmpresaId;
+END
+
+CLOSE curEmpresas;
+DEALLOCATE curEmpresas;
+DROP TABLE #ListaServicios;
+
+PRINT '================================================';
+PRINT 'CARGA FINALIZADA CON EL ESQUEMA CORRECTO';
+GO
+
+SET NOCOUNT ON;
+
+DECLARE @EmpresaId INT;
+
+-- 1. INSERTAR: POOL HUBERT VELA ROSALES (STALNO - 20603727551)
+IF NOT EXISTS (SELECT 1 FROM personal WHERE dni = '43022492')
+BEGIN
+    -- Buscamos la empresa STALNO
+    SELECT @EmpresaId = id FROM empresa WHERE ruc = '20603727551';
+    
+    -- Si no existe la empresa, usamos la 1 por defecto (o ajusta según necesites)
+    IF @EmpresaId IS NULL SET @EmpresaId = 1; 
+
+    INSERT INTO personal (dni, nombres_completos, empresa_id, estado, cargo) -- Asumo columnas estándar
+    VALUES ('43022492', 'POOL HUBERT VELA ROSALES', @EmpresaId, 1, 'CHOFER / ASIGNADO');
+    
+    PRINT ' > Registrado: POOL HUBERT VELA ROSALES';
+END
+ELSE
+BEGIN
+    PRINT ' > Ya existe: POOL HUBERT VELA ROSALES';
+END
+
+-- 2. INSERTAR: ROBERTO JOAQUIN MARTINEZ VERA TUDELA (COMEXDI - 20609093561)
+IF NOT EXISTS (SELECT 1 FROM personal WHERE dni = '07966410')
+BEGIN
+    SELECT @EmpresaId = id FROM empresa WHERE ruc = '20609093561';
+    IF @EmpresaId IS NULL SET @EmpresaId = 1;
+
+    INSERT INTO personal (dni, nombres_completos, empresa_id, estado, cargo)
+    VALUES ('07966410', 'ROBERTO JOAQUIN MARTINEZ VERA TUDELA', @EmpresaId, 1, 'ASIGNADO');
+    
+    PRINT ' > Registrado: ROBERTO JOAQUIN MARTINEZ VERA TUDELA';
+END
+ELSE
+BEGIN
+    PRINT ' > Ya existe: ROBERTO JOAQUIN MARTINEZ VERA TUDELA';
+END
+
+-- 3. INSERTAR: PRESIDENCIA (METQUIM - 20614551853) - DNI FICTICIO
+IF NOT EXISTS (SELECT 1 FROM personal WHERE dni = '00000000')
+BEGIN
+    SELECT @EmpresaId = id FROM empresa WHERE ruc = '20614551853';
+    IF @EmpresaId IS NULL SET @EmpresaId = 1;
+
+    INSERT INTO personal (dni, nombres_completos, empresa_id, estado, cargo)
+    VALUES ('00000000', 'PRESIDENCIA / GERENCIA GENERAL', @EmpresaId, 1, 'GERENCIA');
+    
+    PRINT ' > Registrado: PRESIDENCIA';
+END
+ELSE
+BEGIN
+    PRINT ' > Ya existe: PRESIDENCIA';
+END
+GO
+
+-- =================================================================================================
+-- SCRIPT DE MIGRACIÓN DE FLOTA VEHICULAR (CORREGIDO - SIN LLAVES)
+-- =================================================================================================
+SET NOCOUNT ON;
+SET DATEFORMAT DMY; -- Vital para entender fechas como 15/02/2026
+
+-- 1. ASEGURAR GRUPO Y TIPO
+DECLARE @IdGrupo INT, @IdTipoCamioneta INT, @IdTipoSuv INT;
+
+IF NOT EXISTS (SELECT 1 FROM activo_grupo WHERE nombre = 'VEHÍCULOS')
+    INSERT INTO activo_grupo (nombre) VALUES ('VEHÍCULOS');
+SELECT @IdGrupo = id FROM activo_grupo WHERE nombre = 'VEHÍCULOS';
+
+IF NOT EXISTS (SELECT 1 FROM activo_tipo WHERE nombre = 'CAMIONETA' AND activo_grupo_id = @IdGrupo)
+    INSERT INTO activo_tipo (nombre, activo_grupo_id) VALUES ('CAMIONETA', @IdGrupo);
+SELECT @IdTipoCamioneta = id FROM activo_tipo WHERE nombre = 'CAMIONETA';
+
+IF NOT EXISTS (SELECT 1 FROM activo_tipo WHERE nombre = 'SUV' AND activo_grupo_id = @IdGrupo)
+    INSERT INTO activo_tipo (nombre, activo_grupo_id) VALUES ('SUV', @IdGrupo);
+SELECT @IdTipoSuv = id FROM activo_tipo WHERE nombre = 'SUV';
+
+-- 2. TABLA TEMPORAL CON LA DATA DEL TXT
+IF OBJECT_ID('tempdb..#CargaFlota') IS NOT NULL DROP TABLE #CargaFlota;
+CREATE TABLE #CargaFlota (
+    TipoModalidad VARCHAR(50), RucEmpresa VARCHAR(20), DniChofer VARCHAR(20), NombreChofer VARCHAR(200),
+    Estado VARCHAR(50), Placa VARCHAR(20), Marca VARCHAR(50), Modelo VARCHAR(100), Color VARCHAR(50),
+    Anio INT, Carroceria VARCHAR(50), Kilometraje DECIMAL(10,2), Sede VARCHAR(50),
+    FecRevTecnica VARCHAR(20), FecSoat VARCHAR(20), Vin VARCHAR(50), Motor VARCHAR(50),
+    Combustible VARCHAR(50), FrecuenciaMant DECIMAL(10,2), ProxMant DECIMAL(10,2),
+    TieneGps VARCHAR(50), TienePolarizado VARCHAR(50)
+);
+
+-- INSERTAMOS TUS DATOS LIMPIOS
+INSERT INTO #CargaFlota VALUES
+('PROPIA','20603727551','43022492','POOL HUBERT VELA ROSALES','OPERATIVO','M8J851','FORD','RANGER','PLATA',2024,'PICK UP 4X4',43739,'VIRÚ','','15/02/2026','8AFBR01A7RJ387295','YN2QRJ387295','DIESEL',12000,52000,'SÍ','SÍ'),
+('PROPIA','20603727551','73101188','RENZO DANIEL PLASENCIA ALVA','OPERATIVO','M8K701','RENAULT','OROCH','GRIS ESTRELLA',2025,'PICK UP 4X2',26265,'CHICLAYO','','15/02/2026','93Y9SR8D6SJ132570','H4MJ759Q322688','GLP',5000,30000,'SÍ','SÍ'),
+('PROPIA','20614551853','40525965','JOSE ARTURO ARCE GALICIA','OPERATIVO','BAB809','FORD','RANGER XLT','BLANCO',2019,'PICK UP 4X4',320996,'VIRÚ','14/07/2026','18/04/2026','8AFAR23L9KJ142154','SA2QKJ142154','DIESEL',5000,325000,'NO','SÍ'),
+('PROPIA','20614551853','43283456','JOSÉ LUIS GARCÍA MONTENEGRO','OPERATIVO','CHQ737','FORD','RANGER XL','BLANCO',2025,'PICK UP 4X4',7209.1,'TRUJILLO','','19/11/2026','8AFBR01G3SJ484245','P02QSJ484245','DIESEL',12000,12000,'SÍ','SI'),
+('PROPIA','20613898167','','','EN TIENDA','SIN PLACA','FORD','RANGER XL','NO ESPECIFICADO',2025,'PICK UP 4X4',0,'LIMA','','','','','DIESEL',12000,0,'',''),
+('PROPIA','20605353721','','','EN TALLER','TER912','VOLKSWAGEN','AMAROK','BEIGE MOJAVE',2024,'PICK UP 4X4',0,'LIMA','','17/01/2026','8AWDW22H3RA012075','DDX235542','DIESEL',0,0,'','NO'),
+('PROPIA','20605644725','41229465','CÉSAR MANUEL ESTRADA GASTELO','OPERATIVO','CHN926','FORD','RANGER XLS','ROJO',2025,'PICK UP 4X4',4900.4,'CHICLAYO','','05/11/2026','8AFBR01G2SJ484317','P02QSJ484317','DIESEL',12000,12000,'SÍ','SÍ'),
+('ALQUILADA','20605644725','','','EN TALLER','M7D737','VOLKSWAGEN','AMAROK','BEIGE MOJAVE',2021,'PICK UP 4X2',0,'LIMA','','14/10/2026','WV1ZZZ2HZMAO21741','DDX165229','GLP',5000,145000,'','NO'),
+('PROPIA','20609093561','07966410','ROBERTO JOAQUIN MARTINEZ VERA','OPERATIVO','Z9A801','CHEVROLET','COLORADO','AZUL DARKMOON',2025,'PICK UP 4X4',6000,'CHICLAYO','','01/10/2026','9BG148PK0SC402512','LWNF241421146','DIESEL',5000,10000,'SÍ','SÍ'),
+('PROPIA','20609093561','','','OPERATIVO','Z9B762','CHEVROLET','COLORADO','BLANCO CUMMIT',2025,'PICK UP 4X4',4800,'CHICLAYO','','03/11/2026','9BG1481K0SC422942','LWNF243111140','DIESEL',5000,10000,'SÍ','Sí'),
+('PROPIA','20612680842','44011496','ALESSANDRO GUSTAVO BUSTAMANTE','OPERATIVO','CHL752','FORD','RANGER XLT','NEGRO',2025,'PICK UP 4X4',5776,'CHICLAYO','','03/11/2026','8AFBR01AXSJ005508','YN2QSJ005508','DIESEL',12000,12000,'SÍ','Sí'),
+('PROPIA','20612680842','42815018','MAX RONALD GILBERTO GAMONAL','OPERATIVO','M8J733','MAZDA','BT50','PLATA',2024,'PICK UP 4X4',39925,'CHICLAYO','','14/01/2026','MP2TFS40JRT303156','4JJ3EPB577','DIESEL',5000,45000,'SÍ','SÍ'),
+('PROPIA','20612680842','71536333','CARLOS ANDY HERNÁNDEZ GARCÍA','OPERATIVO','M8K812','MAZDA','BT50','BLANCO HIELO',2025,'PICK UP 4X4',42340,'ICA','','7/03/2026','MP2TFS40JST400542','4JJ3EVF659','DIESEL',5000,45000,'SÍ','SÍ'),
+('PROPIA','20612680842','','','OPERATIVO','M8S724','MAZDA','NFW BT50','BLANCO',2025,'PICK UP 4X4',0,'LIMA','','15/12/2026','MP27FS40JTT502342','4JJ3FGA922','DIESEL',5000,5000,'',''),
+('PROPIA','20612680842','','','OPERATIVO','M8R945','MAZDA','NFW BT50','BLANCO',2025,'PICK UP 4X4',0,'LIMA','','15/12/2026','MP2TFS40JTT502341','4JJ3FGA921','DIESEL',5000,5000,'',''),
+('PROPIA','20612680842','07880050','JUAN JOSÉ JAVIER OLAECHEA FLORES','OPERATIVO','T7P485','SUBARU','CROSSTREK','GRIS PLATA',2024,'SUV 4X4',18671,'LIMA','','11/10/2026','JF1GU7LL5RG010439','FB20YW60210','GASOLINA',7500,22500,'SÍ','VENCIDO'),
+('PROPIA','20614551853','00000000','PRESIDENCIA','OPERATIVO','CHT832','FORD','RANGER LTD','GRIS',2025,'PICK UP 4X4',0,'CHICLAYO','','19/11/2026','8AFBR01J8SJ005622','BF2S SJ005622','DIESEL',0,0,'SÍ','SÍ');
+
+-- 3. PROCESO DE MIGRACIÓN
+DECLARE @RowID INT = 1, @MaxID INT;
+SELECT @MaxID = COUNT(*) FROM #CargaFlota;
+
+-- Variables Cursor
+DECLARE @TipoModalidad VARCHAR(50), @Ruc VARCHAR(20), @Dni VARCHAR(20), @Placa VARCHAR(20), @Marca VARCHAR(50), @Modelo VARCHAR(100);
+DECLARE @Color VARCHAR(50), @Anio INT, @Carroceria VARCHAR(50), @Km DECIMAL(10,2), @Sede VARCHAR(50);
+DECLARE @FecRev VARCHAR(20), @FecSoat VARCHAR(20), @Vin VARCHAR(50), @Motor VARCHAR(50), @Combustible VARCHAR(50);
+DECLARE @FrecMant DECIMAL(10,2), @ProxMant DECIMAL(10,2), @Gps VARCHAR(50), @Polarizado VARCHAR(50), @EstadoVeh VARCHAR(50);
+
+-- Variables IDs BD
+DECLARE @IdMarca INT, @IdModelo INT, @IdEmpresa INT, @IdSucursal INT, @IdActivo INT, @IdPersonal INT, @IdTipoActivo INT;
+
+DECLARE curMigracion CURSOR FOR 
+SELECT TipoModalidad, RucEmpresa, DniChofer, Placa, Marca, Modelo, Color, Anio, Carroceria, Kilometraje, Sede, 
+       FecRevTecnica, FecSoat, Vin, Motor, Combustible, FrecuenciaMant, ProxMant, TieneGps, TienePolarizado, Estado
+FROM #CargaFlota;
+
+OPEN curMigracion;
+FETCH NEXT FROM curMigracion INTO @TipoModalidad, @Ruc, @Dni, @Placa, @Marca, @Modelo, @Color, @Anio, @Carroceria, @Km, @Sede, @FecRev, @FecSoat, @Vin, @Motor, @Combustible, @FrecMant, @ProxMant, @Gps, @Polarizado, @EstadoVeh;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT 'Procesando Placa: ' + @Placa;
+
+    -- A. BUSCAR/CREAR MARCA Y MODELO
+    IF NOT EXISTS (SELECT 1 FROM marca WHERE nombre = @Marca) 
+    BEGIN
+        INSERT INTO marca (nombre, estado) VALUES (@Marca, 1);
+    END
+    SELECT @IdMarca = id FROM marca WHERE nombre = @Marca;
+
+    IF NOT EXISTS (SELECT 1 FROM modelo WHERE nombre = @Modelo AND marca_id = @IdMarca) 
+    BEGIN
+        INSERT INTO modelo (nombre, marca_id, estado) VALUES (@Modelo, @IdMarca, 1);
+    END
+    SELECT @IdModelo = id FROM modelo WHERE nombre = @Modelo AND marca_id = @IdMarca;
+
+    -- B. BUSCAR EMPRESA Y SUCURSAL
+    SET @IdEmpresa = (SELECT TOP 1 id FROM empresa WHERE ruc = @Ruc);
+    IF @IdEmpresa IS NULL SET @IdEmpresa = 1; 
+
+    SET @IdSucursal = (SELECT TOP 1 id FROM sucursal WHERE nombre LIKE '%' + @Sede + '%' AND empresa_id = @IdEmpresa);
+    IF @IdSucursal IS NULL SET @IdSucursal = (SELECT TOP 1 id FROM sucursal WHERE empresa_id = @IdEmpresa); 
+
+    -- C. DEFINIR TIPO (Camioneta vs SUV)
+    SET @IdTipoActivo = CASE WHEN @Carroceria LIKE '%SUV%' THEN @IdTipoSuv ELSE @IdTipoCamioneta END;
+
+    -- D. INSERTAR EL ACTIVO (Si no existe)
+    IF NOT EXISTS (SELECT 1 FROM activo WHERE codigo_interno = @Placa)
+    BEGIN
+        INSERT INTO activo (
+            codigo_interno, serie, activo_grupo_id, activo_tipo_id, marca_id, modelo_id,
+            condicion, situacion, anio_fabricacion, color, modalidad_adquisicion,
+            medida_actual, unidad_medida_uso, prox_mantenimiento, frecuencia_mant,
+            empresa_id, sucursal_id, fecha_registro, estado
+        ) VALUES (
+            @Placa, @Vin, @IdGrupo, @IdTipoActivo, @IdMarca, @IdModelo,
+            @EstadoVeh, 
+            CASE WHEN LEN(@Dni) > 5 THEN 'EN USO' ELSE 'EN STOCK' END, 
+            @Anio, @Color, @TipoModalidad,
+            @Km, 'KM', @ProxMant, @FrecMant,
+            @IdEmpresa, @IdSucursal, GETDATE(), 1
+        );
+        
+        SET @IdActivo = SCOPE_IDENTITY();
+
+        -- E. INSERTAR ESPECIFICACIONES
+        INSERT INTO activo_especificacion (activo_id, clave, valor) VALUES
+        (@IdActivo, 'MOTOR', @Motor),
+        (@IdActivo, 'COMBUSTIBLE', @Combustible),
+        (@IdActivo, 'CARROCERIA', @Carroceria),
+        (@IdActivo, 'GPS', @Gps),
+        (@IdActivo, 'POLARIZADO', @Polarizado);
+
+        -- F. INSERTAR DOCUMENTOS (ALERTAS)
+        -- SOAT
+        IF LEN(@FecSoat) > 5
+        BEGIN
+            INSERT INTO activo_documento (activo_id, tipo_documento, fecha_vencimiento, estado)
+            VALUES (@IdActivo, 'SOAT', CONVERT(DATE, @FecSoat, 103), 1);
+        END
+        -- REV TECNICA
+        IF LEN(@FecRev) > 5
+        BEGIN
+            INSERT INTO activo_documento (activo_id, tipo_documento, fecha_vencimiento, estado)
+            VALUES (@IdActivo, 'REV_TECNICA', CONVERT(DATE, @FecRev, 103), 1);
+        END
+
+        -- G. INSERTAR HISTORIAL INICIAL DE KILOMETRAJE
+        INSERT INTO activo_historial_medida (activo_id, fecha_lectura, valor_medida, origen_dato, observacion, estado)
+        VALUES (@IdActivo, GETDATE(), @Km, 'MIGRACION', 'Carga inicial de datos', 1);
+
+        -- H. GENERAR ASIGNACIÓN (ENTREGA) SI HAY CHOFER
+        IF LEN(@Dni) > 5
+        BEGIN
+            SET @IdPersonal = (SELECT TOP 1 id FROM personal WHERE dni = @Dni);
+            
+            IF @IdPersonal IS NOT NULL
+            BEGIN
+                -- Insertar Cabecera Movimiento
+                INSERT INTO movimiento_activo (
+                    codigo_acta, tipo_movimiento, fecha_movimiento, 
+                    empresa_id, personal_id, usuario_registro_id, 
+                    observacion, estado
+                ) VALUES (
+                    'MIG-' + @Placa, 'ENTREGA', GETDATE(),
+                    @IdEmpresa, @IdPersonal, 1, 
+                    'Asignación detectada en migración', 1
+                );
+                
+                DECLARE @IdMov INT = SCOPE_IDENTITY();
+
+                -- Insertar Detalle
+                INSERT INTO dmovimiento_activo (
+                    movimiento_activo_id, activo_id, condicion_item, medida_registro, observacion_item
+                ) VALUES (
+                    @IdMov, @IdActivo, 'OPERATIVO', @Km, 'Migración de sistema'
+                );
+            END
+            ELSE
+            BEGIN
+                PRINT '  > ALERTA: No se encontró personal con DNI ' + @Dni + ' para la placa ' + @Placa;
+            END
+        END
+    END
+    ELSE
+    BEGIN
+        PRINT '  > Vehículo ' + @Placa + ' ya existe. Saltando.';
+    END
+
+    FETCH NEXT FROM curMigracion INTO @TipoModalidad, @Ruc, @Dni, @Placa, @Marca, @Modelo, @Color, @Anio, @Carroceria, @Km, @Sede, @FecRev, @FecSoat, @Vin, @Motor, @Combustible, @FrecMant, @ProxMant, @Gps, @Polarizado, @EstadoVeh;
+END
+
+CLOSE curMigracion;
+DEALLOCATE curMigracion;
+DROP TABLE #CargaFlota;
+
+PRINT '================================================';
+PRINT 'MIGRACIÓN DE FLOTA COMPLETADA CORRECTAMENTE';
 GO

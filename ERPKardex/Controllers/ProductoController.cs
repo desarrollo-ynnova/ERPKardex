@@ -5,74 +5,38 @@ using Newtonsoft.Json;
 
 namespace ERPKardex.Controllers
 {
-    public class ProductoController : Controller
+    // Heredamos de BaseController para acceder a EmpresaUsuarioId y UsuarioActualId
+    public class ProductoController : BaseController
     {
         private readonly ApplicationDbContext _context;
+
         public ProductoController(ApplicationDbContext context)
         {
             _context = context;
         }
+
         #region VISTAS
-        public IActionResult Index()
-        {
-            return View();
-        }
-        public IActionResult Registrar()
-        {
-            return View();
-        }
-        public IActionResult Editar(string id)
-        {
-            return View();
-        }
-        public IActionResult Ver(string id)
-        {
-            return View();
-        }
-        public IActionResult ObtenerVistaRegistroGrupo()
-        {
-            // Retorna solo el pedazo de HTML sin layout
-            return PartialView("_RegistrarGrupo");
-        }
-        public IActionResult ObtenerVistaRegistroSubgrupo()
-        {
-            return PartialView("_RegistrarSubgrupo");
-        }
-        public IActionResult ObtenerVistaRegistroUnidadMedida()
-        {
-            return PartialView("_RegistrarUnidadMedida");
-        }
-        public IActionResult ObtenerVistaRegistroFormulacion()
-        {
-            return PartialView("_RegistrarFormulacion");
-        }
-        public IActionResult ObtenerVistaRegistroPeligrosidad()
-        {
-            return PartialView("_RegistrarPeligrosidad");
-        }
-        public IActionResult ObtenerVistaRegistroEmpresa()
-        {
-            return PartialView("_RegistrarEmpresa");
-        }
-        public IActionResult ObtenerVistaRegistroMarca()
-        {
-            return PartialView("_RegistrarMarca");
-        }
-        public IActionResult ObtenerVistaRegistroModelo()
-        {
-            return PartialView("_RegistrarModelo");
-        }
-        // Retorna la vista parcial
-        public IActionResult ObtenerVistaRegistroCuenta()
-        {
-            return PartialView("_RegistrarCuenta");
-        }
-        public IActionResult ObtenerVistaRegistroIA()
-        {
-            return PartialView("_RegistrarIngredienteActivo");
-        }
+        public IActionResult RegistroServicio() => View();
+        public IActionResult Index() => View();
+        public IActionResult Registrar() => View();
+        public IActionResult Editar(string id) => View();
+        public IActionResult Ver(string id) => View();
+
+        // Vistas Parciales
+        public IActionResult ObtenerVistaRegistroGrupo() => PartialView("_RegistrarGrupo");
+        public IActionResult ObtenerVistaRegistroSubgrupo() => PartialView("_RegistrarSubgrupo");
+        public IActionResult ObtenerVistaRegistroUnidadMedida() => PartialView("_RegistrarUnidadMedida");
+        public IActionResult ObtenerVistaRegistroFormulacion() => PartialView("_RegistrarFormulacion");
+        public IActionResult ObtenerVistaRegistroPeligrosidad() => PartialView("_RegistrarPeligrosidad");
+        public IActionResult ObtenerVistaRegistroEmpresa() => PartialView("_RegistrarEmpresa");
+        public IActionResult ObtenerVistaRegistroMarca() => PartialView("_RegistrarMarca");
+        public IActionResult ObtenerVistaRegistroModelo() => PartialView("_RegistrarModelo");
+        public IActionResult ObtenerVistaRegistroCuenta() => PartialView("_RegistrarCuenta");
+        public IActionResult ObtenerVistaRegistroIA() => PartialView("_RegistrarIngredienteActivo");
         #endregion
+
         #region APIs
+
         [HttpGet]
         public JsonResult GetSucursalesByEmpresa(int empresaId) =>
             Json(new { data = _context.Sucursales.Where(s => s.EmpresaId == empresaId && s.Estado == true).ToList(), status = true });
@@ -80,15 +44,14 @@ namespace ERPKardex.Controllers
         [HttpGet]
         public JsonResult GetAlmacenesBySucursal(int sucursalId, int empresaId) =>
             Json(new { data = _context.Almacenes.Where(a => a.SucursalId == sucursalId && a.EmpresaId == empresaId && a.Estado == true).ToList(), status = true });
+
         // GET PRODUCTOS
         [HttpGet]
         public JsonResult GetProductosData(int? almacenId)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
+                // Uso de EmpresaUsuarioId heredado
                 var productosData = (from pro in _context.Productos
                                      join disa in _context.DIngresoSalidaAlms on pro.Codigo equals disa.CodProducto
                                      join isa in _context.IngresoSalidaAlms on disa.IngresoSalidaAlmId equals isa.Id
@@ -97,7 +60,7 @@ namespace ERPKardex.Controllers
                                      from td in joinDoc.DefaultIfEmpty()
                                      join ent in _context.Entidades on isa.EntidadId equals ent.Id into joinEnt
                                      from ent in joinEnt.DefaultIfEmpty()
-                                     where pro.EmpresaId == empresaId
+                                     where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
                                      select new
                                      {
                                          pro.Codigo,
@@ -118,9 +81,10 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false }); // Ajuste simple en ApiResponse si no existe la clase
             }
         }
+
         // GET EMPRESAS
         public JsonResult GetEmpresaData()
         {
@@ -131,18 +95,16 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
+
         // GET CUENTAS
         public JsonResult GetCuentaData()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var data = _context.Cuentas.Where(c => c.EmpresaId == empresaId).ToList();
+                var data = _context.Cuentas.Where(c => c.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new { data = data, status = true });
             }
             catch (Exception ex)
@@ -151,15 +113,12 @@ namespace ERPKardex.Controllers
             }
         }
 
-        // GET GRUPOS FILTRADOS POR CUENTA
+        // GET GRUPOS
         public JsonResult GetGrupos()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var data = _context.Grupos.Where(g => g.EmpresaId == empresaId).ToList();
+                var data = _context.Grupos.Where(g => g.EmpresaId == EmpresaUsuarioId && !g.Codigo.StartsWith("6")).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new { data = data, status = true });
             }
             catch (Exception ex)
@@ -167,16 +126,27 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
+        // GET GRUPOS FILTRADOS POR CUENTA (Servicios)
+        public JsonResult GetGruposServ()
+        {
+            try
+            {
+                var data = _context.Grupos.Where(g => g.EmpresaId == EmpresaUsuarioId && g.Codigo.StartsWith("6")).ToList(); // <--- CAMBIO AQUÍ
+                return Json(new { data = data, status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
+
         // GET SUBGRUPOS
-        // Filtrar Subgrupos por Grupo
         public JsonResult GetSubgruposByGrupo(int grupoId)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var data = _context.Subgrupos.Where(s => s.GrupoId == grupoId && s.EmpresaId == empresaId).ToList();
+                var data = _context.Subgrupos.Where(s => s.GrupoId == grupoId && s.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new { data = data, status = true, message = "Subgrupos retornados exitosamente." });
             }
             catch (Exception ex)
@@ -190,10 +160,7 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var data = _context.Modelos.Where(m => m.MarcaId == marcaId && m.EmpresaId == empresaId).ToList();
+                var data = _context.Modelos.Where(m => m.MarcaId == marcaId && m.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new { data = data, status = true, message = "Modelos retornados exitosamente." });
             }
             catch (Exception ex)
@@ -201,6 +168,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         // GET UMEDIDA
         public JsonResult GetUMedidaData()
         {
@@ -211,9 +179,10 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
+
         // GET FQ
         public JsonResult GetFQData()
         {
@@ -224,9 +193,10 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
+
         // GET Peligrosidad
         public JsonResult GetPeligrosidadData()
         {
@@ -237,19 +207,17 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
+
         [HttpGet]
         public JsonResult GetMarcaData()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
                 var marcas = _context.Marcas
-                    .Where(m => m.EmpresaId == empresaId)
+                    .Where(m => m.EmpresaId == EmpresaUsuarioId) // <--- CAMBIO AQUÍ
                     .OrderBy(m => m.Nombre)
                     .ToList();
 
@@ -271,10 +239,7 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var modelos = _context.Modelos.Where(mo => mo.EmpresaId == empresaId).ToList();
+                var modelos = _context.Modelos.Where(mo => mo.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new
                 {
                     data = modelos,
@@ -287,19 +252,17 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         public JsonResult GetIngredienteActivoData()
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                var data = _context.IngredientesActivos.Where(i => i.EmpresaId == empresaId).ToList();
+                var data = _context.IngredientesActivos.Where(i => i.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
                 return Json(new { data = data, status = true });
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
 
@@ -308,13 +271,14 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                ia.EmpresaId = EmpresaUsuarioId; // Aseguramos que se guarde con la empresa actual si el modelo lo requiere
                 _context.IngredientesActivos.Add(ia);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Ingrediente registrado" });
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
 
@@ -326,32 +290,31 @@ namespace ERPKardex.Controllers
             {
                 if (_context.Empresas.Any(e => e.Ruc == empresa.Ruc))
                 {
-                    return Json(new ApiResponse { data = null, message = "Ya existe una empresa registrada con el RUC ingresado.", status = false });
+                    return Json(new { data = (object)null, message = "Ya existe una empresa registrada con el RUC ingresado.", status = false });
                 }
 
                 _context.Empresas.Add(empresa);
                 _context.SaveChanges();
-                return Json(new ApiResponse { data = null, message = "Empresa registrada exitosamente.", status = true });
+                return Json(new { data = (object)null, message = "Empresa registrada exitosamente.", status = true });
             }
             catch (Exception ex)
             {
-                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+                return Json(new { data = (object)null, message = ex.Message, status = false });
             }
         }
+
         // POST Registrar cuenta
         [HttpPost]
         public JsonResult RegistrarCuenta(Cuenta cuenta)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                if (_context.Cuentas.Any(c => c.Codigo == cuenta.Codigo && c.EmpresaId == empresaId))
+                if (_context.Cuentas.Any(c => c.Codigo == cuenta.Codigo && c.EmpresaId == EmpresaUsuarioId)) // <--- CAMBIO AQUÍ
                 {
                     return Json(new { status = false, message = "El código de cuenta ya existe." });
                 }
 
+                cuenta.EmpresaId = EmpresaUsuarioId; // Asignamos ID
                 _context.Cuentas.Add(cuenta);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Cuenta registrada exitosamente." });
@@ -361,18 +324,17 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = "Error: " + ex.Message });
             }
         }
+
         // POST Registrar Grupo
         [HttpPost]
         public JsonResult RegistrarGrupo(Grupo grupo)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                if (_context.Grupos.Any(g => g.Codigo == grupo.Codigo && g.EmpresaId == empresaId))
+                if (_context.Grupos.Any(g => g.Codigo == grupo.Codigo && g.EmpresaId == EmpresaUsuarioId)) // <--- CAMBIO AQUÍ
                     return Json(new { status = false, message = "El código de grupo ya existe." });
 
+                grupo.EmpresaId = EmpresaUsuarioId; // Asignamos ID
                 _context.Grupos.Add(grupo);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Grupo registrado exitosamente." });
@@ -382,21 +344,21 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarSubgrupo(Subgrupo subgrupo)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
-                if (_context.Subgrupos.Any(s => s.Codigo == subgrupo.Codigo && s.CodGrupo == subgrupo.CodGrupo && s.EmpresaId == empresaId))
+                if (_context.Subgrupos.Any(s => s.Codigo == subgrupo.Codigo && s.CodGrupo == subgrupo.CodGrupo && s.EmpresaId == EmpresaUsuarioId)) // <--- CAMBIO AQUÍ
                 {
                     return Json(new { status = false, message = "El código de subgrupo ya existe." });
                 }
 
                 subgrupo.CodGrupo = _context.Grupos.Where(g => g.Id == subgrupo.GrupoId).Select(g => g.Codigo).FirstOrDefault();
                 subgrupo.DescripcionGrupo = subgrupo.DescripcionGrupo?.Split('-')[1].Trim();
+                subgrupo.EmpresaId = EmpresaUsuarioId; // Asignamos ID
+
                 _context.Subgrupos.Add(subgrupo);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Subgrupo registrado exitosamente." });
@@ -406,6 +368,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarUnidadMedida(UnidadMedida unidad)
         {
@@ -425,6 +388,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarFormulacion(FormulacionQuimica formulacion)
         {
@@ -444,6 +408,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarPeligrosidad(Peligrosidad peligrosidad)
         {
@@ -463,20 +428,19 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarMarca(Marca marca)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
                 // Opcional: Validar si el nombre ya existe
-                if (_context.Marcas.Any(m => m.Nombre == marca.Nombre && m.EmpresaId == empresaId))
+                if (_context.Marcas.Any(m => m.Nombre == marca.Nombre && m.EmpresaId == EmpresaUsuarioId)) // <--- CAMBIO AQUÍ
                 {
                     return Json(new { status = false, message = "Esta marca ya se encuentra registrada." });
                 }
 
+                marca.EmpresaId = EmpresaUsuarioId; // Asignamos ID
                 _context.Marcas.Add(marca);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Marca registrada exitosamente." });
@@ -486,20 +450,19 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarModelo(Modelo modelo)
         {
             try
             {
-                var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
                 // Validar si ya existe el modelo para esa marca específica
-                if (_context.Modelos.Any(m => m.Nombre == modelo.Nombre && m.MarcaId == modelo.MarcaId && m.EmpresaId == empresaId))
+                if (_context.Modelos.Any(m => m.Nombre == modelo.Nombre && m.MarcaId == modelo.MarcaId && m.EmpresaId == EmpresaUsuarioId)) // <--- CAMBIO AQUÍ
                 {
                     return Json(new { status = false, message = "Este modelo ya existe para la marca seleccionada." });
                 }
 
+                modelo.EmpresaId = EmpresaUsuarioId; // Asignamos ID
                 _context.Modelos.Add(modelo);
                 _context.SaveChanges();
                 return Json(new { status = true, message = "Modelo registrado correctamente." });
@@ -509,6 +472,7 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = ex.Message });
             }
         }
+
         [HttpPost]
         public JsonResult RegistrarProductoCompleto(Producto producto, string detallesJson)
         {
@@ -516,20 +480,16 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
-                    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
-
                     producto.CodGrupo = _context.Grupos.Where(g => g.Id == producto.GrupoId).Select(g => g.Codigo).FirstOrDefault();
                     producto.CodSubgrupo = _context.Subgrupos.Where(g => g.Id == producto.SubgrupoId).Select(g => g.Codigo).FirstOrDefault();
                     producto.DescripcionGrupo = producto.DescripcionGrupo?.Split('-')[1].Trim();
                     producto.DescripcionSubgrupo = producto.DescripcionSubgrupo?.Split('-')[1].Trim();
-                    producto.EmpresaId = empresaId;
+                    producto.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
+                    producto.FechaRegistro = DateTime.Now;
 
                     // 1. Generación Automática del Código
-                    // El prefijo es: CodGrupo + CodSubgrupo
                     string prefijo = $"{producto.CodSubgrupo}";
 
-                    // Buscamos el último producto cuyo código inicie con ese prefijo
                     var ultimoProducto = _context.Productos
                         .Where(p => p.Codigo.StartsWith(prefijo))
                         .OrderByDescending(p => p.Codigo)
@@ -539,7 +499,6 @@ namespace ERPKardex.Controllers
 
                     if (ultimoProducto != null)
                     {
-                        // Extraemos los últimos 5 dígitos del código actual
                         string parteCorrelativa = ultimoProducto.Codigo.Substring(prefijo.Length);
                         if (int.TryParse(parteCorrelativa, out int ultimoCorrelativo))
                         {
@@ -547,47 +506,39 @@ namespace ERPKardex.Controllers
                         }
                     }
 
-                    // Formateamos: Prefijo + Correlativo con ceros a la izquierda (5 dígitos)
                     producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D5")}";
 
-                    // 2. Validar si por algún motivo extraño el código generado ya existe
                     if (_context.Productos.Any(p => p.Codigo == producto.Codigo))
                         return Json(new { status = false, message = $"Error crítico: El código generado {producto.Codigo} ya existe." });
 
                     // --- LÓGICA DE DESCRIPCIÓN COMERCIAL ---
-
                     if (string.IsNullOrEmpty(producto.DescripcionComercial))
                     {
-                        // Caso A: Producto con Identificación Técnica (Marca, Modelo, Serie)
+                        // Caso A: Producto con Identificación Técnica
                         if (!string.IsNullOrEmpty(producto.DescripcionProducto) &&
                             producto.MarcaId != null &&
                             producto.ModeloId != null &&
                             !string.IsNullOrEmpty(producto.Serie))
                         {
-                            // Obtenemos los nombres de marca y modelo para la concatenación
                             var marcaNom = _context.Marcas.Find(producto.MarcaId)?.Nombre;
                             var modeloNom = _context.Modelos.Find(producto.ModeloId)?.Nombre;
-
                             producto.DescripcionComercial = $"{producto.DescripcionProducto} {marcaNom} {modeloNom} {producto.Serie}".ToUpper();
                         }
-                        // Caso B: Producto Insumo/Químico (Concentración + Formulación)
+                        // Caso B: Producto Insumo/Químico
                         else if (!string.IsNullOrEmpty(producto.DescripcionProducto) &&
                                  producto.Concentracion != null &&
                                  !string.IsNullOrEmpty(producto.CodFormulacionQuimica))
                         {
-                            // Obtenemos el nombre de la formulación
                             var fqNom = _context.FormulacionesQuimicas.FirstOrDefault(f => f.Codigo == producto.CodFormulacionQuimica)?.Nombre;
-
                             producto.DescripcionComercial = $"{producto.DescripcionProducto} {producto.Concentracion} {fqNom}".ToUpper();
                         }
                         else
                         {
-                            // IMPORTANTE: Si no cumple ninguno de los dos bloques de campos obligatorios, queda NULL
                             producto.DescripcionComercial = null;
                         }
                     }
 
-                    // 3. Guardar el Producto (Maestro)
+                    // 3. Guardar el Producto
                     _context.Productos.Add(producto);
                     _context.SaveChanges();
 
@@ -597,8 +548,8 @@ namespace ERPKardex.Controllers
                         var listaDetalles = JsonConvert.DeserializeObject<List<DetalleIngredienteActivo>>(detallesJson);
                         foreach (var detalle in listaDetalles)
                         {
-                            detalle.Id = 0; // Para que SQL maneje el IDENTITY
-                            detalle.CodProducto = producto.Codigo; // El código autogenerado arriba
+                            detalle.Id = 0;
+                            detalle.CodProducto = producto.Codigo;
                             _context.DetallesIngredientesActivos.Add(detalle);
                         }
                         _context.SaveChanges();
@@ -615,7 +566,71 @@ namespace ERPKardex.Controllers
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { status = false, message = "Error: " + ex.InnerException?.Message ?? ex.Message });
+                    return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
+                }
+            }
+        }
+
+        [HttpPost]
+        public JsonResult RegistrarServicio(Producto producto)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    // Completar datos del backend
+                    producto.CodGrupo = _context.Grupos.Where(g => g.Id == producto.GrupoId).Select(g => g.Codigo).FirstOrDefault();
+                    producto.CodSubgrupo = _context.Subgrupos.Where(g => g.Id == producto.SubgrupoId).Select(g => g.Codigo).FirstOrDefault();
+
+                    // Limpieza de nombres
+                    producto.DescripcionGrupo = producto.DescripcionGrupo?.Split('-').LastOrDefault()?.Trim();
+                    producto.DescripcionSubgrupo = producto.DescripcionSubgrupo?.Split('-').LastOrDefault()?.Trim();
+
+                    producto.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
+                    producto.FechaRegistro = DateTime.Now;
+
+                    // Para servicios, la descripción comercial suele ser igual a la descripción simple
+                    producto.DescripcionComercial = producto.DescripcionProducto.ToUpper();
+
+                    // --- 1. Generación Automática del Código ---
+                    string prefijo = $"{producto.CodSubgrupo}";
+
+                    var ultimoProducto = _context.Productos
+                        .Where(p => p.Codigo.StartsWith(prefijo))
+                        .OrderByDescending(p => p.Codigo)
+                        .FirstOrDefault();
+
+                    int nuevoCorrelativo = 1;
+                    if (ultimoProducto != null)
+                    {
+                        string parteCorrelativa = ultimoProducto.Codigo.Substring(prefijo.Length);
+                        if (int.TryParse(parteCorrelativa, out int ultimoCorrelativo))
+                        {
+                            nuevoCorrelativo = ultimoCorrelativo + 1;
+                        }
+                    }
+                    producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D5")}";
+
+                    // Validar duplicado
+                    if (_context.Productos.Any(p => p.Codigo == producto.Codigo))
+                        return Json(new { status = false, message = $"Error: El código generado {producto.Codigo} ya existe. Intente nuevamente." });
+
+                    // --- 2. Guardar ---
+                    _context.Productos.Add(producto);
+                    _context.SaveChanges();
+
+                    transaction.Commit();
+
+                    return Json(new
+                    {
+                        status = true,
+                        message = $"Servicio registrado correctamente: {producto.Codigo}"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
                 }
             }
         }

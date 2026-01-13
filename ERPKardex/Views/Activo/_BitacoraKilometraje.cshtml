@@ -1,0 +1,88 @@
+﻿<div class="modal-header bg-dark text-white">
+    <h5 class="modal-title">Bitácora de Kilometraje</h5>
+    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+</div>
+<div class="modal-body">
+    <input type="hidden" id="hdn_ActivoId_Bitacora" value="@ViewBag.ActivoId">
+
+    <div class="card bg-light mb-3">
+        <div class="card-body p-3">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label>Nuevo Kilometraje</label>
+                    <input type="number" id="txt_NuevoKm" class="form-control font-weight-bold">
+                </div>
+                <div class="col-md-5">
+                    <label>Observación / Motivo</label>
+                    <input type="text" id="txt_ObsKm" class="form-control" placeholder="Ej: Control semanal, Carga gasolina">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-success btn-block" onclick="fct_RegistrarKm()">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Lectura</th>
+                <th>Origen</th>
+                <th>Observación</th>
+                <th>Usuario</th>
+            </tr>
+        </thead>
+        <tbody id="tbl_HistorialKm">
+            <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    $(document).ready(function() {
+        fct_CargarTablaKm();
+    });
+
+    function fct_CargarTablaKm() {
+        let id = $('#hdn_ActivoId_Bitacora').val();
+        $.get('/Activo/GetHistorialMedidas?activoId=' + id, function(res) {
+            if(res.status) {
+                let html = '';
+                res.data.forEach(x => {
+                    html += `<tr>
+                        <td>${x.fecha}</td>
+                        <td class="font-weight-bold">${x.valor}</td>
+                        <td>${x.origen}</td>
+                        <td>${x.obs}</td>
+                        <td><small>${x.usuario}</small></td>
+                    </tr>`;
+                });
+                $('#tbl_HistorialKm').html(html);
+            }
+        });
+    }
+
+    function fct_RegistrarKm() {
+        let id = $('#hdn_ActivoId_Bitacora').val();
+        let km = $('#txt_NuevoKm').val();
+        let obs = $('#txt_ObsKm').val();
+
+        if(!km) return;
+
+        $.post('/Activo/RegistrarMedidaManual', { activoId: id, medida: km, observacion: obs }, function(res) {
+            if(res.status) {
+                toastr.success(res.message);
+                $('#txt_NuevoKm').val('');
+                $('#txt_ObsKm').val('');
+                fct_CargarTablaKm();
+                // Actualizar tabla principal si está detrás
+                if(typeof fct_CargarVehiculos === 'function') fct_CargarVehiculos();
+            } else {
+                toastr.error(res.message);
+            }
+        });
+    }
+</script>

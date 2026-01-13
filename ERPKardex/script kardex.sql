@@ -48,6 +48,8 @@ drop table if exists activo_grupo;
 drop table if exists activo_tipo;
 drop table if exists activo;
 drop table if exists activo_especificacion;
+drop table if exists activo_documento;
+drop table if exists activo_historial_medida;
 drop table if exists movimiento_activo;
 drop table if exists dmovimiento_activo;
 
@@ -207,6 +209,8 @@ create table ingresosalidaalm (
 	estado_id int,
 	usuario_id INT,
 	fecha_registro DATETIME DEFAULT GETDATE(),
+    usuario_anulacion_id INT,
+    fecha_anulacion DATETIME,
 	empresa_id INT,
 	entidad_id INT,
 );
@@ -330,7 +334,8 @@ create table producto (
 	serie varchar(255),
 	es_activo_fijo BIT,
 	estado BIT, -- 1: activo 0: inactivo
-	empresa_id INT
+	empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
 );
 
 create table ingrediente_activo (
@@ -681,7 +686,6 @@ CREATE TABLE personal (
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
--- Creación
 CREATE TABLE activo_grupo (
     id INT IDENTITY(1,1) PRIMARY KEY,
     nombre VARCHAR(100),
@@ -691,63 +695,125 @@ CREATE TABLE activo_grupo (
 CREATE TABLE activo_tipo (
     id INT IDENTITY(1,1) PRIMARY KEY,
     nombre VARCHAR(100),
-    grupo_id INT,
+    activo_grupo_id INT, -- Referencia lógica a activo_grupo(id)
     estado BIT DEFAULT 1
 );
 
+-- =================================================================================
+-- 2. TABLA ACTIVO (Maestro de Vehículos y Equipos)
+-- =================================================================================
 CREATE TABLE activo (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    codigo_interno VARCHAR(50), 
-    grupo_id INT, 
-    tipo_id INT,
-    marca_id INT,  -- Relacionado a tu tabla marca existente
-    modelo_id INT, -- Relacionado a tu tabla modelo existente
-    serie VARCHAR(100),
-    condicion VARCHAR(50), -- OPERATIVO, MALOGRADO
+    
+    -- Identificación Visual
+    codigo_interno VARCHAR(50), -- PLACA (Ej: M8J851)
+    serie VARCHAR(100),         -- VIN / Chasis
+    
+    -- Clasificación
+    activo_grupo_id INT, 
+    activo_tipo_id INT,
+    marca_id INT,  
+    modelo_id INT, 
+    
+    -- Datos Operativos
+    condicion VARCHAR(50), -- OPERATIVO, EN TALLER
     situacion VARCHAR(50), -- EN USO, EN STOCK
+    
+    -- Datos Vehiculares
+    anio_fabricacion INT,
+    color VARCHAR(50),
+    modalidad_adquisicion VARCHAR(50), -- PROPIA, ALQUILADA
+    
+    -- [CORAZÓN DEL MANTENIMIENTO]
+    medida_actual DECIMAL(10,2) DEFAULT 0,      -- Último KM registrado (se actualiza autom.)
+    unidad_medida_uso VARCHAR(10) DEFAULT 'KM', 
+    
+    -- Alertas Gerenciales
+    prox_mantenimiento DECIMAL(10,2) DEFAULT 0,  -- Ej: 52000
+    frecuencia_mant DECIMAL(10,2) DEFAULT 5000,  -- Ej: Cada 5000
+    
+    -- Auditoría
     empresa_id INT, 
-    sucursal_id INT, 
+    sucursal_id INT,
     fecha_registro DATETIME DEFAULT GETDATE(),
     estado BIT DEFAULT 1
 );
 
+-- =================================================================================
+-- 3. ESPECIFICACIONES (Motor, Combustible, GPS)
+-- =================================================================================
 CREATE TABLE activo_especificacion (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    activo_id INT NOT NULL,
+    activo_id INT NOT NULL, -- Referencia lógica a activo(id)
     clave VARCHAR(50),  
-    valor VARCHAR(MAX),
+    valor VARCHAR(MAX)
 );
 
--- CABECERA DEL MOVIMIENTO (El "Acta")
+-- =================================================================================
+-- 4. DOCUMENTOS (SOAT, Rev Técnica) - Vital para Alertas
+-- =================================================================================
+CREATE TABLE activo_documento (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    activo_id INT NOT NULL, 
+    
+    tipo_documento VARCHAR(50), -- SOAT, REV_TECNICA
+    nro_documento VARCHAR(100),
+    fecha_emision DATE,
+    fecha_vencimiento DATE,     -- Semáforo rojo si vence < 30 días
+    
+    aseguradora VARCHAR(100),
+    ruta_archivo VARCHAR(500),
+    estado BIT DEFAULT 1
+);
+
+CREATE TABLE activo_historial_medida (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    activo_id INT NOT NULL,
+    
+    fecha_lectura DATETIME DEFAULT GETDATE(),
+    valor_medida DECIMAL(10,2), -- Ej: 45,200 KM
+    
+    origen_dato VARCHAR(50), -- 'ENTREGA', 'DEVOLUCION', 'CONTROL_SEMANAL', 'MANTENIMIENTO'
+    observacion VARCHAR(255), -- Ej: "Revisión de lunes", "Carga de gasolina"
+    
+    usuario_registro_id INT, -- Quién tomó el dato
+    estado BIT DEFAULT 1
+);
+
+-- =================================================================================
+-- 5. MOVIMIENTOS (Cabecera del Acta)
+-- =================================================================================
 CREATE TABLE movimiento_activo (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    codigo_acta VARCHAR(50), -- Ej: ACT-2026-001
-    tipo_movimiento VARCHAR(20), -- 'ENTREGA', 'DEVOLUCION'
-    
+    codigo_acta VARCHAR(50),
+    tipo_movimiento VARCHAR(20), -- ENTREGA, DEVOLUCION
     fecha_movimiento DATETIME DEFAULT GETDATE(),
     
-    -- Actores
     empresa_id INT,
-    personal_id INT, -- Quien recibe (o quien devuelve)
-    usuario_registro_id INT, -- El logístico que hace la operación
+    personal_id INT,         -- Responsable
+    usuario_registro_id INT, -- Usuario Logístico
     
     ubicacion_destino VARCHAR(255),
     observacion VARCHAR(500),
     ruta_acta_pdf VARCHAR(500),
-    
-    estado BIT DEFAULT 1 -- 1: Vigente, 0: Anulado
+    estado BIT DEFAULT 1
 );
 
--- DETALLE DEL MOVIMIENTO (Los ítems del acta)
+-- =================================================================================
+-- 6. DETALLE MOVIMIENTO (Ítems)
+-- =================================================================================
 CREATE TABLE dmovimiento_activo (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    movimiento_id INT NOT NULL,
-    activo_id INT NOT NULL,
+    movimiento_activo_id INT NOT NULL, -- Referencia lógica a movimiento_activo(id)
+    activo_id INT NOT NULL,            -- Referencia lógica a activo(id)
     
-    condicion_item VARCHAR(50), -- Estado en el momento del movimiento
-    observacion_item VARCHAR(255),
+    condicion_item VARCHAR(50),
+    
+    -- Lectura del odómetro al momento del movimiento
+    medida_registro DECIMAL(10,2) DEFAULT 0, 
+    
+    observacion_item VARCHAR(255)
 );
-
 GO
 
 -- ==========================================
@@ -766,6 +832,7 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 
 -- inserts de 'estado'
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'INGRESOSALIDAALM');
 
 -- Solo los estados que pediste para los REQUERIMIENTOS
 INSERT INTO estado (nombre, tabla) VALUES 

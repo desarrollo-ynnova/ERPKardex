@@ -14,7 +14,7 @@ namespace ERPKardex.Models
         public string? CodigoActa { get; set; }
 
         [Column("tipo_movimiento")]
-        public string? TipoMovimiento { get; set; } // 'ENTREGA', 'DEVOLUCION'
+        public string? TipoMovimiento { get; set; } // ENTREGA, DEVOLUCION
 
         [Column("fecha_movimiento")]
         public DateTime? FechaMovimiento { get; set; }
@@ -23,7 +23,7 @@ namespace ERPKardex.Models
         public int? EmpresaId { get; set; }
 
         [Column("personal_id")]
-        public int? PersonalId { get; set; } // Receptor o Devolvente
+        public int? PersonalId { get; set; }
 
         [Column("usuario_registro_id")]
         public int? UsuarioRegistroId { get; set; }

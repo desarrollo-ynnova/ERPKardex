@@ -1,0 +1,132 @@
+﻿@{
+    ViewData["Title"] = "Registro de Servicio";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-concierge-bell"></i> Información del Servicio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cbx_Grupo">Grupo</label>
+                            <select id="cbx_Grupo" class="form-control"></select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cbx_Subgrupo">Subgrupo</label>
+                            <select id="cbx_Subgrupo" class="form-control"></select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="txt_DescripcionProducto">Descripción del Servicio</label>
+                            <input type="text" id="txt_DescripcionProducto" class="form-control" placeholder="Ej: Servicio de Mantenimiento Preventivo...">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_UnidadMedida">Unidad de Medida</label>
+                            <select id="cbx_UnidadMedida" class="form-control"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-right">
+                    <button id="btn_Cancelar" type="button" class="btn btn-danger">Cancelar</button>
+                    <button id="btn_GuardarServicio" type="button" class="btn btn-success">
+                        <i class="fas fa-save"></i> Guardar Servicio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        fct_InitServicioCombos();
+
+        // --- CASCADA GRUPO -> SUBGRUPO ---
+        $('#cbx_Grupo').on('change', function () {
+            let grupoId = $(this).val();
+            if (grupoId) {
+                fct_FillCombo('/Producto/GetSubgruposByGrupo?grupoId=' + grupoId, '#cbx_Subgrupo', 'id', 'descripcion', '-- SELECCIONAR --', 'codigo');
+            } else {
+                $('#cbx_Subgrupo').html('<option value="">-- SELECCIONAR --</option>').trigger('change');
+            }
+        });
+
+        // --- GUARDAR ---
+        $("#btn_GuardarServicio").click(function () {
+            let desc = $("#txt_DescripcionProducto").val().trim();
+            let grupo = $("#cbx_Grupo").val();
+            let subgrupo = $("#cbx_Subgrupo").val();
+            let unidad = $('#cbx_UnidadMedida').val();
+
+            if (!grupo || !subgrupo) { toastr.warning("Seleccione Grupo y Subgrupo"); return; }
+            if (!desc) { toastr.warning("Ingrese la descripción del servicio"); return; }
+            if (!unidad) { toastr.warning("Seleccione la unidad de medida"); return; }
+
+            let servicio = {
+                GrupoId: grupo,
+                DescripcionGrupo: $("#cbx_Grupo option:selected").text(),
+                SubgrupoId: subgrupo,
+                DescripcionSubgrupo: $("#cbx_Subgrupo option:selected").text(),
+                DescripcionProducto: desc,
+                CodUnidadMedida: unidad,
+                // Valores por defecto para servicios
+                Estado: true,
+                EsActivoFijo: false
+            };
+
+            Swal.fire({
+                title: "¿Guardar Servicio?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Sí, guardar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "/Producto/RegistrarServicio",
+                        type: "POST",
+                        data: { producto: servicio },
+                        success: function (response) {
+                            if (response.status) {
+                                toastr.success(response.message);
+                                setTimeout(() => { location.reload(); }, 1500);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function () { toastr.error("Error en el servidor"); }
+                    });
+                }
+            });
+        });
+
+        $('#btn_Cancelar').on('click', function() {
+            window.location.href = '/Producto/Index';
+        });
+    });
+
+    function fct_InitServicioCombos() {
+        // Carga simplificada solo de lo necesario
+        fct_FillCombo('/Producto/GetGruposServ', '#cbx_Grupo', 'id', 'descripcion', '-- SELECCIONAR --', 'codigo');
+        fct_FillCombo('/Producto/GetUMedidaData', '#cbx_UnidadMedida', 'codigo', 'descripcion', '-- SELECCIONAR --', 'codigo');
+
+        // Select2
+        $('#cbx_Grupo, #cbx_Subgrupo, #cbx_UnidadMedida').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+    }
+
+    function fct_FillCombo(url, id, valProp, txtProp, ph, extra) {
+        $.getJSON(url, function (res) {
+            let h = `<option value="">${ph}</option>`;
+            if (res.status) res.data.forEach(i => h += `<option value="${i[valProp]}">${extra ? i[extra] + ' - ' : ''}${i[txtProp]}</option>`);
+            $(id).html(h).trigger('change');
+        });
+    }
+</script>

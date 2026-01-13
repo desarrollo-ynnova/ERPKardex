@@ -1,0 +1,276 @@
+﻿@{
+    ViewData["Title"] = "Registro de Nueva Unidad";
+}
+<div class="container py-4">
+    <div class="card shadow border-0">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-truck-pickup mr-2"></i> Alta de Vehículo</h5>
+            <small class="text-white-50">Módulo de Flota</small>
+        </div>
+        <div class="card-body">
+            <form id="frmRegistroVehiculo" autocomplete="off">
+
+                <h6 class="text-primary font-weight-bold mb-3"><i class="fas fa-id-card"></i> Identificación de la Unidad</h6>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label class="font-weight-bold">Placa (Código) <span class="text-danger">*</span></label>
+                        <input type="text" id="txt_Placa" class="form-control border-left-primary font-weight-bold text-uppercase" placeholder="Ej: M8J-851" required>
+                        <small class="text-muted">Será el identificador único.</small>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Tipo de Vehículo <span class="text-danger">*</span></label>
+                        <select id="cbx_Tipo" class="form-control select2" required>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Marca <span class="text-danger">*</span></label>
+                        <select id="cbx_Marca" class="form-control select2" onchange="fct_CargarModelos()">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Modelo <span class="text-danger">*</span></label>
+                        <select id="cbx_Modelo" class="form-control select2" disabled>
+                            <option value="">-- Primero seleccione Marca --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label>N° VIN / Chasis</label>
+                        <input type="text" id="txt_Vin" class="form-control text-uppercase" placeholder="XXXXXXXXXXXXXXXXX">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>N° Motor</label>
+                        <input type="text" id="txt_Motor" class="form-control text-uppercase">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Color</label>
+                        <input type="text" id="txt_Color" class="form-control text-uppercase">
+                    </div>
+                </div>
+
+                <h6 class="text-primary font-weight-bold mt-4 mb-3"><i class="fas fa-cogs"></i> Características y Modalidad</h6>
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <label>Año Fabricación</label>
+                        <input type="number" id="txt_Anio" class="form-control" value="@DateTime.Now.Year">
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Combustible</label>
+                        <select id="cbx_Combustible" class="form-control">
+                            <option value="DIESEL">DIESEL</option>
+                            <option value="GASOLINA">GASOLINA</option>
+                            <option value="GLP">GLP</option>
+                            <option value="GNV">GNV</option>
+                            <option value="HIBRIDO">HÍBRIDO</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Modalidad</label>
+                        <select id="cbx_Modalidad" class="form-control font-weight-bold">
+                            <option value="PROPIA">PROPIA</option>
+                            <option value="ALQUILADA">ALQUILADA</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>¿Tiene GPS?</label>
+                        <select id="cbx_Gps" class="form-control">
+                            <option value="SÍ">SÍ</option>
+                            <option value="NO">NO</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>¿Lunas Polarizadas?</label>
+                        <select id="cbx_Polarizado" class="form-control">
+                            <option value="NO">NO</option>
+                            <option value="SÍ">SÍ</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Estado Inicial</label>
+                        <select id="cbx_Condicion" class="form-control">
+                            <option value="OPERATIVO">OPERATIVO</option>
+                            <option value="EN TALLER">EN TALLER</option>
+                            <option value="SINIESTRADO">SINIESTRADO</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary mt-3">
+                    <h6 class="text-dark font-weight-bold mb-3"><i class="fas fa-tachometer-alt"></i> Control de Kilometraje</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Kilometraje Actual (Lectura de Odómetro)</label>
+                            <div class="input-group">
+                                <input type="number" id="txt_KmInicial" class="form-control form-control-lg font-weight-bold text-right" value="0" min="0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text font-weight-bold">KM</span>
+                                </div>
+                            </div>
+                            <small class="text-muted">Este valor iniciará el historial del vehículo.</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Frecuencia de Mantenimiento</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Cada</span>
+                                </div>
+                                <input type="number" id="txt_Frecuencia" class="form-control form-control-lg" value="5000">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">KM</span>
+                                </div>
+                            </div>
+                            <small class="text-muted">El sistema alertará cuando (Km Actual >= Próximo Mantenimiento).</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="/Activo/Index?tipo=VEHICULOS" class="btn btn-secondary mr-2">
+                        <i class="fas fa-arrow-left"></i> Volver al Listado
+                    </a>
+                    <button type="button" class="btn btn-success px-5 font-weight-bold shadow" onclick="fct_GuardarVehiculo()">
+                        <i class="fas fa-save mr-1"></i> GUARDAR UNIDAD
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var GRUPO_VEHICULOS_ID = 0;
+
+        $(document).ready(function () {
+            // Inicializar selects bonitos
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+
+            // Cargar datos iniciales
+            fct_CargarMaestros();
+        });
+
+        function fct_CargarMaestros() {
+            // Pedimos los combos filtrados para VEHICULOS
+            $.get('/Activo/GetCombosRegistro?tipoModulo=VEHICULOS', function (res) {
+                if (res.status) {
+
+                    // 1. Detectar el Grupo ID de "VEHÍCULOS"
+                    let grupo = res.grupos.find(x => x.nombre === 'VEHÍCULOS');
+                    if (grupo) {
+                        GRUPO_VEHICULOS_ID = grupo.id;
+                    } else {
+                        toastr.error("Error Crítico: No existe el grupo 'VEHÍCULOS' en la BD.");
+                    }
+
+                    // 2. Llenar Tipos (Camioneta, SUV, etc.)
+                    let htmlTipos = '';
+                    res.tipos.forEach(x => htmlTipos += `<option value="${x.id}">${x.nombre}</option>`);
+                    $('#cbx_Tipo').html(htmlTipos);
+
+                    // 3. Llenar Marcas
+                    let htmlMarcas = '<option value="">-- Seleccione Marca --</option>';
+                    res.marcas.forEach(x => htmlMarcas += `<option value="${x.id}">${x.nombre}</option>`);
+                    $('#cbx_Marca').html(htmlMarcas);
+                } else {
+                    toastr.error("Error al cargar listas desplegables.");
+                }
+            });
+        }
+
+        function fct_CargarModelos() {
+            let marcaId = $('#cbx_Marca').val();
+            let cbxModelo = $('#cbx_Modelo');
+
+            if (!marcaId) {
+                cbxModelo.html('<option value="">-- Primero seleccione Marca --</option>');
+                cbxModelo.prop('disabled', true);
+                return;
+            }
+
+            // Aquí llamamos a la API nueva que acabamos de crear en el Controller
+            cbxModelo.prop('disabled', true);
+            cbxModelo.html('<option>Cargando...</option>');
+
+            $.get('/Activo/GetModelosByMarca?marcaId=' + marcaId, function (res) {
+                cbxModelo.prop('disabled', false);
+                if (res.status) {
+                    let html = '<option value="">-- Seleccione Modelo --</option>';
+                    res.data.forEach(x => html += `<option value="${x.id}">${x.nombre}</option>`);
+                    cbxModelo.html(html);
+                } else {
+                    cbxModelo.html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function fct_GuardarVehiculo() {
+            // Validaciones básicas
+            let placa = $('#txt_Placa').val().trim();
+            let marca = $('#cbx_Marca').val();
+            let modelo = $('#cbx_Modelo').val();
+            let tipo = $('#cbx_Tipo').val();
+
+            if (!placa) { toastr.warning("La Placa es obligatoria."); return; }
+            if (!marca || !modelo) { toastr.warning("Debe seleccionar Marca y Modelo."); return; }
+            if (!GRUPO_VEHICULOS_ID) { toastr.error("Error interno: ID de Grupo Vehículos no encontrado."); return; }
+
+            // Construir objeto DTO
+            let data = {
+                // Campos Maestros
+                GrupoId: GRUPO_VEHICULOS_ID,
+                TipoId: tipo,
+                MarcaId: marca,
+                ModeloId: modelo,
+
+                // Campos Identificación
+                CodigoInterno: placa.toUpperCase(),
+                Serie: $('#txt_Vin').val().toUpperCase(),
+
+                // Campos Vehículo
+                Anio: $('#txt_Anio').val(),
+                Color: $('#txt_Color').val().toUpperCase(),
+                Modalidad: $('#cbx_Modalidad').val(),
+                Condicion: $('#cbx_Condicion').val(),
+
+                // Campos Kilometraje
+                KilometrajeInicial: $('#txt_KmInicial').val(),
+                FrecuenciaMant: $('#txt_Frecuencia').val(),
+
+                // Especificaciones (Tabla Key-Value)
+                Specs: [
+                    { Clave: 'MOTOR', Valor: $('#txt_Motor').val().toUpperCase() },
+                    { Clave: 'COMBUSTIBLE', Valor: $('#cbx_Combustible').val() },
+                    { Clave: 'GPS', Valor: $('#cbx_Gps').val() },
+                    { Clave: 'POLARIZADO', Valor: $('#cbx_Polarizado').val() }
+                ]
+            };
+
+            // Enviar al servidor
+            // Deshabilitar botón para evitar doble click
+            let btn = $(event.target);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+            $.post('/Activo/GuardarActivo', { model: data }, function (res) {
+                if (res.status) {
+                    toastr.success(res.message);
+                    setTimeout(() => {
+                        window.location.href = '/Activo/Index?tipo=VEHICULOS';
+                    }, 1500);
+                } else {
+                    toastr.error(res.message);
+                    btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> GUARDAR UNIDAD');
+                }
+            }).fail(function() {
+                toastr.error("Error de conexión con el servidor.");
+                btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> GUARDAR UNIDAD');
+            });
+        }
+    </script>
+}

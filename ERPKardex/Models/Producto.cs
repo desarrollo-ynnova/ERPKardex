@@ -51,5 +51,7 @@ namespace ERPKardex.Models
         public bool? EsActivoFijo { get; set; }
         [Column("estado")]
         public bool? Estado { get; set; }
+        [Column("fecha_registro")]
+        public DateTime? FechaRegistro { get; set; }
     }
 }

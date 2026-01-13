@@ -1,0 +1,109 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Flota Vehicular";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">🚚 Flota Vehicular</h1>
+        <a href="/Activo/Registro?tipo=VEHICULOS" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus"></i> Nueva Unidad
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Unidades</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="tbl_Vehiculos" width="100%" cellspacing="0">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th>PLACA</th>
+                            <th>MARCA / MODELO</th>
+                            <th>CHOFER ASIGNADO</th>
+                            <th>KILOMETRAJE</th>
+                            <th>MANTENIMIENTO</th>
+                            <th>ESTADO</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGeneral" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body" id="modalContent"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            fct_CargarVehiculos();
+        });
+
+        function fct_CargarVehiculos() {
+            // Llamamos a la API con el filtro VEHICULOS
+            $.get('/Activo/GetActivos?tipoModulo=VEHICULOS', function (res) {
+                if (res.status) {
+                    let html = '';
+                    res.data.forEach(item => {
+                        // Lógica de Semáforo de Mantenimiento
+                        let semaforo = '<span class="badge badge-success">OK</span>';
+                        let faltaParaMant = item.proxMant - item.kilometraje;
+
+                        if(item.alertaMant === "ROJO") {
+                            semaforo = `<span class="badge badge-danger">VENCIDO (${faltaParaMant} KM)</span>`;
+                        } else if (faltaParaMant <= 1000) {
+                            semaforo = `<span class="badge badge-warning">PRÓXIMO (${faltaParaMant} KM)</span>`;
+                        }
+
+                        // Formateo de Miles
+                        let kmFormat = new Intl.NumberFormat().format(item.kilometraje);
+
+                        html += `
+                            <tr>
+                                <td class="font-weight-bold text-center">${item.codigo}</td> <td>${item.descripcion} <br> <small class="text-muted">VIN: ${item.serie}</small></td>
+                                <td>${item.asignadoA}</td>
+                                <td class="text-right font-weight-bold">${kmFormat} KM</td>
+                                <td class="text-center">${semaforo}</td>
+                                <td class="text-center">${item.condicion}</td>
+                                <td class="text-center">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-info" onclick="fct_VerHistorial(${item.id})" title="Kardex de Asignaciones"><i class="fas fa-history"></i></button>
+                                        <button class="btn btn-sm btn-dark" onclick="fct_BitacoraKm(${item.id})" title="Bitácora de Kilometraje"><i class="fas fa-tachometer-alt"></i></button>
+                                        <button class="btn btn-sm btn-warning" onclick="fct_Documentos(${item.id})" title="SOAT y Rev. Técnica"><i class="fas fa-file-contract"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    $('#tbl_Vehiculos tbody').html(html);
+                }
+            });
+        }
+
+        function fct_BitacoraKm(id) {
+            $('#modalContent').load('/Activo/BitacoraKm?id=' + id, function() {
+                $('#modalGeneral').modal('show');
+            });
+        }
+
+        function fct_Documentos(id) {
+            $('#modalContent').load('/Activo/GestionDocumental?id=' + id, function() {
+                $('#modalGeneral').modal('show');
+            });
+        }
+
+        function fct_VerHistorial(id) {
+            window.location.href = '/Activo/Historial?tipo=VEHICULOS&id=' + id;
+        }
+    </script>
+}
