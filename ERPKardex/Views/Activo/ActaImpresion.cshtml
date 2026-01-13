@@ -126,7 +126,7 @@
     </div>
 
     <div class="header">
-        <img src="/img/logo_ynnova.png" alt="LOGO" class="logo" onerror="this.style.display='none'">
+        <img src="/uploads/logo/logo_ynnova.jpg" alt="LOGO" class="logo" onerror="this.style.display='none'">
         <div class="titulo-doc" id="txt_Titulo">ACTA</div>
     </div>
 
@@ -145,11 +145,20 @@
             <div class="label">EMPRESA:</div>
             <div class="value" id="txt_EmisorEmpresa"></div>
         </div>
-        <br>
-        <div class="info-row">
+
+        <br> <div class="info-row">
             <div class="label" id="lbl_Receptor">RECEPCIÓN:</div>
             <div class="value" id="txt_ReceptorNombre"></div>
         </div>
+        <div class="info-row">
+            <div class="label">CARGO:</div>
+            <div class="value" id="txt_ReceptorCargo"></div>
+        </div>
+        <div class="info-row">
+            <div class="label">EMPRESA:</div>
+            <div class="value" id="txt_ReceptorEmpresa"></div>
+        </div>
+
         <div class="info-row">
             <div class="label">UBICACIÓN:</div>
             <div class="value" id="txt_Ubicacion"></div>
@@ -207,12 +216,16 @@
                             document.getElementById('lbl_Receptor').innerText = "RECIBIDO POR (TI):";
                         }
 
-                        // Llenar Datos Cabecera
+                        // Llenar Datos Emisor
                         document.getElementById('txt_EmisorNombre').innerText = d.emisor.nombre || "";
                         document.getElementById('txt_EmisorCargo').innerText = d.emisor.cargo || "";
                         document.getElementById('txt_EmisorEmpresa').innerText = d.emisor.empresa || "";
 
+                        // Llenar Datos Receptor (Completo)
                         document.getElementById('txt_ReceptorNombre').innerText = d.receptor.nombre || "";
+                        document.getElementById('txt_ReceptorCargo').innerText = d.receptor.cargo || "";
+                        document.getElementById('txt_ReceptorEmpresa').innerText = d.receptor.empresa || "";
+
                         document.getElementById('txt_Ubicacion').innerText = d.ubicacion || "";
 
                         // Llenar Tabla de Items

@@ -467,7 +467,7 @@ namespace ERPKardex.Controllers
 
                     nombreReceptor = nombreUserSys;
                     dniReceptor = dniUserSys;
-                    cargoReceptor = "LOGÍSTICA / TI";
+                    cargoReceptor = "TI";
                     empresaReceptor = empresaUserSys;
                 }
                 else
@@ -475,7 +475,7 @@ namespace ERPKardex.Controllers
                     // ENTREGA: Emisor (Entrega) = Usuario TI | Receptor (Recibe) = Personal
                     nombreEmisor = nombreUserSys;
                     dniEmisor = dniUserSys;
-                    cargoEmisor = "LOGÍSTICA / TI";
+                    cargoEmisor = "TI";
                     empresaEmisor = empresaUserSys;
 
                     if (movimiento.PersonalId.HasValue)
@@ -568,9 +568,16 @@ namespace ERPKardex.Controllers
         [HttpGet]
         public JsonResult GetPersonalCombo()
         {
-            var p = _context.Personal.Where(x => x.Estado == true && x.EmpresaId == EmpresaUsuarioId)
-                            .Select(x => new { x.Id, x.NombresCompletos })
+
+            var p = _context.Personal.Where(x => x.Estado == true)
+                            .Select(x => new { x.Id, x.NombresCompletos, x.EmpresaId })
                             .OrderBy(x => x.NombresCompletos).ToList();
+
+            if (!EsAdminGlobal)
+            {
+                p = p.Where(p => p.EmpresaId == EmpresaUsuarioId).ToList();
+            }
+
             return Json(new { status = true, data = p });
         }
 

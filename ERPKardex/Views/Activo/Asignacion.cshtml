@@ -318,7 +318,7 @@
                                       data-asignado="${a.asignadoA}"
                                       data-pid="${a.personalId || 0}"
                                       data-condicion="${a.condicion}">
-                                ${a.codigo} | ${a.descripcion} | S/N: ${a.serie} (${a.situacion})
+                                ${a.codigo} | ${a.descripcion} | S/N: ${a.serie} (${a.situacion}) | ASIGNADO A: ${a.asignadoA}
                               </option>`;
                     });
                     $('#cbx_BuscarActivo').html(h).select2({ theme: 'bootstrap4' });
