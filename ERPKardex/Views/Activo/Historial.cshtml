@@ -1,223 +1,199 @@
 ﻿@{
-    ViewData["Title"] = "Historial del Activo";
-    bool esVehiculo = ViewBag.TipoModulo == "VEHICULOS";
+    ViewData["Title"] = "Historial del Activo (Cómputo)";
 }
 
 <div class="container-fluid py-4">
-    <div class="card shadow mb-4 border-bottom-primary">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h4 class="font-weight-bold text-primary mb-1" id="lbl_Descripcion">Cargando...</h4>
-                    <div class="h5">
-                        <span class="badge badge-dark mr-2" id="lbl_Codigo">---</span>
-                        <span class="badge badge-secondary" id="lbl_Serie">VIN/SERIE: ---</span>
-                    </div>
-                </div>
-                <div class="col-md-4 text-right">
-                    @if (esVehiculo)
-                    {
-                        <div class="p-2 bg-light rounded border">
-                            <small class="text-muted d-block">KILOMETRAJE ACTUAL</small>
-                            <h3 class="font-weight-bold text-dark mb-0"><span id="lbl_KmActual">0</span> KM</h3>
-                        </div>
-                    }
-                    <div class="mt-2">
-                        <span id="lbl_Situacion" class="badge badge-info p-2">...</span>
-                        <span id="lbl_Condicion" class="badge badge-success p-2">...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Historial del Equipo</h1>
+        <a href="/Activo/Index?tipo=COMPUTO" class="btn btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver al Listado
+        </a>
     </div>
 
-    <div class="card shadow">
-        <div class="card-header p-0">
-            @if (esVehiculo)
-            {
-                <ul class="nav nav-tabs card-header-tabs ml-0" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active font-weight-bold" data-toggle="tab" href="#tab_kardex" role="tab">
-                            <i class="fas fa-history mr-1"></i> Kardex de Asignaciones
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link font-weight-bold" data-toggle="tab" href="#tab_docs" role="tab" onclick="fct_CargarDocs()">
-                            <i class="fas fa-folder-open mr-1"></i> Legajo Documentario
-                        </a>
-                    </li>
-                </ul>
-            }
-            else
-            {
-                <div class="p-3 font-weight-bold text-primary">
-                    <i class="fas fa-history mr-1"></i> Historial de Movimientos
-                </div>
-            }
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-primary text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-laptop"></i> Datos del Activo</h6>
         </div>
-
         <div class="card-body">
-            <div class="tab-content">
-
-                <div class="tab-pane fade show active" id="tab_kardex" role="tabpanel">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="tbl_Historial" width="100%">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>FECHA</th>
-                                    <th>MOVIMIENTO</th>
-                                    <th>RESPONSABLE / ASIGNADO A</th>
-                                    <th>UBICACIÓN</th>
-                                    @if (esVehiculo)
-                                    {
-                                        <th class="text-right">LECTURA (KM)</th>
-                                    }
-                                    <th>OBSERVACIÓN</th>
-                                    <th class="text-center">ACTA</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+            <div class="row mb-4 p-3 bg-light rounded mx-1 border">
+                <div class="col-md-8">
+                    <h4 class="text-dark font-weight-bold" id="lbl_Desc">Cargando...</h4>
+                    <div class="mt-2">
+                        <span class="badge badge-dark p-2" style="font-size: 1em;" id="lbl_Codigo">---</span>
+                        <span class="text-muted ml-2 font-weight-bold" id="lbl_Serie">---</span>
                     </div>
                 </div>
-
-                @if (esVehiculo)
-                {
-                    <div class="tab-pane fade" id="tab_docs" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-primary m-0">Documentos Digitalizados (SOAT, Revisiones, Seguros)</h6>
-                            <button class="btn btn-sm btn-primary" onclick="fct_AbrirModalDocs()"><i class="fas fa-upload"></i> Nuevo Documento</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="tbl_Documentos">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>TIPO</th>
-                                        <th>N° DOCUMENTO</th>
-                                        <th>VENCIMIENTO</th>
-                                        <th>ESTADO</th>
-                                        <th class="text-center">VER</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td colspan="5" class="text-center">Cargando documentos...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                }
-
+                <div class="col-md-4 text-right align-self-center">
+                    <span class="badge badge-success p-2" id="lbl_Condicion" style="font-size: 1em;">---</span>
+                    <div class="mt-1 small text-muted" id="lbl_Situacion">---</div>
+                </div>
             </div>
-        </div>
-        <div class="card-footer text-right">
-            <a href="/Activo/Index?tipo=@ViewBag.TipoModulo" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Volver
-            </a>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover" id="tbl_Historial">
+                    <thead class="thead-dark text-center">
+                        <tr>
+                            <th>FECHA</th>
+                            <th>TIPO MOVIMIENTO</th>
+                            <th>ASIGNADO A / UBICACIÓN</th>
+                            <th>OBSERVACIÓN</th>
+                            <th style="width: 150px;">GESTIÓN ACTA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5" class="text-center">Cargando historial...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalDocs" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" id="modalDocsContent"></div>
+<div class="modal fade" id="modalSubirActa" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-file-upload"></i> Subir Acta Firmada</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hdn_MovimientoId_Subida">
+                <form id="frmSubirActa">
+                    <div class="form-group">
+                        <label>Seleccione el archivo PDF escaneado:</label>
+                        <input type="file" id="file_Acta" name="archivo" class="form-control-file" accept=".pdf,.jpg,.png" required>
+                        <small class="text-muted">Asegúrese de que el acta tenga las firmas correspondientes.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="fct_ProcesarSubida()">Guardar Archivo</button>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        var ACTIVO_ID = @(ViewBag.ActivoId ?? 0);
-        var ES_VEHICULO = @(esVehiculo.ToString().ToLower());
+        var ID = @(ViewBag.ActivoId ?? 0);
 
         $(document).ready(function () {
-            if (ACTIVO_ID > 0) {
-                fct_CargarHistorial();
+            if(ID > 0) {
+                fct_Cargar();
             } else {
                 alert("ID de activo no válido");
                 window.history.back();
             }
         });
 
-        function fct_CargarHistorial() {
-            $.get('/Activo/GetHistorial?activoId=' + ACTIVO_ID, function (res) {
-                if (res.status) {
+        function fct_Cargar() {
+            $.get('/Activo/GetHistorial?activoId=' + ID, function (res) {
+                if(res.status) {
                     // 1. Llenar Cabecera
                     let info = res.activoInfo;
                     if(info) {
-                        $('#lbl_Descripcion').text(info.descripcion);
+                        $('#lbl_Desc').text(info.fullDesc || info.descripcion); // Ajuste por si el nombre cambia en el JSON
                         $('#lbl_Codigo').text(info.codigo);
-                        $('#lbl_Serie').text('SERIE/VIN: ' + info.serie);
+                        $('#lbl_Serie').text('SERIE: ' + info.serie);
                         $('#lbl_Condicion').text(info.condicion);
                         $('#lbl_Situacion').text(info.situacion);
-
-                        if(ES_VEHICULO) {
-                            $('#lbl_KmActual').text(new Intl.NumberFormat().format(info.kmActual));
-                        }
                     }
 
                     // 2. Llenar Tabla Historial
                     let html = '';
-                    res.data.forEach(item => {
-                        let badgeTipo = item.tipo === 'ENTREGA' ? 'badge-primary' : 'badge-warning';
-                        let btnActa = item.rutaActa
-                            ? `<a href="/${item.rutaActa}" target="_blank" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>`
-                            : `<span class="text-muted small">Pendiente</span>`;
+                    if(res.data && res.data.length > 0) {
+                        res.data.forEach(x => {
+                            // Lógica de Botones de Acta
+                            let btnImprimir = `<a href="/Activo/ActaImpresion?id=${x.id}" target="_blank" class="btn btn-secondary btn-sm" title="Imprimir Plantilla"><i class="fas fa-print"></i></a>`;
 
-                        // Columna KM (condicional)
-                        let tdKm = '';
-                        if(ES_VEHICULO) {
-                            tdKm = `<td class="text-right font-weight-bold">${new Intl.NumberFormat().format(item.kilometraje)}</td>`;
-                        }
+                            let btnArchivo = '';
+                            if (x.rutaActa) {
+                                // Si ya hay archivo: Botón VER (Rojo)
+                                btnArchivo = `<a href="/${x.rutaActa}" target="_blank" class="btn btn-danger btn-sm" title="Ver PDF Firmado"><i class="fas fa-file-pdf"></i></a>`;
+                            } else {
+                                // Si no hay archivo: Botón SUBIR (Azul)
+                                btnArchivo = `<button class="btn btn-info btn-sm" onclick="fct_AbrirSubida(${x.id})" title="Subir Acta Firmada"><i class="fas fa-upload"></i></button>`;
+                            }
 
-                        html += `
-                            <tr>
-                                <td>${item.fecha}</td>
-                                <td><span class="badge ${badgeTipo}">${item.tipo}</span> <br> <small>${item.codigoActa}</small></td>
-                                <td>${item.responsable}</td>
-                                <td>${item.ubicacion}</td>
-                                ${tdKm}
-                                <td>${item.observacion}</td>
-                                <td class="text-center">${btnActa}</td>
-                            </tr>
-                        `;
-                    });
+                            // Badge de Tipo
+                            let badge = x.tipo === 'ENTREGA' ? '<span class="badge badge-primary">ENTREGA</span>' : '<span class="badge badge-warning">DEVOLUCIÓN</span>';
+                            if(x.estado === 'ANULADO') badge = '<span class="badge badge-danger">ANULADO</span>';
 
-                    if(res.data.length === 0) html = '<tr><td colspan="7" class="text-center">Sin movimientos registrados.</td></tr>';
+                            html += `
+                                <tr>
+                                    <td class="text-center font-weight-bold">${x.fecha}</td>
+                                    <td>${badge} <br> <small class="text-muted">${x.codigoActa}</small></td>
+                                    <td>
+                                        <i class="fas fa-user text-gray-400"></i> ${x.responsable} <br>
+                                        <i class="fas fa-map-marker-alt text-gray-400"></i> <small>${x.ubicacion}</small>
+                                    </td>
+                                    <td>${x.observacion || '-'}</td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            ${btnImprimir}
+                                            ${btnArchivo}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="5" class="text-center text-muted">Este activo no tiene movimientos registrados.</td></tr>';
+                    }
+
                     $('#tbl_Historial tbody').html(html);
                 }
             });
         }
 
-        function fct_CargarDocs() {
-            if(!ES_VEHICULO) return;
-
-            $.get('/Activo/GetDocumentosActivo?activoId=' + ACTIVO_ID, function(res) {
-                if(res.status) {
-                    let html = '';
-                    res.data.forEach(d => {
-                        let colorVenc = d.estadoVenc === 'VENCIDO' ? 'text-danger font-weight-bold' : 'text-success';
-                        let btnVer = d.rutaArchivo
-                            ? `<a href="/${d.rutaArchivo}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>`
-                            : '<span class="text-muted">-</span>';
-
-                        html += `
-                            <tr>
-                                <td>${d.tipo}</td>
-                                <td>${d.nro}</td>
-                                <td class="${colorVenc}">${d.vence}</td>
-                                <td>${d.estadoVenc}</td>
-                                <td class="text-center">${btnVer}</td>
-                            </tr>
-                        `;
-                    });
-                    if(res.data.length === 0) html = '<tr><td colspan="5" class="text-center">No hay documentos cargados.</td></tr>';
-                    $('#tbl_Documentos tbody').html(html);
-                }
-            });
+        function fct_AbrirSubida(idMovimiento) {
+            $('#hdn_MovimientoId_Subida').val(idMovimiento);
+            $('#file_Acta').val(''); // Limpiar input
+            $('#modalSubirActa').modal('show');
         }
 
-        function fct_AbrirModalDocs() {
-            $('#modalDocsContent').load('/Activo/GestionDocumental?id=' + ACTIVO_ID, function() {
-                $('#modalDocs').modal('show');
+        function fct_ProcesarSubida() {
+            let idMov = $('#hdn_MovimientoId_Subida').val();
+            let fileInput = document.getElementById('file_Acta');
+
+            if(fileInput.files.length === 0) {
+                alert("Debe seleccionar un archivo.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("idMovimiento", idMov);
+            formData.append("archivo", fileInput.files[0]);
+
+            // Bloquear botón
+            let btn = $(event.target);
+            let txtOriginal = btn.text();
+            btn.prop('disabled', true).text('Subiendo...');
+
+            $.ajax({
+                url: '/Activo/SubirActa',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if(res.status) {
+                        alert("Acta subida correctamente.");
+                        $('#modalSubirActa').modal('hide');
+                        fct_Cargar(); // Recargar tabla para ver el botón rojo
+                    } else {
+                        alert("Error: " + res.message);
+                    }
+                },
+                error: function() {
+                    alert("Error de conexión.");
+                },
+                complete: function() {
+                    btn.prop('disabled', false).text(txtOriginal);
+                }
             });
         }
     </script>

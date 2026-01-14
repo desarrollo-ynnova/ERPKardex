@@ -218,7 +218,7 @@
             let tipo = $('#cbx_Tipo').val();
 
             if (!placa) { toastr.warning("La Placa es obligatoria."); return; }
-            if (!marca || !modelo) { toastr.warning("Debe seleccionar Marca y Modelo."); return; }
+            if (!marca) { toastr.warning("Debe seleccionar Marca."); return; }
             if (!GRUPO_VEHICULOS_ID) { toastr.error("Error interno: ID de Grupo Vehículos no encontrado."); return; }
 
             // Construir objeto DTO

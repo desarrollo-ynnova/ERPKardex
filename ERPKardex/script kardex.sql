@@ -791,6 +791,7 @@ CREATE TABLE movimiento_activo (
     
     empresa_id INT,
     personal_id INT,         -- Responsable
+    empresa_usuario_registro_id INT,
     usuario_registro_id INT, -- Usuario Logístico
     
     ubicacion_destino VARCHAR(255),

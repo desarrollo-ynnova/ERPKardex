@@ -2950,7 +2950,7 @@ SET IDENTITY_INSERT activo_grupo OFF;
 -- Tipos (Mapeo manual para orden, el resto se puede insertar dinámico)
 INSERT INTO activo_tipo (nombre, activo_grupo_id) VALUES 
 ('LAPTOP', 1), ('PC ESCRITORIO', 1), ('TABLET', 1), ('IMPRESORA', 1), ('CÁMARA', 1), ('LENTE', 1), ('LUCES', 1), ('TRÍPODE', 1),
-('CARGADOR DE LAPTOP', 2), ('MOUSE', 2), ('TECLADO', 2), ('PANTALLA', 2), ('ESTABILIZADOR', 2), ('REFRIGERACIÓN DE LAPTOP', 2), ('PARLANTES', 2), ('USB', 2), ('SUPRESOR DE PICOS', 2), ('EXTENSIÓN', 2), ('CABLE DE PODER', 2), ('CABLE VGA', 2), ('CABLE DE IMPRESORA', 2), ('CABLE HDMI', 2), ('MICRÓFONO', 2), ('ADAPTADOR HDMI', 2), ('ADAPTADOR DE ENCHUFE', 2), ('BOCINAS', 2), ('PONCHADOR', 2),
+('CARGADOR DE LAPTOP', 2), ('MOUSE', 2), ('TECLADO', 2), ('PANTALLA', 2), ('ESTABILIZADOR', 2), ('REFRIGERACIÓN DE LAPTOP', 2), ('PARLANTES', 2), ('USB', 2), ('SUPRESOR DE PICOS', 2), ('EXTENSIÓN', 2), ('CABLE DE PODER', 2), ('CABLE VGA', 2), ('CABLE DE IMPRESORA', 2), ('CABLE HDMI', 2), ('MICRÓFONO', 2), ('ADAPTADOR HDMI', 2), ('ADAPTADOR DE ENCHUFE', 2), ('BOCINAS', 2), ('PONCHADOR', 2), ('PROTECTOR DE TECLADO', 2),
 ('CELULARES', 3),
 ('CARGADOR DE CELULAR', 4), ('ADAPTADOR AC A USB', 4), ('CASE DE CELULAR', 4), ('PROTECTOR DE PANTALLA', 4),
 ('VENTILADOR', 5), ('LAMINADORA', 5), ('TELEVISOR', 5), ('DISPENSADOR DE AGUA', 5),
@@ -3349,18 +3349,42 @@ LEFT JOIN empresa emp ON emp.ruc = de.RUC;
 
 GO
 
--- ESPECIFICACIONES
-INSERT INTO activo_especificacion (activo_id, clave, valor)
-SELECT a.id, 'PROCESADOR', LTRIM(RTRIM(SUBSTRING(d.Specs, 1, CHARINDEX('-', d.Specs) - 1)))
-FROM #DataCarga d JOIN activo a ON a.serie = d.Serie WHERE d.Specs LIKE '%TG:%';
+-- =============================================================================
+-- INSERTAR ESPECIFICACIONES USANDO EL AMARRE EXACTO (temp_guid)
+-- =============================================================================
 
+-- 1. PROCESADOR (Solo para registros que tengan el formato TG:)
 INSERT INTO activo_especificacion (activo_id, clave, valor)
-SELECT a.id, 'RAM', LTRIM(RTRIM(SUBSTRING(d.Specs, CHARINDEX('-', d.Specs) + 1, CHARINDEX('/', d.Specs) - CHARINDEX('-', d.Specs) - 1)))
-FROM #DataCarga d JOIN activo a ON a.serie = d.Serie WHERE d.Specs LIKE '%TG:%';
+SELECT 
+    a.id, 
+    'PROCESADOR', 
+    LTRIM(RTRIM(SUBSTRING(d.Specs, 1, CHARINDEX('-', d.Specs) - 1)))
+FROM #DataIndividual d  -- <--- USAMOS LA DATA EXPANDIDA
+JOIN activo a ON a.temp_guid = d.GuidActivo -- <--- AMARRE EXACTO POR GUID
+WHERE d.Specs LIKE '%TG:%' 
+  AND CHARINDEX('-', d.Specs) > 0; -- Validación para que no falle el Substring
 
+-- 2. MEMORIA RAM
 INSERT INTO activo_especificacion (activo_id, clave, valor)
-SELECT a.id, 'DETALLE_CELULAR', d.Specs
-FROM #DataCarga d JOIN activo a ON a.serie = d.Serie WHERE d.Specs LIKE '%IMEI%';
+SELECT 
+    a.id, 
+    'RAM', 
+    LTRIM(RTRIM(SUBSTRING(d.Specs, CHARINDEX('-', d.Specs) + 1, CHARINDEX('/', d.Specs) - CHARINDEX('-', d.Specs) - 1)))
+FROM #DataIndividual d 
+JOIN activo a ON a.temp_guid = d.GuidActivo
+WHERE d.Specs LIKE '%TG:%'
+  AND CHARINDEX('-', d.Specs) > 0 
+  AND CHARINDEX('/', d.Specs) > 0;
+
+-- 3. DETALLE CELULAR (IMEI)
+INSERT INTO activo_especificacion (activo_id, clave, valor)
+SELECT 
+    a.id, 
+    'DETALLE_CELULAR', 
+    d.Specs
+FROM #DataIndividual d 
+JOIN activo a ON a.temp_guid = d.GuidActivo
+WHERE d.Specs LIKE '%IMEI%';
 
 GO
 -- 4. CABECERAS DE ACTAS (Solo para personal que NO es Stock)
@@ -3371,10 +3395,10 @@ FROM #DataIndividual
 WHERE UsuarioNombre NOT LIKE '%STOCK%'
 GROUP BY EmpresaNombre, DNI, Direccion;
 
-INSERT INTO movimiento_activo (codigo_acta, tipo_movimiento, fecha_movimiento, empresa_id, personal_id, ubicacion_destino, observacion, estado, usuario_registro_id)
+INSERT INTO movimiento_activo (codigo_acta, tipo_movimiento, fecha_movimiento, empresa_id, personal_id, ubicacion_destino, observacion, estado, empresa_usuario_registro_id, usuario_registro_id)
 SELECT 
     'MIG-' + LEFT(CAST(m.ActaUid AS VARCHAR(36)), 8), 
-    'ENTREGA', GETDATE(), e.id, p.id, m.Direccion, 'MIGRACIÓN', 1, 1
+    'ENTREGA', GETDATE(), e.id, p.id, m.Direccion, 'MIGRACIÓN', 1, (SELECT ID FROM EMPRESA WHERE RUC LIKE '20615155251'), 1
 FROM #TmpActas m
 JOIN empresa e ON e.razon_social = m.EmpresaNombre
 JOIN personal p ON p.dni = m.DNI;
@@ -3838,6 +3862,8 @@ END
 CLOSE curMigracion;
 DEALLOCATE curMigracion;
 DROP TABLE #CargaFlota;
+IF OBJECT_ID('tempdb..#DataCarga') IS NOT NULL DROP TABLE #DataCarga;
+IF OBJECT_ID('tempdb..#DataIndividual') IS NOT NULL DROP TABLE #DataIndividual;
 
 PRINT '================================================';
 PRINT 'MIGRACIÓN DE FLOTA COMPLETADA CORRECTAMENTE';

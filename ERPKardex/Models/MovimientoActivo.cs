@@ -25,6 +25,9 @@ namespace ERPKardex.Models
         [Column("personal_id")]
         public int? PersonalId { get; set; }
 
+        [Column("empresa_usuario_registro_id")]
+        public int? EmpresaUsuarioRegistroId { get; set; }
+
         [Column("usuario_registro_id")]
         public int? UsuarioRegistroId { get; set; }
 

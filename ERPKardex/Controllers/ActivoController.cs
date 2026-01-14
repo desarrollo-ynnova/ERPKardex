@@ -33,20 +33,25 @@ namespace ERPKardex.Controllers
             return View("Registro");
         }
 
-        public IActionResult Asignacion(string tipo = "COMPUTO")
-        {
-            ViewBag.TipoModulo = tipo;
-            return View();
-        }
-
         public IActionResult Historial(string tipo = "COMPUTO")
         {
             ViewBag.TipoModulo = tipo;
-            if (int.TryParse(Request.Query["id"], out int id))
-            {
-                ViewBag.ActivoId = id;
-            }
-            return View();
+            if (int.TryParse(Request.Query["id"], out int id)) ViewBag.ActivoId = id;
+
+            // AQUÍ LA SEPARACIÓN:
+            if (tipo == "VEHICULOS") return View("HistorialVehiculo");
+
+            return View("Historial"); // Vista clásica (Cómputo)
+        }
+
+        public IActionResult Asignacion(string tipo = "COMPUTO")
+        {
+            ViewBag.TipoModulo = tipo;
+
+            // AQUÍ LA SEPARACIÓN:
+            if (tipo == "VEHICULOS") return View("AsignacionVehiculo");
+
+            return View("Asignacion"); // Vista clásica (Cómputo)
         }
 
         // Vista para impresión de actas
@@ -207,7 +212,7 @@ namespace ERPKardex.Controllers
                                            Tipo = m.TipoMovimiento,
                                            Responsable = (m.TipoMovimiento == "DEVOLUCION") ? "ALMACÉN / STOCK" : (p != null ? p.NombresCompletos : "SIN ASIGNAR"),
                                            Ubicacion = m.UbicacionDestino,
-                                           Observacion = d.ObservacionItem ?? m.Observacion,
+                                           Observacion = string.IsNullOrEmpty(d.ObservacionItem) ? m.Observacion : d.ObservacionItem,
                                            Kilometraje = d.MedidaRegistro, // <--- ESTO FALTABA
                                            RutaActa = m.RutaActaPdf,
                                            Estado = m.Estado == true ? "VIGENTE" : "ANULADO"
@@ -293,7 +298,7 @@ namespace ERPKardex.Controllers
                 // Info Usuario Sistema (TI)
                 var userSys = await _context.Usuarios.FindAsync(movimiento.UsuarioRegistroId);
                 // Info Empresa (Dueña del activo)
-                var empSys = await _context.Empresas.FindAsync(movimiento.EmpresaId);
+                var empSys = await _context.Empresas.FindAsync(movimiento.EmpresaUsuarioRegistroId);
 
                 string tiNombre = userSys?.Nombre ?? "TI/SISTEMAS";
                 string tiDni = userSys?.Dni ?? "";
@@ -313,7 +318,7 @@ namespace ERPKardex.Controllers
                     }
                     nombreReceptor = tiNombre;
                     dniReceptor = tiDni;
-                    cargoReceptor = "TI";
+                    cargoReceptor = "Soporte TI";
                     empresaReceptor = tiEmpresa;
                 }
                 else
@@ -321,7 +326,7 @@ namespace ERPKardex.Controllers
                     // Entrega: TI -> Recibe: Personal
                     nombreEmisor = tiNombre;
                     dniEmisor = tiDni;
-                    cargoEmisor = "TI";
+                    cargoEmisor = "Soporte TI";
                     empresaEmisor = tiEmpresa;
 
                     if (movimiento.PersonalId.HasValue)
@@ -548,12 +553,15 @@ namespace ERPKardex.Controllers
                         if (responsableIdDetectado == null) return Json(new { status = false, message = "No se detectó responsable previo." });
                     }
 
+                    var personal = _context.Personal.FirstOrDefault(p => p.Id == responsableIdDetectado);
+
                     var cabecera = new MovimientoActivo
                     {
                         CodigoActa = "ACT-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"),
                         TipoMovimiento = data.TipoMovimiento,
                         FechaMovimiento = DateTime.Now,
-                        EmpresaId = EmpresaUsuarioId,
+                        EmpresaId = personal?.EmpresaId ?? 0,
+                        EmpresaUsuarioRegistroId = EmpresaUsuarioId,
                         UsuarioRegistroId = UsuarioActualId,
                         PersonalId = responsableIdDetectado,
                         UbicacionDestino = data.Ubicacion,

@@ -329,21 +329,32 @@
                         </li>
 
                         <li class="nav-header font-weight-bold">GESTIÓN DE ACTIVOS</li>
+
                         <li class="nav-item @(controllerName == "Activo" ? "menu-open" : "")">
                             <a href="#" class="nav-link @(controllerName == "Activo" ? "active" : "")">
-                                <i class="nav-icon fas fa-laptop"></i> <p>
+                                <i class="nav-icon fas fa-boxes"></i> <p>
                                     Activos Fijos
                                     <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+
                                 <li class="nav-item">
-                                    <a href="/Activo/Index"
-                                       class="nav-link @((controllerName == "Activo" && new[] { "Index", "Asignacion", "Historial", "Registro" }.Contains(actionName)) ? "active" : "")">
-                                        <i class="fas fa-list-ul nav-icon text-primary"></i>
+                                    <a href="/Activo/Index?tipo=COMPUTO"
+                                       class="nav-link @((controllerName == "Activo" && (string.IsNullOrEmpty(Context.Request.Query["tipo"]) || Context.Request.Query["tipo"] == "COMPUTO")) ? "active" : "")">
+                                        <i class="fas fa-laptop nav-icon text-primary"></i>
                                         <p>Cómputo</p>
                                     </a>
                                 </li>
+
+                                <li class="nav-item">
+                                    <a href="/Activo/Index?tipo=VEHICULOS"
+                                       class="nav-link @((controllerName == "Activo" && Context.Request.Query["tipo"] == "VEHICULOS") ? "active" : "")">
+                                        <i class="fas fa-truck-pickup nav-icon text-warning"></i>
+                                        <p>Flota Vehicular</p>
+                                    </a>
+                                </li>
+
                             </ul>
                         </li>
                     </ul>

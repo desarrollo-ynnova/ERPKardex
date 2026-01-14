@@ -1,0 +1,169 @@
+﻿@{
+    ViewData["Title"] = "Hoja de Vida del Vehículo";
+}
+
+<div class="container-fluid py-3">
+    <div class="card shadow mb-4 border-left-warning">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h3 class="font-weight-bold text-dark mb-1" id="vh_Placa">---</h3>
+                    <h5 class="text-secondary" id="vh_Desc">---</h5>
+                    <div class="text-muted small"><i class="fas fa-barcode"></i> VIN: <span id="vh_Vin">---</span></div>
+                </div>
+                <div class="col-md-4 text-right border-left">
+                    <small class="text-muted font-weight-bold">ODÓMETRO ACTUAL</small>
+                    <h2 class="font-weight-bold text-primary mb-0"><span id="vh_Km">0</span> <small>KM</small></h2>
+                    <span id="vh_Estado" class="badge badge-success mt-2">---</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header p-0 border-bottom-0">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold" data-toggle="tab" href="#tab_mov" role="tab"><i class="fas fa-route"></i> Kardex de Movimientos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" data-toggle="tab" href="#tab_doc" role="tab" onclick="fct_CargarDocs()"><i class="fas fa-folder-open"></i> Documentación Digital</a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+
+                <div class="tab-pane fade show active" id="tab_mov" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="tbl_Movimientos">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>FECHA</th>
+                                    <th>EVENTO</th>
+                                    <th>RESPONSABLE / DESTINO</th>
+                                    <th class="text-right">LECTURA (KM)</th>
+                                    <th>OBSERVACIÓN</th>
+                                    @* <th class="text-center">ACTA</th> *@
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="tab_doc" role="tabpanel">
+                    <div class="text-right mb-2">
+                        <button class="btn btn-primary btn-sm shadow-sm" onclick="fct_NuevoDoc()"><i class="fas fa-plus"></i> Agregar Documento</button>
+                    </div>
+                    <table class="table table-bordered" id="tbl_Docs">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>TIPO DOCUMENTO</th>
+                                <th>N° DOCUMENTO</th>
+                                <th>VENCIMIENTO</th>
+                                <th>ESTADO</th>
+                                <th class="text-center">ARCHIVO</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr><td colspan="5" class="text-center">Cargando...</td></tr></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <a href="/Activo/Index?tipo=VEHICULOS" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDocs" tabindex="-1"><div class="modal-dialog"><div class="modal-content" id="modalDocsContent"></div></div></div>
+
+@section Scripts {
+    <script>
+        var ID = @(ViewBag.ActivoId ?? 0);
+
+        $(document).ready(function () {
+            fct_CargarDatos();
+        });
+
+        function fct_CargarDatos() {
+            $.get('/Activo/GetHistorial?activoId=' + ID, function (res) {
+                if(res.status) {
+                    // Cabecera
+                    let info = res.activoInfo;
+                    if(info) {
+                        $('#vh_Placa').text(info.codigo);
+                        $('#vh_Desc').text(info.descripcion);
+                        $('#vh_Vin').text(info.serie);
+                        $('#vh_Km').text(new Intl.NumberFormat().format(info.kmActual));
+                        $('#vh_Estado').text(info.situacion + " | " + info.condicion);
+                    }
+
+                    // Tabla Movimientos
+                    let html = '';
+                    res.data.forEach(x => {
+                        let km = new Intl.NumberFormat().format(x.kilometraje);
+
+                        // CORRECCIÓN 1: Validar Ubicación para que no salga "null"
+                        let ubicacionDisplay = x.ubicacion ? x.ubicacion : '';
+
+                        // CORRECCIÓN 2: Validar Acta. Si no hay ruta, mostrar guión simple.
+                        let actaDisplay = '-';
+                        if (x.rutaActa) {
+                            actaDisplay = `<a href="/${x.rutaActa}" target="_blank" class="text-danger" title="Descargar Acta"><i class="fas fa-file-pdf fa-lg"></i></a>`;
+                        }
+
+                        html += `<tr>
+                            <td>${x.fecha}</td>
+                            <td><span class="font-weight-bold text-dark">${x.tipo}</span><br><small>${x.codigoActa}</small></td>
+                            <td>
+                                ${x.responsable}
+                                <br><small class="text-muted">${ubicacionDisplay}</small>
+                            </td>
+                            <td class="text-right font-weight-bold">${km}</td>
+                            <td>${x.observacion || ''}</td>
+                            @*<td class="text-center">${actaDisplay}</td>*@
+                        </tr>`;
+                    });
+
+                    if(res.data.length === 0) html = '<tr><td colspan="6" class="text-center">No hay movimientos registrados.</td></tr>';
+
+                    $('#tbl_Movimientos tbody').html(html);
+                }
+            });
+        }
+
+        function fct_CargarDocs() {
+            $.get('/Activo/GetDocumentosActivo?activoId=' + ID, function(res) {
+                if(res.status) {
+                    let html = '';
+                    res.data.forEach(d => {
+                        let st = d.estadoVenc == 'VENCIDO' ? '<span class="badge badge-danger">VENCIDO</span>' : '<span class="badge badge-success">VIGENTE</span>';
+                        let ver = d.rutaArchivo ? `<a href="/${d.rutaArchivo}" target="_blank" class="btn btn-info btn-xs"><i class="fas fa-eye"></i></a>` : '';
+
+                        // Formatear fecha
+                        let fechaVenc = d.vence ? d.vence : '-';
+
+                        html += `<tr>
+                            <td>${d.tipo}</td>
+                            <td>${d.nro || 'Sin documento'}</td>
+                            <td class="${d.estadoVenc == 'VENCIDO' ? 'text-danger font-weight-bold' : ''}">${fechaVenc}</td>
+                            <td>${st}</td>
+                            <td class="text-center">${ver}</td>
+                        </tr>`;
+                    });
+                    if(res.data.length == 0) html = '<tr><td colspan="5" class="text-center text-muted">Sin documentos.</td></tr>';
+                    $('#tbl_Docs tbody').html(html);
+                }
+            });
+        }
+
+        function fct_NuevoDoc() {
+            $('#modalDocsContent').load('/Activo/GestionDocumental?id=' + ID, function() {
+                $('#modalDocs').modal('show');
+            });
+        }
+    </script>
+}
