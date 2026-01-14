@@ -1331,7 +1331,7 @@ VALUES (3, SCOPE_IDENTITY(), 4, 1);
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('43115775', 'Socrates Magno Martinez Terrones', 'mmartinez@sblworldperu.com', '913097873', 'password123', 1); 
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (4, SCOPE_IDENTITY(), 2, 1);
+VALUES (4, SCOPE_IDENTITY(), 1, 1);
 
 -- Mario Sánchez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)

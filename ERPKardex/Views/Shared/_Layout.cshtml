@@ -275,6 +275,13 @@
                             bool isLogisticaOpen = new[] { "ReqCompra", "ReqServicio", "PedCompra", "PedServicio", "OrdenCompra", "OrdenServicio" }.Contains(controllerName);
                         }
 
+                        <li class="nav-item">
+                            <a href="/Logistica/Dashboard" class="nav-link @(controllerName == "Logistica" ? "active" : "")">
+                                <i class="nav-icon fas fa-chart-line text-info"></i>
+                                <p>Dashboard Logístico</p>
+                            </a>
+                        </li>
+
                         <li class="nav-item @(isLogisticaOpen ? "menu-open" : "")">
                             <a href="#" class="nav-link @(isLogisticaOpen ? "active" : "")">
                                 <i class="nav-icon fas fa-truck-loading"></i>

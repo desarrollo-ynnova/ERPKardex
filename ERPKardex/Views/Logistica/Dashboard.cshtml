@@ -1,0 +1,225 @@
+﻿@{
+    ViewData["Title"] = "Tablero de Control Logístico";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<div class="container-fluid py-3">
+
+    <div class="card shadow mb-4 border-bottom-primary">
+        <div class="card-body py-2">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="small font-weight-bold mb-1">Empresa</label>
+                    <select id="cbxEmpresaDash" class="form-control form-control-sm">
+                        <option value="0">-- CONSOLIDADO --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small font-weight-bold mb-1">Desde</label>
+                    <input type="date" id="txtFInicio" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="small font-weight-bold mb-1">Hasta</label>
+                    <input type="date" id="txtFFin" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary btn-sm btn-block shadow-sm font-weight-bold" onclick="fct_CargarDashboard()">
+                        <i class="fas fa-sync-alt mr-2"></i> ACTUALIZAR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Gasto Total Ejecutado</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Total">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Compras (Bienes)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Compras">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Servicios Contratados</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Servicios">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tools fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Monto Pagado</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Pagado">S/ 0.00</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hand-holding-usd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fas fa-shopping-cart"></i> Req. Compras</h6>
+                </div>
+                <div class="card-body">
+                    <div id="chartReqCompra" style="height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
+                    <h6 class="m-0 font-weight-bold text-warning"><i class="fas fa-hard-hat"></i> Req. Servicios</h6>
+                </div>
+                <div class="card-body">
+                    <div id="chartReqServicio" style="height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
+                    <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-chart-area"></i> Evolución del Gasto</h6>
+                </div>
+                <div class="card-body">
+                    <div id="chartEvolucion" style="height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const formatter = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+
+        $(document).ready(function () {
+            // Cargar Empresas
+            $.get('/Activo/GetEmpresasCombo', function (res) {
+                if (res.status) {
+                    res.data.forEach(e => $('#cbxEmpresaDash').append(`<option value="${e.id}">${e.razonSocial}</option>`));
+                }
+            });
+
+            // Fechas Default (Mes actual)
+            let date = new Date();
+            $('#txtFInicio').val(new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0]);
+            $('#txtFFin').val(new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0]);
+
+            fct_CargarDashboard();
+        });
+
+        function fct_CargarDashboard() {
+            let empresa = $('#cbxEmpresaDash').val();
+            let inicio = $('#txtFInicio').val();
+            let fin = $('#txtFFin').val();
+
+            Swal.fire({ title: 'Procesando...', didOpen: () => Swal.showLoading() });
+
+            $.get(`/Logistica/GetDashboardData?empresaId=${empresa}&fechaInicio=${inicio}&fechaFin=${fin}`, function (res) {
+                Swal.close();
+                if (res.status) {
+                    // KPIs
+                    $('#lbl_Total').text(formatter.format(res.kpis.montoTotal));
+                    $('#lbl_Compras').text(formatter.format(res.kpis.montoCompras));
+                    $('#lbl_Servicios').text(formatter.format(res.kpis.montoServicios));
+                    $('#lbl_Pagado').text(formatter.format(res.kpis.montoPagado));
+
+                    // Charts
+                    initDonut('chartReqCompra', res.charts.reqCompras, ['#36b9cc', '#f6c23e', '#e74a3b']); // Info, Warning, Danger
+                    initDonut('chartReqServicio', res.charts.reqServicios, ['#36b9cc', '#f6c23e', '#e74a3b']);
+                    initBarStack('chartEvolucion', res.charts.evolucion);
+                }
+            });
+        }
+
+        function initDonut(id, data, colors) {
+            let chart = echarts.init(document.getElementById(id));
+
+            // Mapeo de colores según estado (Opcional, lógica visual)
+            let colorMap = { 'ATENDIDO': '#1cc88a', 'PENDIENTE': '#f6c23e', 'CANCELADO': '#e74a3b' };
+
+            // Asignar color a cada data point si coincide
+            data.forEach(d => { if(colorMap[d.name]) d.itemStyle = { color: colorMap[d.name] }; });
+
+            let option = {
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: { bottom: '0%', icon: 'circle' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: data,
+                    label: { show: true, formatter: '{c}', position: 'inside', color: '#fff', fontWeight: 'bold' },
+                    itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 }
+                }]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        function initBarStack(id, data) {
+            let chart = echarts.init(document.getElementById(id));
+            let option = {
+                tooltip: { trigger: 'axis' },
+                legend: { top: '0%' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: data.categories },
+                yAxis: { type: 'value' },
+                series: [
+                    { name: 'Compras', type: 'bar', stack: 'total', data: data.compras, itemStyle: { color: '#36b9cc' } },
+                    { name: 'Servicios', type: 'bar', stack: 'total', data: data.servicios, itemStyle: { color: '#f6c23e' } }
+                ]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+    </script>
+}
