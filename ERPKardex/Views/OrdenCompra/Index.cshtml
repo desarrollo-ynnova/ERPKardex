@@ -175,6 +175,14 @@
                     className: 'btn btn-warning',
                     columns: ':not(.noVis)',
                 },
+                {
+                    text: ' <i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nueva OCO',
+                    className: 'btn bg-primary m-1',
+                    titleAttr: 'Nuevo',
+                    action: function (e, dt, node, config) {
+                        window.location.href = '/OrdenCompra/Registrar';
+                    },
+                },
             ],
             ajax: { url: '/OrdenCompra/GetOrdenesData', type: 'GET' },
             columns: [

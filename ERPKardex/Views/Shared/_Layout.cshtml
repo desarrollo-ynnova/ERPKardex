@@ -337,11 +337,28 @@
                                     <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
+                            @{
+                                // 1. Capturamos el tipo actual de la URL y lo normalizamos a mayúsculas
+                                string currentTipo = Context.Request.Query["tipo"].ToString().ToUpper();
+
+                                // 2. LISTA BLANCA: Definimos explícitamente qué vistas son "operativas"
+                                //    Esto evita que 'Dashboard' o futuros métodos activen estos menús por error.
+                                var accionesGestion = new[] { "Index", "Registro", "Historial", "Asignacion", "ActaImpresion", "BitacoraKm", "GestionDocumental" };
+                            }
+
                             <ul class="nav nav-treeview">
 
                                 <li class="nav-item">
+                                    <a href="/Activo/Dashboard"
+                                       class="nav-link @(controllerName == "Activo" && actionName == "Dashboard" ? "active" : "")">
+                                        <i class="nav-icon fas fa-tachometer-alt text-danger"></i>
+                                        <p>Dashboard Gerencial</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
                                     <a href="/Activo/Index?tipo=COMPUTO"
-                                       class="nav-link @((controllerName == "Activo" && (string.IsNullOrEmpty(Context.Request.Query["tipo"]) || Context.Request.Query["tipo"] == "COMPUTO")) ? "active" : "")">
+                                       class="nav-link @(controllerName == "Activo" && accionesGestion.Contains(actionName) && (currentTipo == "COMPUTO" || string.IsNullOrEmpty(currentTipo)) ? "active" : "")">
                                         <i class="fas fa-laptop nav-icon text-primary"></i>
                                         <p>Cómputo</p>
                                     </a>
@@ -349,7 +366,7 @@
 
                                 <li class="nav-item">
                                     <a href="/Activo/Index?tipo=VEHICULOS"
-                                       class="nav-link @((controllerName == "Activo" && Context.Request.Query["tipo"] == "VEHICULOS") ? "active" : "")">
+                                       class="nav-link @(controllerName == "Activo" && accionesGestion.Contains(actionName) && currentTipo == "VEHICULOS" ? "active" : "")">
                                         <i class="fas fa-truck-pickup nav-icon text-warning"></i>
                                         <p>Flota Vehicular</p>
                                     </a>

@@ -98,6 +98,7 @@ create table estado (
 create table empresa (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	ruc char(11),
+    nombre varchar(255),
 	razon_social varchar(255),
 	estado BIT,
 );
@@ -952,10 +953,10 @@ INSERT INTO formulacion_quimica (codigo, nombre, descripcion, ejemplo) VALUES ('
 INSERT INTO formulacion_quimica (codigo, nombre, descripcion, ejemplo) VALUES ('CS','CAPSULE SUSPENSION','MICROCÁPSULAS SUSPENDIDAS','LAMBDA-CIHALOTRINA CS');
 
 -- inserts de 'empresa'
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20607778338', 'CONTROL SCIENCE DEL PERU S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20603727551', 'STALNO S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRICOLA S.A.C.', 1);
-INSERT INTO empresa (ruc, razon_social, estado) VALUES ('20615184153', 'SUPPLY BIOTECHNOLOGY LOGISTIC WORLD S.A.C.S.', 1);
+INSERT INTO empresa (ruc, razon_social, nombre, estado) VALUES ('20607778338', 'CONTROL SCIENCE DEL PERU S.A.C.', 'CONTROL SCIENCE', 1);
+INSERT INTO empresa (ruc, razon_social, nombre, estado) VALUES ('20603727551', 'STALNO S.A.C.', 'STALNO', 1);
+INSERT INTO empresa (ruc, razon_social, nombre, estado) VALUES ('20613898167', 'MAQUINARIA Y SANIDAD AGRICOLA S.A.C.', 'MAQSA', 1);
+INSERT INTO empresa (ruc, razon_social, nombre, estado) VALUES ('20615184153', 'SUPPLY BIOTECHNOLOGY LOGISTIC WORLD S.A.C.S.', 'SUPPLY BIOTECHNOLOGY', 1);
 
 GO
 -- B. INSERTAR LAS DEMÁS EMPRESAS (IDs 5 al 16)
@@ -963,51 +964,51 @@ GO
 SET IDENTITY_INSERT empresa ON;
 -- ID 5: SOLUCIONES INDUSTRIALES METQUIM
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 5)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (5, '20614551853', 'SOLUCIONES INDUSTRIALES METQUIM S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (5, '20614551853', 'SOLUCIONES INDUSTRIALES METQUIM S.A.C.', 'METQUIM', 1);
 
 -- ID 6: GREEN FARM
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 6)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (6, '20603845294', 'PRODUCTOS Y SERVICIOS GENERALES GREEN FARM S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (6, '20603845294', 'PRODUCTOS Y SERVICIOS GENERALES GREEN FARM S.A.C.', 'GREEN FARM', 1);
 
 -- ID 7: IMBO
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 7)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (7, '20605644725', 'CONSTRUCTORA INMOBILIARIA EDIFICACIONES E INGENIERIA IMBO S.A.C', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (7, '20605644725', 'CONSTRUCTORA INMOBILIARIA EDIFICACIONES E INGENIERIA IMBO S.A.C', 'IMBO', 1);
 
 -- ID 8: EVOCA
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 8)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (8, '20561231304', 'EVOCA S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (8, '20561231304', 'EVOCA S.A.C.', 'EVOCA', 1);
 
 -- ID 9: INSTITUTO E.I.R.L.
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 9)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (9, '20605353721', 'INSTITUTO DE INVESTIGACION E INNOVACION DE GESTION Y DESARROLLO EMPRESARIAL E.I.R.L.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (9, '20605353721', 'INSTITUTO DE INVESTIGACION E INNOVACION DE GESTION Y DESARROLLO EMPRESARIAL E.I.R.L.', 'INIGDE', 1);
 
 -- ID 10: MEDICINA CORPORATIVA
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 10)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (10, '20607165832', 'MEDICINA CORPORATIVA Y SALUD S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (10, '20607165832', 'MEDICINA CORPORATIVA Y SALUD S.A.C.', 'MEDICORS', 1);
 
 -- ID 11: COMERCIALIZADORA EXPORTADORA
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 11)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (11, '20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (11, '20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 'COMEXDI', 1);
 
 -- ID 12: AGROQUIMEX
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 12)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (12, '20612680842', 'INNOVACION Y GESTION EN BIOPLAGUICIDAS AGROQUIMEX S.A.C', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (12, '20612680842', 'INNOVACION Y GESTION EN BIOPLAGUICIDAS AGROQUIMEX S.A.C', 'AGROQUIMEX', 1);
 
 -- ID 13: ECOMATERIALES
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 13)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (13, '20615085198', 'CORPORACION ECOMATERIALES DEL PERU S.A.C.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (13, '20615085198', 'CORPORACION ECOMATERIALES DEL PERU S.A.C.', 'ECOMAT', 1);
 
 -- ID 14: RECLUTA HEAD HUNTING
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 14)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (14, '20615125254', 'RECLUTA HEAD HUNTING S.A.C.S', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (14, '20615125254', 'RECLUTA HEAD HUNTING S.A.C.S', 'RECLUTA', 1);
 
 -- ID 15: YNNOVA DIGITAL
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 15)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (15, '20615155251', 'YNNOVA DIGITAL CORP S.A.C.S.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (15, '20615155251', 'YNNOVA DIGITAL CORP S.A.C.S.', 'YNNOVA', 1);
 
 -- ID 16: TRUST MORE COMPLIANCE
 IF NOT EXISTS(SELECT * FROM empresa WHERE id = 16)
-    INSERT INTO empresa (id, ruc, razon_social, estado) VALUES (16, '20614993198', 'TRUST MORE COMPLIANCE S.A.C.S.', 1);
+    INSERT INTO empresa (id, ruc, razon_social, nombre, estado) VALUES (16, '20614993198', 'TRUST MORE COMPLIANCE S.A.C.S.', 'TRUST MORE COMPLIANCE', 1);
 
 SET IDENTITY_INSERT empresa OFF;
 GO

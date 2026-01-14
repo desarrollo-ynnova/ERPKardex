@@ -1,0 +1,269 @@
+﻿@{
+    ViewData["Title"] = "Dashboard de Activos";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<style>
+    .table-container-scroll {
+        max-height: 500px; /* Alto máximo visible */
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+    }
+
+        .table-container-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Para que quede encima del contenido */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+        }
+</style>
+
+<div class="container-fluid py-3">
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Dashboard Gerencial</h1>
+        <small class="text-muted">Vista Ejecutiva de Activos</small>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="info-box mb-3 shadow">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cubes"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Activos</span>
+                    <span class="info-box-number" id="lbl_Total">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-box mb-3 shadow">
+                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-truck-pickup text-white"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Flota Vehicular</span>
+                    <span class="info-box-number" id="lbl_Vehiculos">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-box mb-3 shadow">
+                <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-laptop"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Activos Cómputo</span>
+                    <span class="info-box-number" id="lbl_Computo">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4 border-left-warning">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-car-side text-warning"></i> Distribución de Flota Vehicular</h6>
+                </div>
+                <div class="card-body">
+                    <div id="chartVehiculos" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4 border-left-primary">
+
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-laptop"></i> Inventario de Cómputo</h6>
+
+                    <div class="form-inline">
+                        <div class="input-group mr-3">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-primary text-white font-weight-bold"><i class="fas fa-filter"></i></span>
+                            </div>
+                            <select id="cbx_Empresa" class="form-control font-weight-bold text-primary" onchange="fct_FiltrarComputo()">
+                                <option value="TODAS">-- TODAS LAS EMPRESAS --</option>
+                            </select>
+                        </div>
+
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" onclick="$('#viewChart').show(); $('#viewMatrix').hide();">
+                                <input type="radio" name="options" autocomplete="off" checked> <i class="fas fa-chart-bar"></i> Gráfico
+                            </label>
+                            <label class="btn btn-outline-dark" onclick="$('#viewChart').hide(); $('#viewMatrix').show(); fct_RenderMatriz();">
+                                <input type="radio" name="options" autocomplete="off"> <i class="fas fa-table"></i> Matriz
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    <div id="viewChart">
+                        <h5 class="text-center font-weight-bold text-secondary mb-3" id="titleChartComputo">Resumen General</h5>
+                        <div id="chartComputo" style="width: 100%; min-height: 450px;"></div>
+                    </div>
+
+                    <div id="viewMatrix" style="display:none;">
+                        <h5 class="text-center font-weight-bold text-secondary mb-3">Matriz Detallada de Activos</h5>
+                        <div class="table-container-scroll">
+                            <table class="table table-striped table-hover text-center mb-0" id="tblMatrix">
+                                <thead class="bg-dark text-white"></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const formatter = new Intl.NumberFormat('en-US');
+        var RAW_COMPUTO = [];
+        var CHART_COMPUTO_INSTANCE = null;
+
+        $(document).ready(function () {
+            fct_CargarData();
+        });
+
+        function fct_CargarData() {
+            $.get('/Activo/GetResumenDashboard', function (res) {
+                if (res.status) {
+                    $('#lbl_Total').text(formatter.format(res.cards.total));
+                    $('#lbl_Computo').text(formatter.format(res.cards.computo));
+                    $('#lbl_Vehiculos').text(formatter.format(res.cards.vehiculos));
+
+                    initChartVehiculos(res.chartVehiculos);
+
+                    RAW_COMPUTO = res.rawComputo;
+
+                    let empresas = [...new Set(RAW_COMPUTO.map(x => x.empresa))];
+                    empresas.sort();
+                    empresas.forEach(e => {
+                        $('#cbx_Empresa').append(`<option value="${e}">${e}</option>`);
+                    });
+
+                    fct_FiltrarComputo();
+                }
+            });
+        }
+
+        // --- CÓMPUTO ---
+        function fct_FiltrarComputo() {
+            let empresaSel = $('#cbx_Empresa').val();
+            let dataFiltrada = [];
+
+            if (empresaSel === 'TODAS') {
+                $('#titleChartComputo').text('CONSOLIDADO GLOBAL POR TIPO DE ACTIVO');
+                let map = {};
+                RAW_COMPUTO.forEach(item => {
+                    if (!map[item.tipo]) map[item.tipo] = 0;
+                    map[item.tipo] += item.cantidad;
+                });
+                dataFiltrada = Object.keys(map).map(k => ({ name: k, value: map[k] }));
+            } else {
+                $('#titleChartComputo').text('DETALLE DE ACTIVOS: ' + empresaSel);
+                dataFiltrada = RAW_COMPUTO
+                    .filter(x => x.empresa === empresaSel)
+                    .map(x => ({ name: x.tipo, value: x.cantidad }));
+            }
+
+            dataFiltrada.sort((a, b) => b.value - a.value); // Ordenar
+
+            // --- LÓGICA DE ALTO DINÁMICO ---
+            // Calculamos 40px por barra + un colchón de 100px para ejes
+            let newHeight = (dataFiltrada.length * 40) + 100;
+            // Mínimo 450px para que no se vea ridículo si hay pocos datos
+            if (newHeight < 450) newHeight = 450;
+
+            // Aplicar nuevo alto al contenedor
+            $('#chartComputo').css('height', newHeight + 'px');
+
+            initChartComputo(dataFiltrada);
+        }
+
+        function fct_RenderMatriz() {
+            let empresas = [...new Set(RAW_COMPUTO.map(x => x.empresa))].sort();
+            let tipos = [...new Set(RAW_COMPUTO.map(x => x.tipo))].sort();
+
+            let thead = `<tr><th class="text-left bg-dark border-0">TIPO DE ACTIVO</th>`;
+            empresas.forEach(e => thead += `<th class="bg-dark border-0">${e}</th>`);
+            thead += `<th class="bg-secondary border-0">TOTAL</th></tr>`;
+            $('#tblMatrix thead').html(thead);
+
+            let tbody = '';
+            tipos.forEach(tipo => {
+                let row = `<tr><td class="text-left font-weight-bold">${tipo}</td>`;
+                let totalFila = 0;
+                empresas.forEach(emp => {
+                    let item = RAW_COMPUTO.find(x => x.empresa === emp && x.tipo === tipo);
+                    let cant = item ? item.cantidad : 0;
+                    let style = cant === 0 ? 'text-muted' : 'font-weight-bold text-dark';
+                    let val = cant === 0 ? '-' : cant;
+                    totalFila += cant;
+                    row += `<td class="${style}">${val}</td>`;
+                });
+                row += `<td class="font-weight-bold bg-light">${totalFila}</td></tr>`;
+                tbody += row;
+            });
+            $('#tblMatrix tbody').html(tbody);
+        }
+
+        function initChartVehiculos(data) {
+            var chart = echarts.init(document.getElementById('chartVehiculos'));
+            var option = {
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: { orient: 'vertical', left: 'left', textStyle: { fontSize: 14 } },
+                toolbox: { feature: { saveAsImage: { title: 'Guardar' } } },
+                series: [{
+                    name: 'Flota',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['60%', '50%'],
+                    itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+                    label: { show: true, formatter: '{c} Unds', fontWeight: 'bold', fontSize: 16 },
+                    data: data
+                }]
+            };
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        function initChartComputo(data) {
+            if(CHART_COMPUTO_INSTANCE != null) {
+                CHART_COMPUTO_INSTANCE.dispose(); // Destruir previo para re-dibujar en nuevo tamaño
+            }
+            CHART_COMPUTO_INSTANCE = echarts.init(document.getElementById('chartComputo'));
+
+            var option = {
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '10%', bottom: '3%', top: '5%', containLabel: true },
+                xAxis: { type: 'value' },
+                yAxis: {
+                    type: 'category',
+                    data: data.map(x => x.name).reverse(),
+                    axisLabel: { fontWeight: 'bold' }
+                },
+                series: [{
+                    type: 'bar',
+                    data: data.map(x => x.value).reverse(),
+                    barMaxWidth: 30, // Barras delgadas y elegantes
+                    barGap: '20%',   // Espacio entre barras
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#83bff6' }, { offset: 0.5, color: '#188df0' }, { offset: 1, color: '#188df0' }
+                        ])
+                    },
+                    label: { show: true, position: 'right', formatter: '{c}', fontWeight: 'bold', fontSize: 14, color: '#000' }
+                }]
+            };
+            CHART_COMPUTO_INSTANCE.setOption(option);
+            // No necesitamos listener de resize aquí porque se redibuja cada vez que filtra
+        }
+    </script>
+}

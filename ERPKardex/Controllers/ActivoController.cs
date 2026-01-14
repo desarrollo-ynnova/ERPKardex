@@ -755,5 +755,61 @@ namespace ERPKardex.Controllers
             return Json(new { status = true, data = ubicaciones });
         }
         #endregion
+        #region DASHBOARD GERENCIAL
+
+        public IActionResult Dashboard()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetResumenDashboard()
+        {
+            try
+            {
+                // 1. DATA BASE
+                var dataBase = await (from a in _context.Activos
+                                      join g in _context.ActivoGrupos on a.ActivoGrupoId equals g.Id
+                                      join t in _context.ActivoTipos on a.ActivoTipoId equals t.Id
+                                      join e in _context.Empresas on a.EmpresaId equals e.Id
+                                      where a.Estado == true
+                                      select new { Grupo = g.Nombre, Tipo = t.Nombre, Empresa = e.Nombre })
+                                      .ToListAsync();
+
+                // 2. KPIs
+                var cards = new
+                {
+                    total = dataBase.Count,
+                    vehiculos = dataBase.Count(x => x.Grupo == "VEHÍCULOS"),
+                    computo = dataBase.Count(x => x.Grupo != "VEHÍCULOS")
+                };
+
+                // 3. DATOS FLOTA (Para Pie Chart)
+                var fleetData = dataBase.Where(x => x.Grupo == "VEHÍCULOS")
+                                        .GroupBy(x => x.Empresa)
+                                        .Select(g => new { name = g.Key, value = g.Count() })
+                                        .ToList();
+
+                // 4. DATOS CÓMPUTO (RAW DATA para filtrar en Front)
+                // Enviamos: [{ Empresa: 'Inigde', Tipo: 'Laptop', Cantidad: 10 }, ...]
+                var compData = dataBase.Where(x => x.Grupo != "VEHÍCULOS")
+                                       .GroupBy(x => new { x.Empresa, x.Tipo })
+                                       .Select(g => new
+                                       {
+                                           Empresa = g.Key.Empresa,
+                                           Tipo = g.Key.Tipo,
+                                           Cantidad = g.Count()
+                                       })
+                                       .OrderBy(x => x.Empresa).ThenBy(x => x.Tipo)
+                                       .ToList();
+
+                return Json(new { status = true, cards, chartVehiculos = fleetData, rawComputo = compData });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
+        #endregion
     }
 }

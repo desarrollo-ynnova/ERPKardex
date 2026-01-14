@@ -9,6 +9,7 @@ namespace ERPKardex.Models
         public string? Ruc { get; set; }
         [Column("razon_social")]
         public string? RazonSocial { get; set; }
+        public string? Nombre { get; set; }
         public bool? Estado { get; set; }
     }
 }
