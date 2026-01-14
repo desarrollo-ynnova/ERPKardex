@@ -103,6 +103,11 @@
                             <label>Precio Unit. (Base)</label>
                             <input type="number" id="txt_DetPrecio" class="form-control" step="0.000001" value="0.000000">
                         </div>
+                        <div class="col-md-4 mb-3" id="div_TipoCambio">
+                            <label class="small font-weight-bold">Tipo de Cambio (Ref)</label>
+                            <input type="text" id="txtTCRef" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="---">
+                            <small class="text-muted d-block mt-1" id="msgTC">Del día seleccionado</small>
+                        </div>
                         <div class="col-md-4 mb-3 d-none" id="div_InputSalida_CC">
                             <label>Centro de Costo</label>
                             <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
@@ -199,7 +204,7 @@
             if (tipo === "0") {
                 // --- MODO SALIDA ---
                 // Ocultamos valorización y referencia
-                $('#div_InputPrecio, #div_DocRef, #div_DocVal').addClass('d-none');
+                $('#div_InputPrecio, #div_DocRef, #div_DocVal, #div_TipoCambio').addClass('d-none');
                 $('#div_InputSalida_CC, #div_InputSalida_Act').removeClass('d-none');
 
                 // Tabla
@@ -209,7 +214,7 @@
             } else {
                 // --- MODO ENTRADA ---
                 // Mostramos valorización y referencia
-                $('#div_InputPrecio, #div_DocRef, #div_DocVal').removeClass('d-none');
+                $('#div_InputPrecio, #div_DocRef, #div_DocVal, #div_TipoCambio').removeClass('d-none');
                 $('#div_InputSalida_CC, #div_InputSalida_Act').addClass('d-none');
 
                 // Tabla
@@ -358,6 +363,17 @@
                     });
                 }
             });
+        });
+
+        // 1. Consultar TC
+        $.get('/TipoCambio/GetTcPorFecha?fecha=' + '@DateTime.Now.ToString("yyyy-MM-dd")', function(res) {
+            if (res.status) {
+                $('#txtTCRef').val(res.valor.toFixed(3));
+                $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
+            } else {
+                $('#txtTCRef').val('0.000');
+                $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
+            }
         });
 
         $('#btn_Cancelar').on('click', function() {

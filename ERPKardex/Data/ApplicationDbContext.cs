@@ -60,6 +60,8 @@ namespace ERPKardex.Data
         public DbSet<ActivoDocumento> ActivoDocumentos { get; set; }
         public DbSet<ActivoHistorialMedida> ActivoHistorialMedidas { get; set; }
         public DbSet<Personal> Personal { get; set; }
-
+        public DbSet<TipoCambio> TipoCambios { get; set; }
+        public DbSet<Banco> Bancos { get; set; }
+        public DbSet<OrdenPago> OrdenPagos { get; set; }
     }
 }

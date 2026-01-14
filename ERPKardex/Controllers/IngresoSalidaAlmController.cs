@@ -159,6 +159,13 @@ namespace ERPKardex.Controllers
                     _context.IngresoSalidaAlms.Add(cabecera);
                     _context.SaveChanges();
 
+                    var tcDia = _context.TipoCambios
+                      .Where(x => x.Fecha.Date == cabecera.FechaDocumento.GetValueOrDefault().Date)
+                      .Select(x => x.TcVenta)
+                      .FirstOrDefault();
+
+                    if (tcDia <= 0) return Json(new { status = false, message = $"No existe Tipo de Cambio registrado para la fecha de pago {cabecera.FechaDocumento.GetValueOrDefault().Date:dd/MM/yyyy}." });
+
                     // 4. PROCESAR DETALLES Y STOCK
                     if (!string.IsNullOrEmpty(detallesJson))
                     {
@@ -206,6 +213,7 @@ namespace ERPKardex.Controllers
                             detalle.IngresoSalidaAlmId = cabecera.Id;
                             detalle.FechaRegistro = DateTime.Now;
                             detalle.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
+                            detalle.TipoCambio = tcDia;
 
                             var prodData = _context.Productos
                                 .Where(p => p.Id == detalle.ProductoId)

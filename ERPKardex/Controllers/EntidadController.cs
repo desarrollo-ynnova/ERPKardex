@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPKardex.Controllers
 {
-    public class EntidadController : Controller
+    public class EntidadController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
@@ -38,30 +38,53 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
+                var miEmpresaId = EmpresaUsuarioId;
+                var esGlobal = EsAdminGlobal;
 
-                // NOTA: Quitamos el filtro 'Estado == true' para ver también los inactivos y poder reactivarlos
-                var data = await _context.Entidades
-                    .Where(e => e.EmpresaId == empresaId)
-                    .OrderByDescending(e => e.Id)
-                    .Select(e => new
-                    {
-                        e.Id,
-                        e.Ruc,
-                        e.RazonSocial,
-                        e.NombreContacto,
-                        e.Telefono,
-                        e.Email,
-                        e.Estado // Necesario para pintar el badge en la vista
-                    })
-                    .ToListAsync();
+                // Hacemos Join con Banco para mostrar el nombre
+                var query = from e in _context.Entidades
+                            join b in _context.Bancos on e.BancoId equals b.Id into bancoJoin
+                            from b in bancoJoin.DefaultIfEmpty() // Left Join (puede no tener banco)
+                            where e.Estado == true
+                            select new
+                            {
+                                e.Id,
+                                e.Ruc,
+                                e.RazonSocial,
+                                e.NombreContacto,
+                                e.Telefono,
+                                e.Email,
+                                e.EmpresaId,
+                                e.Estado,
+                                // Datos Bancarios para mostrarlos o usarlos al editar
+                                e.BancoId,
+                                BancoNombre = b != null ? b.Nombre : "-",
+                                e.NumeroCuenta,
+                                e.NumeroCci,
+                                e.NumeroDetraccion
+                            };
 
-                return Json(new { status = true, data = data });
+                if (!esGlobal) query = query.Where(x => x.EmpresaId == miEmpresaId);
+
+                var lista = await query.OrderByDescending(x => x.Id).ToListAsync();
+                return Json(new { status = true, data = lista });
             }
-            catch (Exception ex)
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetBancosCombo()
+        {
+            try
             {
-                return Json(new { status = false, message = ex.Message });
+                var bancos = await _context.Bancos
+                                           .Where(x => x.Estado == true)
+                                           .Select(x => new { x.Id, x.Nombre })
+                                           .ToListAsync();
+
+                return Json(new { status = true, data = bancos });
             }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
         // 2. OBTENER UNO (Para cargar formulario)
@@ -120,6 +143,10 @@ namespace ERPKardex.Controllers
                     entidadDb.NombreContacto = modelo.NombreContacto;
                     entidadDb.Telefono = modelo.Telefono;
                     entidadDb.Email = modelo.Email;
+                    entidadDb.NumeroCuenta = modelo.NumeroCuenta;
+                    entidadDb.NumeroCci = modelo.NumeroCci;
+                    entidadDb.NumeroDetraccion = modelo.NumeroDetraccion;
+                    entidadDb.BancoId = modelo.BancoId;
 
                     // AQUÍ ES DONDE APLICAMOS LA BAJA O REACTIVACIÓN LÓGICA
                     // Si el usuario marcó Inactivo en el combo, aquí se guarda false.

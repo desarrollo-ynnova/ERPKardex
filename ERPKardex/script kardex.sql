@@ -52,6 +52,9 @@ drop table if exists activo_documento;
 drop table if exists activo_historial_medida;
 drop table if exists movimiento_activo;
 drop table if exists dmovimiento_activo;
+drop table if exists banco;
+drop table if exists tipo_cambio;
+drop table if exists orden_pago;
 
 GO
 
@@ -184,6 +187,10 @@ CREATE TABLE entidad (
 	nombre_contacto varchar(255),
     telefono varchar(255),
     email varchar(255),
+    banco_id INT,
+    numero_cuenta VARCHAR(255),
+    numero_detraccion VARCHAR(255),
+    numero_cci VARCHAR(255),
 	estado BIT,
 	empresa_id INT,
 );
@@ -816,6 +823,69 @@ CREATE TABLE dmovimiento_activo (
     
     observacion_item VARCHAR(255)
 );
+
+CREATE TABLE tipo_cambio (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    fecha DATE NOT NULL,          -- La fecha del TC
+    tc_compra DECIMAL(12,6),
+    tc_venta DECIMAL(12,6),       -- ESTE ES EL QUE USAREMOS PARA VENTAS/SALIDAS
+    estado BIT DEFAULT 1,
+    fecha_registro DATETIME DEFAULT GETDATE(),
+    
+    -- Restricción: No puede haber dos registros para el '2025-01-14', por ejemplo.
+    CONSTRAINT UQ_TipoCambio_Fecha UNIQUE (fecha)
+);
+
+CREATE TABLE orden_pago (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    
+    -- VINCULACIÓN (Solo se llenará uno de los dos)
+    ordencompra_id INT NULL,
+    ordenservicio_id INT NULL,
+    
+    -- DATOS SNAPSHOT (Copia de la orden al momento del pago para reporte rápido)
+    fecha_orden DATE,
+    numero_orden VARCHAR(20),
+    moneda_orden_id INT,
+    monto_total_orden DECIMAL(18,2),
+    
+    -- DATOS DE CRÉDITO
+    condicion_pago VARCHAR(50), -- 'CONTADO', 'CREDITO'
+    dias_credito INT DEFAULT 0,
+    
+    -- DATOS DEL PAGO REAL
+    fecha_pago DATE,
+    tipo_cambio_pago DECIMAL(12,6), -- El TC del día que se pagó (vital para contabilidad)
+    monto_abonado DECIMAL(18,2),    -- Cuánto pagaste realmente
+    
+    -- DATOS BANCARIOS
+    banco_id INT,                   -- Referencia a la tabla BANCO
+    numero_operacion VARCHAR(50),   -- El voucher o código de op.
+    
+    -- DEDUCCIONES (Detracciones / Retenciones)
+    tiene_deduccion BIT DEFAULT 0,
+    tipo_deduccion VARCHAR(20),     -- 'DETRACCION', 'RETENCION' o NULL
+    monto_deduccion DECIMAL(18,2) DEFAULT 0, -- Opcional, por si quieren guardar cuánto fue
+    
+    -- CÁLCULOS
+    dias_retraso INT DEFAULT 0,     -- Se calcula: DATEDIFF(day, fecha_orden, fecha_pago)
+  
+    estado_id INT,
+    ruta_voucher VARCHAR(255),
+  
+    -- AUDITORÍA
+    observacion VARCHAR(500),
+    usuario_registro_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE(),
+);
+
+CREATE TABLE banco (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    ruc varchar(255),
+    nombre VARCHAR(255),      -- Ej: 'BANCO DE CREDITO DEL PERU'
+    estado BIT DEFAULT 1
+);
+
 GO
 
 -- ==========================================
@@ -865,6 +935,7 @@ INSERT INTO estado (nombre, tabla) VALUES
 INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado', 'ORDEN');
 
 GO
 
@@ -1271,6 +1342,14 @@ VALUES (4, SCOPE_IDENTITY(), 2, 1);
 PRINT '>> Proceso de inserción finalizado correctamente.';
 GO
 
+INSERT INTO usuario (dni, nombre, email, telefono, password, estado) 
+VALUES ('77013712', 'Fernando Dávila Ubillús', 'ssoporte@corpsaf.com', '913980405', 'password123', 1);
+
+INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
+VALUES (15, (select id from usuario where dni = '77013712'), 1, 1);
+
+GO
+
 PRINT '>> Listado de usuarios.';
 SELECT 
     e.razon_social AS Empresa,
@@ -1289,3 +1368,48 @@ WHERE eu.estado = 1 AND e.estado = 1
 ORDER BY e.razon_social, u.nombre;
 
 GO
+
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100047218','BANCO DE CRÉDITO DEL PERÚ (BCP)',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100130204','BBVA PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100053455','INTERBANK (BANCO INTERNACIONAL DEL PERÚ)',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100030595','BANCO DE LA NACIÓN',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20101036813','BANBIF (BANCO INTERAMERICANO DE FINANZAS)',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20330401991','BANCO FALABELLA PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20259702411','BANCO RIPLEY PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20516711559','BANCO SANTANDER PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100105862','BANCO PICHINCHA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20513074370','BANCO GNB PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20604306150','BANK OF CHINA (PERÚ)',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100116635','CITIBANK DEL PERÚ',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20517476405','ALFIN BANCO',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20369155360','COMPARTAMOS BANCO',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20382036655','MIBANCO – BANCO DE LA MICROEMPRESA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20546892175','ICBC PERU BANK S.A.',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100209641','CAJA MUNICIPAL DE AREQUIPA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20114839176','CAJA MUNICIPAL DE CUSCO',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20130200789','CAJA MUNICIPAL DE HUANCAYO',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20104888934','CAJA MUNICIPAL DE ICA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20100269466','CAJA METROPOLITANA DE LIMA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20103845328','CAJA MUNICIPAL DE MAYNAS',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20102361939','CAJA MUNICIPAL DE PAITA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20113604248','CAJA MUNICIPAL DE PIURA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20130098488','CAJA MUNICIPAL DE TACNA',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20132243230','CAJA MUNICIPAL DE TRUJILLO',1);
+INSERT INTO banco (ruc, nombre, estado) VALUES ('20114105024','CAJA MUNICIPAL DEL SANTA',1);
+
+GO
+
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-01',3.358,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-02',3.358,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-03',3.358,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-04',3.358,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-05',3.358,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-06',3.356,3.372,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-07',3.357,3.366,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-08',3.359,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-09',3.359,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-10',3.358,3.365,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-11',3.358,3.365,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-12',3.358,3.365,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-13',3.355,3.368,1);
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14',3.356,3.361,1);

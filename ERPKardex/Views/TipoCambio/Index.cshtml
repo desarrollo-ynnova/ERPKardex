@@ -1,0 +1,200 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Tipo de Cambio";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container-fluid py-4">
+    <div class="row">
+
+        <div class="col-md-4">
+            <div class="card shadow border-left-success">
+                <div class="card-header bg-white">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-money-bill-wave"></i> Registro Diario</h6>
+                </div>
+                <div class="card-body">
+                    <form id="frmTC" autocomplete="off">
+                        <div class="form-group">
+                            <label class="font-weight-bold">Fecha</label>
+                            <input type="date" id="txtFecha" class="form-control text-center font-weight-bold" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                            <small class="text-muted">Si ya existe registro para esta fecha, no podrá sobreescribirlo.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>T.C. Compra</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" step="0.001" id="txtCompra" class="form-control" placeholder="0.000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>T.C. Venta <small class="text-muted">(Usado por el sistema)</small></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" step="0.001" id="txtVenta" class="form-control font-weight-bold text-success" placeholder="0.000">
+                            </div>
+                        </div>
+                        <hr>
+                        <button type="button" class="btn btn-success btn-block shadow" onclick="fct_ConfirmarGuardado()">
+                            <i class="fas fa-save mr-2"></i> REGISTRAR TIPO DE CAMBIO
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-history"></i> Historial Reciente</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 text-center" id="tblHistorial">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>FECHA</th>
+                                    <th>COMPRA</th>
+                                    <th>VENTA</th>
+                                    <th>ESTADO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="4">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            fct_CargarHistorial();
+        });
+
+        function fct_CargarHistorial() {
+            $.get('/TipoCambio/GetHistorial', function (res) {
+                if (res.status) {
+                    let html = '';
+                    if (res.data.length === 0) {
+                        html = '<tr><td colspan="4" class="text-muted">No hay registros recientes.</td></tr>';
+                    } else {
+                        res.data.forEach(x => {
+                            html += `
+                                <tr>
+                                    <td class="font-weight-bold">${x.fecha}</td>
+                                    <td>${x.tcCompra.toFixed(3)}</td>
+                                    <td class="text-success font-weight-bold">${x.tcVenta.toFixed(3)}</td>
+                                    <td><span class="badge badge-success">ACTIVO</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#tblHistorial tbody').html(html);
+                }
+            });
+        }
+
+        function fct_ConfirmarGuardado() {
+            let fecha = $('#txtFecha').val();
+            let compra = $('#txtCompra').val();
+            let venta = $('#txtVenta').val();
+
+            // 1. Validaciones Básicas
+            if (!fecha || !compra || !venta) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Faltan Datos',
+                    text: 'Por favor complete todos los campos (Fecha, Compra y Venta).',
+                    confirmButtonColor: '#f6c23e'
+                });
+                return;
+            }
+
+            if (parseFloat(compra) <= 0 || parseFloat(venta) <= 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Valores Incorrectos',
+                    text: 'El Tipo de Cambio debe ser mayor a 0.',
+                    confirmButtonColor: '#f6c23e'
+                });
+                return;
+            }
+
+            // 2. Mensaje de Confirmación
+            let msgFecha = '';
+            let hoy = new Date().toISOString().split('T')[0];
+            if (fecha !== hoy) {
+                msgFecha = '<br><span class="text-danger font-weight-bold">⚠️ ATENCIÓN: La fecha seleccionada NO es hoy.</span>';
+            }
+
+            Swal.fire({
+                title: '¿Confirmar Registro?',
+                html: `Se registrará el T.C. para el <b>${fecha}</b><br>
+                       Compra: <b>${compra}</b> | Venta: <b>${venta}</b>
+                       ${msgFecha}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1cc88a',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, Registrar',
+                cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                reverseButtons: true // Botón de confirmar a la derecha (estilo Windows/Mac moderno)
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fct_EjecutarGuardado(fecha, compra, venta);
+                }
+            });
+        }
+
+        function fct_EjecutarGuardado(fecha, compra, venta) {
+            // Bloqueo de UI
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Guardando información en el sistema',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            $.post('/TipoCambio/Guardar', { fecha: fecha, compra: compra, venta: venta }, function (res) {
+                if (res.status) {
+                    // Éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Registrado!',
+                        text: res.message,
+                        confirmButtonColor: '#1cc88a'
+                    });
+
+                    fct_CargarHistorial();
+                    // Limpiar campos
+                    $('#txtCompra').val('');
+                    $('#txtVenta').val('');
+                } else {
+                    // Error (Probablemente fecha duplicada si el backend valida eso)
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se pudo registrar',
+                        text: res.message,
+                        confirmButtonColor: '#e74a3b'
+                    });
+                }
+            }).fail(function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo contactar con el servidor.',
+                    confirmButtonColor: '#e74a3b'
+                });
+            });
+        }
+    </script>
+}

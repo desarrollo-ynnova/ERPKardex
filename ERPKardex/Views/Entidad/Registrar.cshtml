@@ -52,6 +52,27 @@
                         </div>
                     </div>
 
+                    <h6 class="text-success font-weight-bold mt-3 mb-3 border-bottom pb-2">Información Financiera</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label>Banco</label>
+                            <select id="cbxBanco" class="form-control">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>N° Cuenta</label>
+                            <input type="text" class="form-control" id="txtCuenta" placeholder="Cta. Corriente / Ahorros">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>CCI</label>
+                            <input type="text" class="form-control" id="txtCci" placeholder="Código Interbancario">
+                        </div>
+                        <div class="form-group col-md-12">
+                            <label>Cta. Detracciones (Banco Nación)</label>
+                            <input type="text" class="form-control bg-light" id="txtDetraccion" placeholder="00-000-00000">
+                        </div>
+                    </div>
                     <hr />
                     <div class="text-right">
                         <a href="/Entidad/Index" class="btn btn-secondary mr-2">
@@ -67,63 +88,93 @@
     </div>
 </div>
 
-<script>
-    $(document).ready(function() {
-        let id = $('#hdn_Id').val();
-        if(id > 0) {
-            cargarDatos(id);
-        } else {
-            // Si es nuevo, Estado Activo por defecto
-            $('#cbo_Estado').val("1");
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Cargar bancos y luego verificar si hay datos para editar
+            fct_CargarBancos();
+        });
+
+        // 1. CARGAR BANCOS
+        function fct_CargarBancos() {
+            $.get('/Entidad/GetBancosCombo', function (res) {
+                if (res.status) {
+                    let html = '<option value="">-- Sin Banco --</option>';
+                    res.data.forEach(b => {
+                        html += `<option value="${b.id}">${b.nombre}</option>`;
+                    });
+                    $('#cbxBanco').html(html);
+
+                    // Una vez cargado el combo, cargamos la data si es edición
+                    let id = $('#hdn_Id').val();
+                    if(id > 0) {
+                        cargarDatos(id);
+                    } else {
+                        $('#cbo_Estado').val("1");
+                    }
+                }
+            });
         }
-    });
 
-    function cargarDatos(id) {
-        $.get('/Entidad/Obtener?id=' + id, function(res) {
-            if(res.status) {
-                $('#txt_Ruc').val(res.data.ruc);
-                $('#txt_RazonSocial').val(res.data.razonSocial);
-                $('#txt_NombreContacto').val(res.data.nombreContacto);
-                $('#txt_Telefono').val(res.data.telefono);
-                $('#txt_Email').val(res.data.email);
+        function cargarDatos(id) {
+            $.get('/Entidad/Obtener?id=' + id, function(res) {
+                if(res.status) {
+                    // Datos Generales
+                    $('#txt_Ruc').val(res.data.ruc);
+                    $('#txt_RazonSocial').val(res.data.razonSocial);
+                    $('#txt_NombreContacto').val(res.data.nombreContacto);
+                    $('#txt_Telefono').val(res.data.telefono);
+                    $('#txt_Email').val(res.data.email);
+                    $('#cbo_Estado').val(res.data.estado ? "1" : "0");
 
-                // Mapear boolean a value del select (true->"1", false->"0")
-                $('#cbo_Estado').val(res.data.estado ? "1" : "0");
-            } else {
-                Swal.fire("Error", "No se pudo cargar la información.", "error");
-            }
-        });
-    }
+                    // Datos Financieros (AQUÍ ESTÁ LA MAGIA)
+                    $('#cbxBanco').val(res.data.bancoId);
+                    $('#txtCuenta').val(res.data.numeroCuenta);
+                    $('#txtCci').val(res.data.numeroCci);
+                    $('#txtDetraccion').val(res.data.numeroDetraccion);
 
-    function guardar() {
-        // Validaciones simples
-        let ruc = $('#txt_Ruc').val().trim();
-        let razon = $('#txt_RazonSocial').val().trim();
-        let nombreContacto = $('#txt_NombreContacto').val().trim();
+                } else {
+                    Swal.fire("Error", "No se pudo cargar la información.", "error");
+                }
+            });
+        }
 
-        if(!ruc || ruc.length < 11) return Swal.fire("Aviso", "El RUC debe tener 11 dígitos.", "warning");
-        if(!razon) return Swal.fire("Aviso", "Ingrese la Razón Social.", "warning");
-        if(!nombreContacto) return Swal.fire("Aviso", "Ingrese el nombre de contacto.", "warning");
+        function guardar() {
+            // Validaciones
+            let ruc = $('#txt_Ruc').val().trim();
+            let razon = $('#txt_RazonSocial').val().trim();
+            let nombreContacto = $('#txt_NombreContacto').val().trim();
 
-        let modelo = {
-            Id: $('#hdn_Id').val(),
-            Ruc: ruc,
-            RazonSocial: razon,
-            NombreContacto: nombreContacto,
-            Telefono: $('#txt_Telefono').val(),
-            Email: $('#txt_Email').val(),
-            // Enviamos el estado seleccionado (true si es "1", false si es "0")
-            Estado: $('#cbo_Estado').val() === "1"
-        };
+            if(!ruc || ruc.length < 11) return Swal.fire("Aviso", "El RUC debe tener 11 dígitos.", "warning");
+            if(!razon) return Swal.fire("Aviso", "Ingrese la Razón Social.", "warning");
+            if(!nombreContacto) return Swal.fire("Aviso", "Ingrese el nombre de contacto.", "warning");
 
-        $.post('/Entidad/Guardar', { modelo: modelo }, function(res) {
-            if(res.status) {
-                Swal.fire("Éxito", res.message, "success").then(() => {
-                    window.location.href = '/Entidad/Index';
-                });
-            } else {
-                Swal.fire("Error", res.message, "error");
-            }
-        });
-    }
-</script>
+            let modelo = {
+                Id: $('#hdn_Id').val(),
+                Ruc: ruc,
+                RazonSocial: razon,
+                NombreContacto: nombreContacto,
+                Telefono: $('#txt_Telefono').val(),
+                Email: $('#txt_Email').val(),
+
+                // Nuevos Campos Financieros
+                BancoId: $('#cbxBanco').val() || null, // Enviamos null si está vacío
+                NumeroCuenta: $('#txtCuenta').val(),
+                NumeroCci: $('#txtCci').val(),
+                NumeroDetraccion: $('#txtDetraccion').val(),
+
+                Estado: $('#cbo_Estado').val() === "1"
+            };
+
+            $.post('/Entidad/Guardar', { modelo: modelo }, function(res) {
+                if(res.status) {
+                    Swal.fire("Éxito", res.message, "success").then(() => {
+                        window.location.href = '/Entidad/Index';
+                    });
+                } else {
+                    Swal.fire("Error", res.message, "error");
+                }
+            });
+        }
+    </script>
+}

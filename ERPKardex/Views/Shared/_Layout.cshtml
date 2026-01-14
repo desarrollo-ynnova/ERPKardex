@@ -340,8 +340,13 @@
 
                         <li class="nav-header font-weight-bold">CONTABILIDAD</li>
 
-                        <li class="nav-item @(new[] { "CentroCosto" }.Contains(controllerName) ? "menu-open" : "")">
-                            <a href="#" class="nav-link @(new[] { "CentroCosto" }.Contains(controllerName) ? "active" : "")">
+                        @{
+                            // Agregamos "OrdenPago" a la lista para que el menú padre se quede abierto
+                            bool isFinanzasOpen = new[] { "CentroCosto", "TipoCambio", "OrdenPago" }.Contains(controllerName);
+                        }
+
+                        <li class="nav-item @(isFinanzasOpen ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(isFinanzasOpen ? "active" : "")">
                                 <i class="nav-icon fas fa-coins"></i>
                                 <p>
                                     Gestión Financiera
@@ -349,6 +354,7 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+
                                 <li class="nav-item">
                                     <a href="/CentroCosto/Index"
                                        class="nav-link @((controllerName == "CentroCosto" && actionName == "Index") ? "active" : "")">
@@ -356,6 +362,23 @@
                                         <p>Centros de Costo</p>
                                     </a>
                                 </li>
+
+                                <li class="nav-item">
+                                    <a href="/OrdenPago/Index"
+                                       class="nav-link @((controllerName == "OrdenPago") ? "active" : "")">
+                                        <i class="fas fa-file-invoice-dollar nav-icon text-primary"></i>
+                                        <p>Gestión de Pagos</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="/TipoCambio/Index"
+                                       class="nav-link @((controllerName == "TipoCambio") ? "active" : "")">
+                                        <i class="fas fa-money-bill-wave nav-icon text-success"></i>
+                                        <p>Tipo de Cambio</p>
+                                    </a>
+                                </li>                                
+
                             </ul>
                         </li>
 

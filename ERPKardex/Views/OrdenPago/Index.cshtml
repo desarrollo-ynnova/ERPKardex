@@ -1,0 +1,475 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Pagos";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="card shadow mb-4 border-top-primary">
+        <div class="card-header bg-white border-bottom-0 pt-3 pl-3">
+            <ul class="nav nav-tabs card-header-tabs" id="tabPagos" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold text-primary" id="pendientes-tab" data-toggle="tab" href="#pendientes" role="tab" aria-selected="true">
+                        <i class="fas fa-clock mr-2"></i> Pendientes de Pago
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-secondary" id="historial-tab" data-toggle="tab" href="#historial" role="tab" aria-selected="false" onclick="fct_CargarHistorial()">
+                        <i class="fas fa-history mr-2"></i> Historial de Pagos
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+
+                <div class="tab-pane fade show active" id="pendientes" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="tblOrdenes" width="100%">
+                            <thead class="thead-light text-center font-weight-bold text-dark">
+                                <tr>
+                                    <th>TIPO</th>
+                                    <th>N° ORDEN</th>
+                                    <th>FECHA EMISIÓN</th>
+                                    <th>PROVEEDOR</th>
+                                    <th>MONEDA</th>
+                                    <th>TOTAL</th>
+                                    <th>ACCIÓN</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="historial" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="tblHistorial" width="100%">
+                            <thead class="thead-light text-center font-weight-bold text-dark">
+                                <tr>
+                                    <th>FECHA PAGO</th>
+                                    <th>N° ORDEN</th>
+                                    <th>MONEDA</th>
+                                    <th>MONTO</th>
+                                    <th>BANCO / OP.</th>
+                                    <th>CUMPLIMIENTO</th>
+                                    <th>ESTADO</th>
+                                    <th>VOUCHER</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="text-center text-muted">Cargando historial...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPago" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-white text-dark border-bottom">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-hand-holding-usd text-success mr-2"></i> Registrar Pago</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <form id="frmPago">
+                    <input type="hidden" id="hdnIdOrden">
+                    <input type="hidden" id="hdnTipoOrden">
+                    <input type="hidden" id="hdnMonedaId">
+                    <input type="hidden" id="hdnFechaOrdenRaw"> <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-md-3 border-right">
+                                    <small class="text-muted font-weight-bold d-block">N° ORDEN</small>
+                                    <span id="lblNumeroOrden" class="h5 font-weight-bold text-dark">---</span>
+                                </div>
+                                <div class="col-md-3 border-right">
+                                    <small class="text-muted font-weight-bold d-block">FECHA EMISIÓN</small>
+                                    <span id="lblFechaOrden" class="text-dark">---</span>
+                                </div>
+                                <div class="col-md-3 border-right">
+                                    <small class="text-muted font-weight-bold d-block">FECHA DE POSIBLE PAGO</small>
+                                    <span id="lblFechaPosiblePago" class="text-dark">---</span>
+                                </div>
+                                <div class="col-md-3 text-right">
+                                    <small class="text-muted font-weight-bold d-block">TOTAL A PAGAR</small>
+                                    <span id="lblTotalOrden" class="h5 font-weight-bold text-primary">---</span>
+                                </div>
+                            </div>
+                            <div class="row mt-2 pt-2 border-top align-items-center">
+                                <div class="col-md-6 border-right">
+                                    <small class="text-muted">CONDICIÓN: <span id="lblCondicion" class="font-weight-bold text-dark">---</span></small>
+                                    <input type="hidden" id="hdnDiasCredito">
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <span id="lblAlertaRetraso" class="badge badge-light border text-muted p-2" style="font-size: 0.9em;">Calculando vencimiento...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-success font-weight-bold mb-3 border-bottom pb-2">Datos de la Transacción</h6>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">Fecha Pago <span class="text-danger">*</span></label>
+                                    <input type="date" id="txtFechaPago" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="fct_CambioFechaPago()">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">Banco Emisor <span class="text-danger">*</span></label>
+                                    <select id="cbxBanco" class="form-control select2">
+                                        <option value="">-- Seleccione --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">Tipo de Cambio (Ref)</label>
+                                    <input type="text" id="txtTCRef" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="---">
+                                    <small class="text-muted d-block mt-1" id="msgTC">Del día seleccionado</small>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">N° Operación <span class="text-danger">*</span></label>
+                                    <input type="text" id="txtOperacion" class="form-control" placeholder="Ej: 000548">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">Monto Abonado <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="txtMontoPagar" class="form-control font-weight-bold text-success border-success">
+                                </div>
+                            </div>
+
+                            <div class="form-row mt-2">
+                                <div class="form-group col-md-12">
+                                    <label class="small font-weight-bold">Adjuntar Voucher / Comprobante</label>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="fileVoucher" accept="image/*,.pdf">
+                                        <label class="custom-file-label" for="fileVoucher" id="lblFileVoucher">Seleccionar archivo...</label>
+                                    </div>
+                                    <small class="text-muted">Formatos: JPG, PNG, PDF (Máx 5MB)</small>
+                                </div>
+                            </div>
+
+                            <div class="form-group mt-2 border-top pt-2">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="chkDeduccion" onchange="fct_ToggleDeduccion()">
+                                    <label class="custom-control-label font-weight-bold text-secondary small" for="chkDeduccion">¿APLICA DEDUCCIÓN? (DETRACCIÓN / RETENCIÓN)</label>
+                                </div>
+                            </div>
+                            <div class="form-row bg-light p-2 rounded" id="divDeduccion" style="display:none;">
+                                <div class="form-group col-md-6 mb-0">
+                                    <label class="small font-weight-bold">Tipo</label>
+                                    <select id="cbxTipoDeduccion" class="form-control form-control-sm">
+                                        <option value="DETRACCION">DETRACCIÓN</option>
+                                        <option value="RETENCION">RETENCIÓN</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6 mb-0">
+                                    <label class="small font-weight-bold">Importe</label>
+                                    <input type="number" step="0.01" id="txtMontoDeduccion" class="form-control form-control-sm" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-light border" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success px-4 font-weight-bold shadow-sm" onclick="fct_GuardarPago()">
+                    <i class="fas fa-check-circle mr-1"></i> CONFIRMAR PAGO
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            fct_CargarOrdenes();
+            
+            $('#fileVoucher').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+        });
+
+        // --- 1. CARGA DE PENDIENTES ---
+        function fct_CargarOrdenes() {
+            $.get('/OrdenPago/GetOrdenesPorPagar', function (res) {
+                if (res.status) {
+                    let html = '';
+                    if(res.data.length === 0) html = '<tr><td colspan="7" class="text-center text-muted py-4">No hay órdenes aprobadas pendientes de pago.</td></tr>';
+
+                    res.data.forEach(x => {
+                        let badge = x.tipo === 'COMPRA' ? 'badge-info' : 'badge-warning';
+                        html += `
+                            <tr>
+                                <td class="text-center align-middle"><span class="badge ${badge}">${x.tipo}</span></td>
+                                <td class="font-weight-bold align-middle text-dark">${x.numero}</td>
+                                <td class="text-center align-middle">${x.fecha}</td>
+                                <td class="align-middle">${x.proveedor}</td>
+                                <td class="text-center font-weight-bold align-middle">${x.moneda}</td>
+                                <td class="text-right font-weight-bold align-middle text-dark">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.total)}</td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-sm btn-outline-success shadow-sm" onclick="fct_AbrirPago(${x.id}, '${x.tipo}', '${x.numero}')" title="Registrar Pago">
+                                        <i class="fas fa-money-bill-wave"></i> Pagar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    $('#tblOrdenes tbody').html(html);
+                }
+            });
+        }
+
+        // --- 2. CARGA DE HISTORIAL (Con Lógica de Cumplimiento) ---
+        function fct_CargarHistorial() {
+            $.get('/OrdenPago/GetHistorialPagos', function (res) {
+                if (res.status) {
+                    let html = '';
+                    if(res.data.length === 0) html = '<tr><td colspan="8" class="text-center text-muted py-4">Aún no se han registrado pagos.</td></tr>';
+
+                    res.data.forEach(x => {
+
+                        // Lógica Visual de Cumplimiento
+                        let cumplimientoHtml = '';
+                        if (x.diasCredito === 0) {
+                            cumplimientoHtml = '<span class="badge badge-light border text-secondary">CONTADO</span>';
+                        } else {
+                            cumplimientoHtml = `<small class="text-muted d-block">Crédito ${x.diasCredito} días</small>`;
+                        }
+
+                        if (x.diasRetraso > 0) {
+                            cumplimientoHtml += `<span class="badge badge-danger ml-1">Retraso: ${x.diasRetraso} días</span>`;
+                        } else {
+                            cumplimientoHtml += `<span class="badge badge-success ml-1">A tiempo</span>`;
+                        }
+
+                        let btnVer = x.rutaVoucher
+                            ? `<a href="/${x.rutaVoucher}" target="_blank" class="btn btn-sm btn-info" title="Ver Voucher"><i class="fas fa-file-alt"></i></a>`
+                            : '-';
+
+                        html += `
+                            <tr>
+                                <td class="font-weight-bold text-center align-middle">${x.fecha}</td>
+                                <td class="align-middle">${x.orden}</td>
+                                <td class="text-center align-middle">${x.moneda}</td>
+                                <td class="text-right font-weight-bold text-success align-middle">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.monto)}</td>
+                                <td class="align-middle">
+                                    <small class="d-block font-weight-bold text-dark">${x.banco}</small>
+                                    <small class="text-muted">Op: ${x.operacion}</small>
+                                </td>
+                                <td class="align-middle text-center">${cumplimientoHtml}</td>
+                                <td class="text-center align-middle"><span class="badge badge-light border">${x.estado}</span></td>
+                                <td class="text-center align-middle">${btnVer}</td>
+                            </tr>
+                        `;
+                        
+                    });
+                    $('#tblHistorial tbody').html(html);
+                }
+            });
+        }
+
+        // --- 3. MODAL Y LÓGICA DE PAGO ---
+        function fct_AbrirPago(id, tipo, numero) {
+            $('#frmPago')[0].reset();
+            $('#divDeduccion').hide();
+            $('#hdnIdOrden').val(id);
+            $('#hdnTipoOrden').val(tipo);
+            $('#lblNumeroOrden').text(numero);
+
+            $.get(`/OrdenPago/GetDatosOrden?id=${id}&tipo=${tipo}`, function (res) {
+                if (res.status) {
+                    let d = res.data;
+
+                    // Guardamos la fecha raw para cálculos
+                    $('#hdnFechaOrdenRaw').val(d.fechaOrden);
+                    // 1. Extraer días de crédito (PRIMERO)
+                    let dias = 0;
+                    let matches = d.condicion.match(/\d+/); // Busca el primer número en "CREDITO 30 DIAS"
+                    if (matches) dias = parseInt(matches[0]);
+                    $('#hdnDiasCredito').val(dias);
+
+                    // 2. Crear objetos de Fecha
+                    let fechaEmision = new Date(d.fechaOrden + 'T00:00:00');
+                    let fechaVencimiento = new Date(d.fechaOrden + 'T00:00:00'); // Clonamos la fecha base
+
+                    // 3. Sumar los días (Si es contado, suma 0)
+                    fechaVencimiento.setDate(fechaVencimiento.getDate() + dias);
+
+                    // 4. Mostrar en la Interfaz
+                    $('#lblFechaOrden').text(fechaEmision.toLocaleDateString('es-PE'));
+                    $('#lblFechaPosiblePago').text(fechaVencimiento.toLocaleDateString('es-PE')); // <--- Fecha Calculada
+
+                    // Resto de datos
+                    $('#lblTotalOrden').text(new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(d.total));
+                    $('#lblCondicion').text(d.condicion);
+                    $('#txtMontoPagar').val(d.total.toFixed(2));
+                    $('#hdnMonedaId').val(d.monedaId);
+
+                    let htmlBancos = '<option value="">-- Seleccione --</option>';
+                    res.bancos.forEach(b => htmlBancos += `<option value="${b.id}">${b.nombre}</option>`);
+                    $('#cbxBanco').html(htmlBancos);
+
+                    // Ejecutar lógica de fechas inicial
+                    fct_CambioFechaPago();
+
+                    $('#modalPago').modal('show');
+                }
+            });
+        }
+
+        // Función Centralizada: Al cambiar fecha, busca TC y Calcula Retraso
+        function fct_CambioFechaPago() {
+            let fechaPago = $('#txtFechaPago').val();
+            if (!fechaPago) return;
+
+            // 1. Consultar TC
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + fechaPago, function(res) {
+                if (res.status) {
+                    $('#txtTCRef').val(res.valor.toFixed(3));
+                    $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
+                } else {
+                    $('#txtTCRef').val('0.000');
+                    $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
+                }
+            });
+
+            // 2. Calcular Retraso en Vivo (Visual)
+            let diasCredito = parseInt($('#hdnDiasCredito').val() || 0);
+            let fechaOrdenStr = $('#hdnFechaOrdenRaw').val();
+
+            if (fechaOrdenStr) {
+                let fOrden = new Date(fechaOrdenStr + 'T00:00:00');
+                // Fecha Vencimiento = Fecha Orden + Días Crédito
+                fOrden.setDate(fOrden.getDate() + diasCredito);
+
+                let fPago = new Date(fechaPago + 'T00:00:00');
+
+                // Diferencia en tiempo -> días
+                let diffTime = fPago - fOrden;
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 0) {
+                    $('#lblAlertaRetraso')
+                        .removeClass('badge-light badge-success border-success text-muted')
+                        .addClass('badge-danger text-white')
+                        .html(`<i class="fas fa-clock"></i> PAGO CON RETRASO: ${diffDays} días`);
+                } else {
+                    $('#lblAlertaRetraso')
+                        .removeClass('badge-light badge-danger text-muted')
+                        .addClass('badge-success text-white')
+                        .html(`<i class="fas fa-check-circle"></i> PAGO A TIEMPO`);
+                }
+            }
+        }
+
+        function fct_ToggleDeduccion() {
+            if ($('#chkDeduccion').is(':checked')) {
+                $('#divDeduccion').slideDown();
+            } else {
+                $('#divDeduccion').slideUp();
+                $('#txtMontoDeduccion').val(0);
+            }
+        }
+        
+        function fct_GuardarPago() {
+            // 1. Validaciones
+            if (!$('#cbxBanco').val() || !$('#txtOperacion').val() || !$('#txtMontoPagar').val()) {
+                Swal.fire('Faltan Datos', 'Complete Banco, N° Operación y Monto.', 'warning');
+                return;
+            }
+
+            if (parseFloat($('#txtTCRef').val()) <= 0) {
+                Swal.fire('Error de T.C.', 'No hay Tipo de Cambio para la fecha seleccionada.', 'error');
+                return;
+            }
+
+            // 2. Preparar Datos del Objeto (Igual que antes)
+            let totalTexto = $('#lblTotalOrden').text().replace(/,/g, '');
+            let tipo = $('#hdnTipoOrden').val();
+
+            let objetoPago = {
+                OrdenCompraId: (tipo === 'COMPRA') ? $('#hdnIdOrden').val() : null,
+                OrdenServicioId: (tipo === 'SERVICIO') ? $('#hdnIdOrden').val() : null,
+                NumeroOrden: $('#lblNumeroOrden').text(),
+                MonedaOrdenId: $('#hdnMonedaId').val(),
+                MontoTotalOrden: parseFloat(totalTexto),
+                CondicionPago: $('#lblCondicion').text(),
+                DiasCredito: $('#hdnDiasCredito').val(),
+                FechaOrden: $('#hdnFechaOrdenRaw').val(), // Fecha raw del hidden
+                BancoId: $('#cbxBanco').val(),
+                NumeroOperacion: $('#txtOperacion').val().toUpperCase(),
+                MontoAbonado: $('#txtMontoPagar').val(),
+                TieneDeduccion: $('#chkDeduccion').is(':checked'),
+                TipoDeduccion: $('#chkDeduccion').is(':checked') ? $('#cbxTipoDeduccion').val() : null,
+                MontoDeduccion: $('#chkDeduccion').is(':checked') ? $('#txtMontoDeduccion').val() : 0
+            };
+
+            // 3. CREAR FORM DATA (El envoltorio para archivos + datos)
+            let formData = new FormData();
+
+            // A. Metemos el objeto como String JSON (Truco para no mapear campo por campo en C#)
+            formData.append('pagoJson', JSON.stringify(objetoPago));
+
+            // B. Metemos la fecha suelta
+            formData.append('fechaPagoReal', $('#txtFechaPago').val());
+
+            // C. Metemos el archivo (si existe)
+            let archivo = $('#fileVoucher')[0].files[0];
+            if (archivo) {
+                formData.append('archivoVoucher', archivo);
+            }
+
+            // 4. Enviar
+            Swal.fire({
+                title: '¿Confirmar Pago?',
+                text: `Monto: ${objetoPago.MontoAbonado} | T.C.: ${$('#txtTCRef').val()}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1cc88a',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, Pagar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    // UI Loading
+                    Swal.fire({ title: 'Procesando...', text: 'Subiendo archivo y registrando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+                    $.ajax({
+                        url: '/OrdenPago/RegistrarPago',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false, // IMPORTANTE: Para que no intente procesar como string
+                        processData: false, // IMPORTANTE: Para enviar el archivo binario
+                        success: function (res) {
+                            if (res.status) {
+                                Swal.fire('¡Éxito!', res.message, 'success');
+                                $('#modalPago').modal('hide');
+                                fct_CargarOrdenes();
+                                $('#historial-tab').tab('show');
+                                fct_CargarHistorial();
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

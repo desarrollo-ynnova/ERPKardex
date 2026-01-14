@@ -49,8 +49,9 @@
                             <select id="cbx_Moneda" class="form-control form-control"></select>
                         </div>
                         <div class="col-md-3">
-                            <label>T. Cambio</label>
-                            <input type="number" id="txt_TipoCambio" class="form-control" value="1.000" step="0.001">
+                            <label class="small font-weight-bold">Tipo de Cambio (Ref)</label>
+                            <input type="text" id="txtTCRef" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="---">
+                            <small class="text-muted d-block mt-1" id="msgTC">Del día seleccionado</small>
                         </div>
                         <div class="col-md-4">
                             <label class="d-block mb-1 font-weight-bold text-primary">Condición de Pago</label>
@@ -239,6 +240,18 @@
             renderTabla();
             limpiarInputsHeredados();
         });
+
+        // 1. Consultar TC
+        $.get('/TipoCambio/GetTcPorFecha?fecha=' + '@DateTime.Now.ToString("yyyy-MM-dd")', function(res) {
+            if (res.status) {
+                $('#txtTCRef').val(res.valor.toFixed(3));
+                $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
+            } else {
+                $('#txtTCRef').val('0.000');
+                $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
+            }
+        });
+
     });
     
     function toggleCondicionPago() {
@@ -535,7 +548,7 @@
             FechaEmision: $('#txt_FechaEmision').val(),
             FechaEntrega: $('#txt_FechaEntrega').val(),
             MonedaId: parseInt($('#cbx_Moneda').val()),
-            TipoCambio: parseFloat($('#txt_TipoCambio').val()),
+            TipoCambio: parseFloat($('#txtTCRef').val()),
             CondicionPago: condPagoFinal,
             IncluyeIgv: $('#chk_IncluyeIgv').is(':checked'),
             Observacion: $('#txt_Observacion').val(),

@@ -710,7 +710,34 @@ namespace ERPKardex.Controllers
         #endregion
 
         #region COMBOS
+        [HttpGet]
+        public JsonResult GetEmpresasCombo()
+        {
+            try
+            {
+                var esGlobal = EsAdminGlobal;
+                var miEmpresaId = EmpresaUsuarioId;
 
+                var query = _context.Empresas.Where(x => x.Estado == true);
+
+                if (!esGlobal)
+                {
+                    query = query.Where(x => x.Id == miEmpresaId);
+                }
+
+                var data = query.Select(x => new
+                {
+                    x.Id,
+                    x.RazonSocial
+                }).ToList();
+
+                return Json(new { status = true, data });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
         [HttpGet]
         public JsonResult GetCombosRegistro(string tipoModulo = "COMPUTO")
         {

@@ -25,7 +25,16 @@ namespace ERPKardex.Controllers
             }
         }
 
+        protected int TipoUsuarioActualId
+        {
+            get
+            {
+                var claim = User.FindFirstValue(ClaimTypes.Role);
+                return claim != null ? int.Parse(claim) : 0;
+            }
+        }
+
         // Aquí definimos la lógica del "Admin Global" (Hardcodeado solo una vez aquí)
-        protected bool EsAdminGlobal => EmpresaUsuarioId == 4;
+        protected bool EsAdminGlobal => TipoUsuarioActualId == 1 || EmpresaUsuarioId == 4;
     }
 }

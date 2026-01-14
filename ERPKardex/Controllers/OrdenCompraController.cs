@@ -268,11 +268,19 @@ namespace ERPKardex.Controllers
                         if (partes.Length > 1 && int.TryParse(partes[1], out int val)) nro = val + 1;
                     }
 
+                    var tcDia = _context.TipoCambios
+                                          .Where(x => x.Fecha.Date == cabecera.FechaEmision.GetValueOrDefault().Date)
+                                          .Select(x => x.TcVenta)
+                                          .FirstOrDefault();
+
+                    if (tcDia <= 0) return Json(new { status = false, message = $"No existe Tipo de Cambio registrado para la fecha de pago {cabecera.FechaEmision.GetValueOrDefault().Date:dd/MM/yyyy}." });
+
                     // Cabecera
                     cabecera.Numero = $"OCO-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
                     cabecera.UsuarioCreacionId = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
+                    cabecera.TipoCambio = tcDia;
                     cabecera.EstadoId = estadoGenerado.Id;
 
                     if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
