@@ -728,7 +728,8 @@ namespace ERPKardex.Controllers
                 var data = query.Select(x => new
                 {
                     x.Id,
-                    x.RazonSocial
+                    x.RazonSocial,
+                    x.Nombre
                 }).ToList();
 
                 return Json(new { status = true, data });
