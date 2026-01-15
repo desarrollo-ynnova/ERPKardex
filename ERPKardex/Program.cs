@@ -37,6 +37,11 @@ builder.Services.AddControllersWithViews()
 // Configurar el Worker automático
 builder.Services.AddHostedService<ERPKardex.Workers.VerificadorVencimientosWorker>();
 
+// CACHÉ PARA PERMISOS
+builder.Services.AddMemoryCache(); // Habilitar Caché en RAM
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ERPKardex.Services.IPermisoService, ERPKardex.Services.PermisoService>();
+
 // --- CONFIGURACI�N DE CULTURA H�BRIDA ---
 var cultureInfo = new System.Globalization.CultureInfo("es-PE");
 

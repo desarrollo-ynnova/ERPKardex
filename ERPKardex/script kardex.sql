@@ -1,6 +1,8 @@
 ﻿-- USE DB
 use erp_kardex_dev;
 
+drop table if exists empresa_usuario_permiso;
+drop table if exists permiso;
 drop table if exists stock_almacen;
 drop table if exists empresa;
 drop table if exists sucursal;
@@ -90,6 +92,26 @@ CREATE TABLE empresa_usuario (
     usuario_id INT NOT NULL,      -- Relación lógica con tabla usuario
     tipo_usuario_id INT NOT NULL, -- Relación lógica con tabla tipo_usuario
     estado BIT DEFAULT 1
+);
+
+-- 1. TABLA PERMISOS (El catálogo de qué se puede hacer)
+CREATE TABLE permiso (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,  -- Ej: 'MOD_LOGISTICA', 'BTN_ANULAR'
+    descripcion VARCHAR(100),
+    modulo VARCHAR(50),                  -- Agrupador visual (LOGISTICA, VENTAS)
+    estado BIT DEFAULT 1
+);
+
+-- 2. TABLA ASIGNACIÓN (Quién tiene qué, en qué empresa)
+CREATE TABLE empresa_usuario_permiso (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    empresa_usuario_id INT NOT NULL,     -- El ID del vínculo usuario-empresa
+    permiso_id INT NOT NULL,
+    
+    CONSTRAINT FK_EUP_Vinculo FOREIGN KEY (empresa_usuario_id) REFERENCES empresa_usuario(id),
+    CONSTRAINT FK_EUP_Permiso FOREIGN KEY (permiso_id) REFERENCES permiso(id),
+    CONSTRAINT UQ_Permiso_Unico UNIQUE (empresa_usuario_id, permiso_id)
 );
 
 create table estado (

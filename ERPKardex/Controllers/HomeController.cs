@@ -58,9 +58,10 @@ namespace ERPKardex.Controllers
                                               UsuarioId = u.Id,
                                               u.Nombre,
                                               u.Dni,
-                                              e.Id, // Este es el EmpresaId real
+                                              EmpresaId = e.Id, // Este es el EmpresaId real
                                               RazonSocial = e.RazonSocial,
-                                              eu.TipoUsuarioId // El rol por si lo necesitas luego
+                                              eu.TipoUsuarioId, // El rol por si lo necesitas luego
+                                              EmpresaUsuarioId = eu.Id
                                           }).FirstOrDefaultAsync();
 
                 if (datosUsuario == null)
@@ -74,7 +75,8 @@ namespace ERPKardex.Controllers
             {
                 new Claim(ClaimTypes.Name, datosUsuario.Nombre),
                 new Claim(ClaimTypes.NameIdentifier, datosUsuario.UsuarioId.ToString()),
-                new Claim("EmpresaId", datosUsuario.Id.ToString()), // EmpresaId recuperado del RUC
+                new Claim("EmpresaId", datosUsuario.EmpresaId.ToString()), // EmpresaId recuperado del RUC
+                new Claim("EmpresaUsuarioId", datosUsuario.EmpresaUsuarioId.ToString()), // GUARDAMOS ESTO
                 new Claim("RazonSocial", datosUsuario.RazonSocial),
                 new Claim("DNI", datosUsuario.Dni),
                 new Claim(ClaimTypes.Role, datosUsuario.TipoUsuarioId.GetValueOrDefault().ToString())

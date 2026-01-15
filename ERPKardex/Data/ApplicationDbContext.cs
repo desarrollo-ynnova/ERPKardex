@@ -13,6 +13,8 @@ namespace ERPKardex.Data
         public DbSet<TipoUsuario> TipoUsuarios { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<EmpresaUsuario> EmpresaUsuarios { get; set; }
+        public DbSet<Permiso> Permisos { get; set; }
+        public DbSet<EmpresaUsuarioPermiso> EmpresaUsuarioPermisos { get; set; }
         public DbSet<Grupo> Grupos { get; set; }
         public DbSet<Subgrupo> Subgrupos { get; set; }
         public DbSet<TipoExistencia> TipoExistencias { get; set; }
