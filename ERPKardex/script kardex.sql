@@ -129,6 +129,7 @@ create table moneda (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	codigo varchar(255),
 	nombre varchar(255),
+    simbolo varchar(255),
 	estado BIT
 );
 
@@ -1111,8 +1112,8 @@ INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('09','Guía de 
 INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('10','Recibo por Arrendamiento',1);
 
 -- inserts de 'moneda'
-INSERT INTO moneda (codigo, nombre, estado) VALUES ('01', 'SOLES', 1);
-INSERT INTO moneda (codigo, nombre, estado) VALUES ('02', 'DÓLARES', 1);
+INSERT INTO moneda (codigo, nombre, simbolo, estado) VALUES ('01', 'SOLES', 'S/.', 1);
+INSERT INTO moneda (codigo, nombre, simbolo, estado) VALUES ('02', 'DÓLARES', '$', 1);
 
 -- inserts de 'motivo'
 -- tipo_movimiento: 1 - ENTRADAS

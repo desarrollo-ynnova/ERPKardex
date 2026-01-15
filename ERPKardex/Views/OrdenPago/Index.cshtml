@@ -191,9 +191,15 @@
                                     <label class="small font-weight-bold">N° Operación <span class="text-danger">*</span></label>
                                     <input type="text" id="txtOperacion" class="form-control" placeholder="Ej: 000548">
                                 </div>
+
                                 <div class="form-group col-md-4">
                                     <label class="small font-weight-bold">Monto a Pagar <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" id="txtMontoPagar" class="form-control font-weight-bold text-success border-success form-control-lg">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text font-weight-bold bg-white text-success border-success" id="lblMonedaInput">S/.</span>
+                                        </div>
+                                        <input type="number" step="0.01" id="txtMontoPagar" class="form-control font-weight-bold text-success border-success form-control-lg" style="border-left:0;">
+                                    </div>
                                     <small class="text-muted">Sugerido: Saldo Pendiente</small>
                                 </div>
                             </div>
@@ -308,8 +314,8 @@
                     res.data.forEach(x => {
                         let badge = x.tipo === 'COMPRA' ? 'badge-info' : 'badge-warning';
 
-                        // --- LÓGICA DE ESTADO PAGO (CORREGIDA) ---
-                        let estadoPagoHtml = '<span class="badge badge-secondary">Pendiente</span>'; // Default
+                        // --- LÓGICA DE ESTADO PAGO ---
+                        let estadoPagoHtml = '<span class="badge badge-secondary">Pendiente</span>';
 
                         if (x.estadoPago === 'Pagado Parcial') {
                             estadoPagoHtml = '<span class="badge badge-warning">Pagado Parcial</span>';
@@ -319,6 +325,9 @@
                             estadoPagoHtml = '<span class="badge badge-success">Pagado Total</span>';
                         }
 
+                        // USAMOS EL SÍMBOLO DINÁMICO QUE VIENE DE TU CONTROLLER
+                        let simbolo = x.monedaSimbolo || 'S/.';
+
                         html += `
                             <tr>
                                 <td class="text-center align-middle"><span class="badge ${badge}">${x.tipo}</span></td>
@@ -326,7 +335,7 @@
                                 <td class="text-center align-middle">${x.fecha}</td>
                                 <td class="align-middle">${x.proveedor}</td>
                                 <td class="text-center font-weight-bold align-middle">${x.moneda}</td>
-                                <td class="text-right font-weight-bold align-middle text-dark">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.total)}</td>
+                                <td class="text-right font-weight-bold align-middle text-dark">${simbolo} ${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.total)}</td>
                                 <td class="text-center align-middle">${estadoPagoHtml}</td>
                                 <td class="text-center align-middle">
                                     <button class="btn btn-sm btn-outline-success shadow-sm" onclick="fct_AbrirPago(${x.id}, '${x.tipo}', '${x.numero}')" title="Registrar Pago">
@@ -360,12 +369,15 @@
                             ? `<a href="/${x.rutaVoucher}" target="_blank" class="btn btn-sm btn-info" title="Ver Voucher"><i class="fas fa-file-alt"></i></a>`
                             : '<span class="text-muted">-</span>';
 
+                        // Símbolo en historial (Asumimos moneda por nombre si no tienes columna símbolo en este DTO)
+                        let simboloH = x.monedaSimbolo;
+
                         html += `
                             <tr>
                                 <td class="font-weight-bold text-center align-middle">${x.fecha}</td>
                                 <td class="align-middle">${x.orden}</td>
                                 <td class="text-center align-middle">${x.moneda}</td>
-                                <td class="text-right font-weight-bold text-success align-middle">${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.monto)}</td>
+                                <td class="text-right font-weight-bold text-success align-middle">${simboloH} ${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(x.monto)}</td>
                                 <td class="align-middle">
                                     <small class="d-block font-weight-bold text-dark">${x.banco}</small>
                                     <small class="text-muted">Op: ${x.operacion}</small>
@@ -385,7 +397,7 @@
         function fct_AbrirPago(id, tipo, numero) {
             $('#frmPago')[0].reset();
             $('#divDeduccion').hide();
-            resetUploadUI(); // Limpia el input file visualmente
+            resetUploadUI();
 
             $('#hdnIdOrden').val(id);
             $('#hdnTipoOrden').val(tipo);
@@ -408,14 +420,20 @@
                     fechaVencimiento.setDate(fechaVencimiento.getDate() + dias);
                     $('#lblFechaPosiblePago').text(fechaVencimiento.toLocaleDateString('es-PE'));
 
+                    // --- SÍMBOLO DINÁMICO ---
+                    let simbolo = d.monedaSimbolo || 'S/.'; // Recibimos el símbolo del controller
                     let formatoMoneda = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 });
-                    $('#lblTotalOrden').text(formatoMoneda.format(d.total));
-                    $('#lblSaldoPendiente').text(formatoMoneda.format(d.saldoPendiente)); // Muestra Saldo
+
+                    $('#lblTotalOrden').text(`${simbolo} ${formatoMoneda.format(d.total)}`);
+                    $('#lblSaldoPendiente').text(`${simbolo} ${formatoMoneda.format(d.saldoPendiente)}`);
+
+                    // Actualizamos el prefijo visual del input
+                    $('#lblMonedaInput').text(simbolo);
 
                     $('#lblCondicion').text(d.condicion);
                     $('#hdnMonedaId').val(d.monedaId);
 
-                    $('#txtMontoPagar').val(d.saldoPendiente.toFixed(2)); // Sugiere Saldo
+                    $('#txtMontoPagar').val(d.saldoPendiente.toFixed(2));
 
                     let htmlBancos = '<option value="">-- Seleccione --</option>';
                     res.bancos.forEach(b => htmlBancos += `<option value="${b.id}">${b.nombre}</option>`);
@@ -441,7 +459,7 @@
                 }
             });
 
-            // Alerta Retraso Visual
+            // Alerta Retraso
             let diasCredito = parseInt($('#hdnDiasCredito').val() || 0);
             let fechaOrdenStr = $('#hdnFechaOrdenRaw').val();
             if (fechaOrdenStr) {
@@ -473,7 +491,7 @@
                 return;
             }
 
-            let saldoStr = $('#lblSaldoPendiente').text().replace(/,/g, '');
+            let saldoStr = $('#lblSaldoPendiente').text().replace(/[^0-9.-]+/g, ""); // Limpiamos símbolos para obtener solo el número
             let saldo = parseFloat(saldoStr);
             let montoPagar = parseFloat($('#txtMontoPagar').val());
 
@@ -482,16 +500,17 @@
             let colorBoton = '#1cc88a';
             let mensajeExtra = '';
 
-            if (montoPagar > saldo + 1) { // Tolerancia 1.00
+            if (montoPagar > saldo + 1) {
                 tituloAlerta = '¿SOBREPAGO DETECTADO?';
                 iconoAlerta = 'warning';
                 colorBoton = '#f6c23e';
                 let exceso = (montoPagar - saldo).toFixed(2);
-                mensajeExtra = `ATENCIÓN: Estás pagando S/ ${exceso} MÁS del saldo pendiente.\n\n`;
+                mensajeExtra = `ATENCIÓN: Estás pagando ${exceso} MÁS del saldo pendiente.\n\n`;
             }
 
             let tipo = $('#hdnTipoOrden').val();
-            let totalTexto = $('#lblTotalOrden').text().replace(/,/g, '');
+            // Limpiamos el texto total quitando el símbolo que agregamos
+            let totalTexto = $('#lblTotalOrden').text().replace(/[^0-9.-]+/g, "");
 
             let objetoPago = {
                 OrdenCompraId: (tipo === 'COMPRA') ? $('#hdnIdOrden').val() : null,

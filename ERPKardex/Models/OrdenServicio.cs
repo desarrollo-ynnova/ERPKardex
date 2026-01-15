@@ -29,7 +29,7 @@ namespace ERPKardex.Models
         [Column("moneda_id")]
         public int? MonedaId { get; set; }
 
-        [Column("tipo_cambio")]
+        [Column("tipo_cambio", TypeName = "decimal(12,6)")]
         public decimal? TipoCambio { get; set; }
 
         [Column("condicion_pago")]

@@ -40,7 +40,7 @@ namespace ERPKardex.Models
         [Column("fecha_pago")]
         public DateTime FechaPago { get; set; }
 
-        [Column("tipo_cambio_pago")]
+        [Column("tipo_cambio_pago", TypeName = "decimal(12,6)")]
         public decimal? TipoCambioPago { get; set; }
 
         [Column("monto_abonado")]

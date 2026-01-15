@@ -160,7 +160,7 @@ namespace ERPKardex.Controllers
                     _context.SaveChanges();
 
                     var tcDia = _context.TipoCambios
-                      .Where(x => x.Fecha.Date == cabecera.FechaDocumento.GetValueOrDefault().Date)
+                      .Where(x => x.Fecha.Date == cabecera.FechaRegistro.GetValueOrDefault().Date)
                       .Select(x => x.TcVenta)
                       .FirstOrDefault();
 

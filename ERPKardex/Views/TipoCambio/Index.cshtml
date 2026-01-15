@@ -25,7 +25,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">S/</span>
                                 </div>
-                                <input type="number" step="0.001" id="txtCompra" class="form-control" placeholder="0.000">
+                                <input type="number" step="0.000001" id="txtCompra" class="form-control" placeholder="0.000">
                             </div>
                         </div>
                         <div class="form-group">
@@ -34,7 +34,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">S/</span>
                                 </div>
-                                <input type="number" step="0.001" id="txtVenta" class="form-control font-weight-bold text-success" placeholder="0.000">
+                                <input type="number" step="0.000001" id="txtVenta" class="form-control font-weight-bold text-success" placeholder="0.000">
                             </div>
                         </div>
                         <hr>
@@ -91,8 +91,8 @@
                             html += `
                                 <tr>
                                     <td class="font-weight-bold">${x.fecha}</td>
-                                    <td>${x.tcCompra.toFixed(3)}</td>
-                                    <td class="text-success font-weight-bold">${x.tcVenta.toFixed(3)}</td>
+                                    <td>${x.tcCompra.toFixed(6)}</td>
+                                    <td class="text-success font-weight-bold">${x.tcVenta.toFixed(6)}</td>
                                     <td><span class="badge badge-success">ACTIVO</span></td>
                                 </tr>
                             `;

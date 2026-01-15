@@ -12,11 +12,11 @@ namespace ERPKardex.Models
         [Column("fecha")]
         public DateTime Fecha { get; set; }
 
-        [Column("tc_compra")]
+        [Column("tc_compra", TypeName = "decimal(12,6)")]
         public decimal TcCompra { get; set; }
 
-        [Column("tc_venta")]
-        public decimal TcVenta { get; set; } // <--- Este es el importante para el sistema
+        [Column("tc_venta", TypeName = "decimal(12,6)")]
+        public decimal TcVenta { get; set; }
 
         [Column("estado")]
         public bool? Estado { get; set; }

@@ -53,6 +53,7 @@ namespace ERPKardex.Controllers
                                   Fecha = o.FechaEmision,
                                   Proveedor = ent.RazonSocial,
                                   Moneda = mon.Nombre,
+                                  MonedaSimbolo = mon.Simbolo,
                                   EstadoPago = est.Nombre,
                                   Total = o.Total,
                                   EmpresaId = o.EmpresaId
@@ -73,6 +74,7 @@ namespace ERPKardex.Controllers
                                     Fecha = o.FechaEmision,
                                     Proveedor = ent.RazonSocial,
                                     Moneda = mon.Nombre,
+                                    MonedaSimbolo = mon.Simbolo,
                                     EstadoPago = est.Nombre,
                                     Total = o.Total,
                                     EmpresaId = o.EmpresaId
@@ -94,6 +96,7 @@ namespace ERPKardex.Controllers
                     Fecha = x.Fecha.GetValueOrDefault().ToString("dd/MM/yyyy"),
                     x.Proveedor,
                     x.Moneda,
+                    x.MonedaSimbolo,
                     Total = x.Total,
                     x.EstadoPago,
                 });
@@ -111,6 +114,8 @@ namespace ERPKardex.Controllers
             try
             {
                 string condicionPago = "";
+                string monedaNombre = "";
+                string monedaSimbolo = "";
                 decimal total = 0;
                 DateTime fechaEmision = DateTime.Now;
                 int monedaId = 0;
@@ -125,6 +130,11 @@ namespace ERPKardex.Controllers
                         total = oc.Total ?? 0;
                         fechaEmision = oc.FechaEmision ?? DateTime.Now;
                         monedaId = oc.MonedaId ?? 0;
+
+                        // Monedas
+                        var monedaOc = _context.Monedas.FirstOrDefault(mo => mo.Id == monedaId);
+                        monedaNombre = monedaOc?.Nombre ?? "";
+                        monedaSimbolo = monedaOc?.Simbolo ?? "";
 
                         // Sumar pagos previos
                         pagadoHastaAhora = await _context.OrdenPagos
@@ -141,6 +151,11 @@ namespace ERPKardex.Controllers
                         total = os.Total ?? 0;
                         fechaEmision = os.FechaEmision ?? DateTime.Now;
                         monedaId = os.MonedaId ?? 0;
+
+                        // Monedas
+                        var monedaOs = _context.Monedas.FirstOrDefault(mo => mo.Id == monedaId);
+                        monedaNombre = monedaOs?.Nombre ?? "";
+                        monedaSimbolo = monedaOs?.Simbolo ?? "";
 
                         pagadoHastaAhora = await _context.OrdenPagos
                             .Where(p => p.OrdenServicioId == id && p.EstadoId == 1)
@@ -163,6 +178,8 @@ namespace ERPKardex.Controllers
                         Condicion = condicionPago,
                         Total = total,
                         MonedaId = monedaId,
+                        MonedaNombre = monedaNombre,
+                        MonedaSimbolo = monedaSimbolo,
                         PagadoPrevio = pagadoHastaAhora, // Para mostrar info
                         SaldoPendiente = saldoPendiente  // Para sugerir en el input
                     },
@@ -321,6 +338,7 @@ namespace ERPKardex.Controllers
                                        Fecha = op.FechaPago.ToString("dd/MM/yyyy"),
                                        Orden = op.NumeroOrden,
                                        Moneda = m.Nombre,
+                                       MonedaSimbolo = m.Simbolo,
                                        Monto = op.MontoAbonado,
                                        Banco = b.Nombre,
                                        Operacion = op.NumeroOperacion,
