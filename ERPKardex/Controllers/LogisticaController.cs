@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace ERPKardex.Controllers
 {
@@ -60,11 +59,12 @@ namespace ERPKardex.Controllers
                 qRC = qRC.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
                 qRS = qRS.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
 
-                // Helper para nombres de estados
+                // Helper para nombres de estados (OPERATIVOS y FINANCIEROS)
                 var estadosDb = await _context.Estados.ToListAsync();
+                var estadosFinanzas = estadosDb.Where(e => e.Tabla == "FINANZAS").ToList();
 
                 // =================================================================================
-                // 2. TORTAS OPERATIVAS (Por Estado del Documento)
+                // 2. TORTAS OPERATIVAS (Por Estado del Documento: Aprobado, Anulado...)
                 // =================================================================================
 
                 // Req Compras
@@ -75,7 +75,7 @@ namespace ERPKardex.Controllers
                 var kpiRS = await qRS.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
                 var chartRS = kpiRS.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
 
-                // Orden Compras (OPERATIVO: Generado, Aprobado, Anulado)
+                // Orden Compras (OPERATIVO)
                 var kpiOC = await qOC.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
                 var chartOC = kpiOC.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
 
@@ -85,42 +85,33 @@ namespace ERPKardex.Controllers
 
 
                 // =================================================================================
-                // 3. TORTAS FINANCIERAS (Por Estado de Pago: Pagado, Vencido, Pendiente)
+                // 3. TORTAS FINANCIERAS (Por Estado de Pago: Vencido, Pagado...)
                 // =================================================================================
-                var estPagado = estadosDb.FirstOrDefault(e => e.Nombre == "Pagado" && e.Tabla == "ORDEN")?.Id ?? 0;
-                var estAprobado = estadosDb.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "ORDEN")?.Id ?? 0;
+                // AHORA ES DIRECTO A LA BD (GROUP BY EstadoPagoId)
 
-                string CalcularEstadoPago(int estadoId, DateTime fechaEmision, string condicionPago)
+                // Finanzas Compras
+                var kpiPagoOC = await qOC
+                    .GroupBy(x => x.EstadoPagoId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                var chartPagoOC = kpiPagoOC.Select(x => new
                 {
-                    if (estadoId == estPagado) return "PAGADO";
-                    if (estadoId != estAprobado) return "EN PROCESO"; // Borradores o Anulados no entran en deuda
+                    name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"),
+                    value = x.Count
+                }).ToList();
 
-                    int diasCredito = 0;
-                    if (!string.IsNullOrEmpty(condicionPago))
-                    {
-                        var match = Regex.Match(condicionPago, @"\d+");
-                        if (match.Success) int.TryParse(match.Value, out diasCredito);
-                    }
-                    var fechaVencimiento = fechaEmision.Date.AddDays(diasCredito);
+                // Finanzas Servicios
+                var kpiPagoOS = await qOS
+                    .GroupBy(x => x.EstadoPagoId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
 
-                    return (DateTime.Now.Date > fechaVencimiento) ? "VENCIDO" : "PENDIENTE";
-                }
-
-                // Traemos data a memoria para calcular lógica de fechas
-                var listOC = await qOC.Select(x => new { x.EstadoId, x.FechaEmision, x.CondicionPago }).ToListAsync();
-                var listOS = await qOS.Select(x => new { x.EstadoId, x.FechaEmision, x.CondicionPago }).ToListAsync();
-
-                var chartPagoOC = listOC
-                    .Select(x => CalcularEstadoPago(x.EstadoId ?? 0, x.FechaEmision ?? DateTime.Now, x.CondicionPago))
-                    .Where(x => x != "EN PROCESO") // Opcional: mostrar solo lo que es deuda real
-                    .GroupBy(x => x)
-                    .Select(g => new { name = g.Key, value = g.Count() }).ToList();
-
-                var chartPagoOS = listOS
-                    .Select(x => CalcularEstadoPago(x.EstadoId ?? 0, x.FechaEmision ?? DateTime.Now, x.CondicionPago))
-                    .Where(x => x != "EN PROCESO")
-                    .GroupBy(x => x)
-                    .Select(g => new { name = g.Key, value = g.Count() }).ToList();
+                var chartPagoOS = kpiPagoOS.Select(x => new
+                {
+                    name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"),
+                    value = x.Count
+                }).ToList();
 
                 // =================================================================================
                 // 4. EVOLUCIÓN MENSUAL
@@ -176,9 +167,9 @@ namespace ERPKardex.Controllers
                         // OPERATIVO
                         pieRC = chartRC,
                         pieRS = chartRS,
-                        pieOC = chartOC, // Restaurado
-                        pieOS = chartOS, // Restaurado
-                        // FINANCIERO
+                        pieOC = chartOC,
+                        pieOS = chartOS,
+                        // FINANCIERO (VENCIDO / PAGADO / PARCIAL)
                         piePagoOC = chartPagoOC,
                         piePagoOS = chartPagoOS
                     }

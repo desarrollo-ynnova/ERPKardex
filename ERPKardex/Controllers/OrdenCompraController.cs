@@ -34,6 +34,7 @@ namespace ERPKardex.Controllers
                 var query = from o in _context.OrdenCompras
                             join ent in _context.Entidades on o.EntidadId equals ent.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
+                            join est2 in _context.Estados on o.EstadoPagoId equals est2.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
                             orderby o.Id descending
                             select new
@@ -47,6 +48,7 @@ namespace ERPKardex.Controllers
                                 Moneda = mon.Nombre,
                                 Total = o.Total,
                                 Estado = est.Nombre,
+                                EstadoPago = est2.Nombre,
                                 o.EstadoId,
                                 o.Observacion
                             };
@@ -251,9 +253,10 @@ namespace ERPKardex.Controllers
                     var usuarioId = UsuarioActualId; // BaseController
 
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
+                    var estPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "FINANZAS");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OCO");
 
-                    if (estadoGenerado == null || tipoDoc == null) throw new Exception("Configuración faltante (Estados/TiposDoc).");
+                    if (estadoGenerado == null || tipoDoc == null || estPendientePago == null) throw new Exception("Configuración faltante (Estados/TiposDoc).");
 
                     // Correlativo
                     var ultimo = _context.OrdenCompras
@@ -282,6 +285,7 @@ namespace ERPKardex.Controllers
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.TipoCambio = tcDia;
                     cabecera.EstadoId = estadoGenerado.Id;
+                    cabecera.EstadoPagoId = estPendientePago.Id;
 
                     if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
 

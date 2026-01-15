@@ -574,6 +574,7 @@ CREATE TABLE ordencompra (
     total DECIMAL(18,2) DEFAULT 0,
 
     estado_id INT,
+    estado_pago_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
 
@@ -646,6 +647,7 @@ CREATE TABLE ordenservicio (
     total DECIMAL(18,2) DEFAULT 0, -- NISIRA: Total Servicio
 
     estado_id INT,
+    estado_pago_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
 
@@ -935,7 +937,12 @@ INSERT INTO estado (nombre, tabla) VALUES
 INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
-INSERT INTO estado (nombre, tabla) VALUES ('Pagado', 'ORDEN');
+
+-- 1. Crear nuevos estados financieros si no existen
+INSERT INTO estado (nombre, tabla) VALUES ('Pendiente Pago', 'FINANZAS'); -- ID X
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado Parcial', 'FINANZAS'); -- ID Y
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado Total', 'FINANZAS');   -- ID Z
+INSERT INTO estado (nombre, tabla) VALUES ('Vencido', 'FINANZAS');        -- ID W
 
 GO
 
@@ -1283,7 +1290,7 @@ PRINT '>> Asignando Alexis a la Empresa 1...';
 DECLARE @NewUsuarioID INT = SCOPE_IDENTITY();
 
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, @NewUsuarioID, 3, 1); -- Empresa 1, Rol 3 (Aprobador)
+VALUES (1, @NewUsuarioID, 1, 1); -- Empresa 1, Rol 1 (Administrador del sistema)
 
 PRINT '>> Proceso de tablas de usuario finalizado.';
 GO

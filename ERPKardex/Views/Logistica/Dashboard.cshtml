@@ -167,10 +167,22 @@
                 }
             });
 
+            // Fechas Default: Todo el Año Actual (1 Ene - 31 Dic)
             let date = new Date();
-            let fin = new Date(date.getFullYear(), date.getMonth() + 1, 0); 
-            let inicio = new Date(date.getFullYear(), date.getMonth() - 5, 1); 
-            
+            let currentYear = date.getFullYear();
+
+            // Primer día del año (Mes 0 = Enero)
+            let inicio = new Date(currentYear, 0, 1);
+
+            // Último día del año (Mes 11 = Diciembre, Día 31)
+            let fin = new Date(currentYear, 11, 31);
+
+            // AJUSTE DE ZONA HORARIA:
+            // Esto evita que al convertir a ISO se reste el horario (ej: UTC-5 Perú)
+            // y te marque el día anterior.
+            inicio.setMinutes(inicio.getMinutes() - inicio.getTimezoneOffset());
+            fin.setMinutes(fin.getMinutes() - fin.getTimezoneOffset());
+
             $('#txtFInicio').val(inicio.toISOString().split('T')[0]);
             $('#txtFFin').val(fin.toISOString().split('T')[0]);
 

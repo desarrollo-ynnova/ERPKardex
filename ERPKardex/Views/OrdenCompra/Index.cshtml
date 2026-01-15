@@ -18,6 +18,7 @@
                             <th>Moneda</th>
                             <th>Total</th>
                             <th>Estado</th>
+                            <th>Estado Pago</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -204,6 +205,37 @@
                     render: function(data) {
                         // CAMBIO AQUÍ: "Generado" es el estado amarillo (warning)
                         let color = data === 'Generado' ? 'warning' : (data === 'Aprobado' ? 'success' : 'danger');
+                        return `<span class="badge badge-${color}">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'estadoPago',
+                    className: 'text-center',
+                    title: 'Estado Pago', // Título de la columna
+                    render: function(data) {
+                        // Validación por si viene nulo en registros viejos
+                        if (!data) return '<span class="badge badge-secondary">Pendiente</span>';
+
+                        let color = 'secondary'; // Default (Gris)
+
+                        // Lógica de Colores
+                        switch(data) {
+                            case 'Pagado Total':
+                                color = 'success'; // Verde
+                                break;
+                            case 'Pagado Parcial':
+                                color = 'warning'; // Amarillo
+                                break;
+                            case 'Vencido':
+                                color = 'danger';  // Rojo
+                                break;
+                            case 'Pendiente Pago':
+                                color = 'secondary'; // Gris
+                                break;
+                            default:
+                                color = 'light border'; // Fallback
+                        }
+
                         return `<span class="badge badge-${color}">${data}</span>`;
                     }
                 },

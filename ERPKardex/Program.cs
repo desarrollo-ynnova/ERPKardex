@@ -34,6 +34,9 @@ builder.Services.AddControllersWithViews()
         options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
     });
 
+// Configurar el Worker automático
+builder.Services.AddHostedService<ERPKardex.Workers.VerificadorVencimientosWorker>();
+
 // --- CONFIGURACI�N DE CULTURA H�BRIDA ---
 var cultureInfo = new System.Globalization.CultureInfo("es-PE");
 
