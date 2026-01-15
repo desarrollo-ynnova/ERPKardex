@@ -32,144 +32,167 @@ namespace ERPKardex.Controllers
                 var fFin = fechaFin ?? DateTime.Now;
 
                 // =================================================================================
-                // 1. DATA BASE (FILTRADA)
+                // 1. DATA BASE (ÓRDENES Y REQUERIMIENTOS)
                 // =================================================================================
 
-                // A. Órdenes
                 var qOC = _context.OrdenCompras.AsQueryable();
                 var qOS = _context.OrdenServicios.AsQueryable();
-
-                if (idEmpresaFiltro > 0)
-                {
-                    qOC = qOC.Where(x => x.EmpresaId == idEmpresaFiltro);
-                    qOS = qOS.Where(x => x.EmpresaId == idEmpresaFiltro);
-                }
-                qOC = qOC.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
-                qOS = qOS.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
-
-                // B. Requerimientos
                 var qRC = _context.ReqCompras.AsQueryable();
                 var qRS = _context.ReqServicios.AsQueryable();
 
                 if (idEmpresaFiltro > 0)
                 {
+                    qOC = qOC.Where(x => x.EmpresaId == idEmpresaFiltro);
+                    qOS = qOS.Where(x => x.EmpresaId == idEmpresaFiltro);
                     qRC = qRC.Where(x => x.EmpresaId == idEmpresaFiltro);
                     qRS = qRS.Where(x => x.EmpresaId == idEmpresaFiltro);
                 }
+
+                // Filtro Fechas
+                qOC = qOC.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
+                qOS = qOS.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
                 qRC = qRC.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
                 qRS = qRS.Where(x => x.FechaEmision >= fInicio && x.FechaEmision <= fFin);
 
-                // Helper para nombres de estados (OPERATIVOS y FINANCIEROS)
+                // Helper Estados
                 var estadosDb = await _context.Estados.ToListAsync();
                 var estadosFinanzas = estadosDb.Where(e => e.Tabla == "FINANZAS").ToList();
 
                 // =================================================================================
-                // 2. TORTAS OPERATIVAS (Por Estado del Documento: Aprobado, Anulado...)
+                // 2. DATA PAGOS (CORRECCIÓN: JOINS MANUALES)
                 // =================================================================================
+                // Necesitamos filtrar los pagos por la empresa de la orden asociada
 
-                // Req Compras
-                var kpiRC = await qRC.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
-                var chartRC = kpiRC.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+                // A. Pagos de Compras
+                var qPagosC = from p in _context.OrdenPagos
+                              join o in _context.OrdenCompras on p.OrdenCompraId equals o.Id
+                              where p.EstadoId == 1 // Pagos activos
+                                 && p.FechaPago >= fInicio && p.FechaPago <= fFin
+                              select new { p, EmpresaId = o.EmpresaId };
 
-                // Req Servicios
-                var kpiRS = await qRS.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
-                var chartRS = kpiRS.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+                // B. Pagos de Servicios
+                var qPagosS = from p in _context.OrdenPagos
+                              join o in _context.OrdenServicios on p.OrdenServicioId equals o.Id
+                              where p.EstadoId == 1
+                                 && p.FechaPago >= fInicio && p.FechaPago <= fFin
+                              select new { p, EmpresaId = o.EmpresaId };
 
-                // Orden Compras (OPERATIVO)
-                var kpiOC = await qOC.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
-                var chartOC = kpiOC.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
-
-                // Orden Servicios (OPERATIVO)
-                var kpiOS = await qOS.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync();
-                var chartOS = kpiOS.Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
-
-
-                // =================================================================================
-                // 3. TORTAS FINANCIERAS (Por Estado de Pago: Vencido, Pagado...)
-                // =================================================================================
-                // AHORA ES DIRECTO A LA BD (GROUP BY EstadoPagoId)
-
-                // Finanzas Compras
-                var kpiPagoOC = await qOC
-                    .GroupBy(x => x.EstadoPagoId)
-                    .Select(g => new { Id = g.Key, Count = g.Count() })
-                    .ToListAsync();
-
-                var chartPagoOC = kpiPagoOC.Select(x => new
+                // Aplicar filtro empresa a los pagos
+                if (idEmpresaFiltro > 0)
                 {
-                    name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"),
-                    value = x.Count
-                }).ToList();
-
-                // Finanzas Servicios
-                var kpiPagoOS = await qOS
-                    .GroupBy(x => x.EstadoPagoId)
-                    .Select(g => new { Id = g.Key, Count = g.Count() })
-                    .ToListAsync();
-
-                var chartPagoOS = kpiPagoOS.Select(x => new
-                {
-                    name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"),
-                    value = x.Count
-                }).ToList();
+                    qPagosC = qPagosC.Where(x => x.EmpresaId == idEmpresaFiltro);
+                    qPagosS = qPagosS.Where(x => x.EmpresaId == idEmpresaFiltro);
+                }
 
                 // =================================================================================
-                // 4. EVOLUCIÓN MENSUAL
+                // 3. TORTAS Y KPIS (LÓGICA CONSOLIDADA)
                 // =================================================================================
-                var dataOC_List = await qOC.Select(x => new { x.FechaEmision, Total = x.Total ?? 0, x.MonedaId, TC = x.TipoCambio ?? 1 }).ToListAsync();
-                var dataOS_List = await qOS.Select(x => new { x.FechaEmision, Total = x.Total ?? 0, x.MonedaId, TC = x.TipoCambio ?? 1 }).ToListAsync();
 
-                var fechasUnicas = dataOC_List.Select(x => new { x.FechaEmision.Value.Year, x.FechaEmision.Value.Month })
-                    .Union(dataOS_List.Select(x => new { x.FechaEmision.Value.Year, x.FechaEmision.Value.Month }))
-                    .OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
+                // --- Tortas Operativas ---
+                var chartRC = (await qRC.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                              .Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+
+                var chartRS = (await qRS.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                              .Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+
+                var chartOC = (await qOC.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                              .Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+
+                var chartOS = (await qOS.GroupBy(x => x.EstadoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                              .Select(x => new { name = estadosDb.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Desconocido", value = x.Count }).ToList();
+
+                // --- Tortas Financieras ---
+                var chartPagoOC = (await qOC.GroupBy(x => x.EstadoPagoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                                  .Select(x => new { name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"), value = x.Count }).ToList();
+
+                var chartPagoOS = (await qOS.GroupBy(x => x.EstadoPagoId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync())
+                                  .Select(x => new { name = x.Id == null ? "Pendiente Pago" : (estadosFinanzas.FirstOrDefault(e => e.Id == x.Id)?.Nombre ?? "Otro"), value = x.Count }).ToList();
+
+
+                // =================================================================================
+                // 4. DATA PARA EVOLUCIÓN (LISTAS EN MEMORIA)
+                // =================================================================================
+
+                // Ejecutado (Órdenes)
+                var dataOC = await qOC.Select(x => new { x.FechaEmision, Total = x.Total ?? 0, x.MonedaId, TC = x.TipoCambio ?? 1 }).ToListAsync();
+                var dataOS = await qOS.Select(x => new { x.FechaEmision, Total = x.Total ?? 0, x.MonedaId, TC = x.TipoCambio ?? 1 }).ToListAsync();
+
+                // Pagado (Pagos - Join ya resuelto)
+                var dataPagosC = await qPagosC.Select(x => new { x.p.FechaPago, Monto = x.p.MontoAbonado, Moneda = x.p.MonedaOrdenId, TC = x.p.TipoCambioPago }).ToListAsync();
+                var dataPagosS = await qPagosS.Select(x => new { x.p.FechaPago, Monto = x.p.MontoAbonado, Moneda = x.p.MonedaOrdenId, TC = x.p.TipoCambioPago }).ToListAsync();
+
+                // Unificar Fechas (Meses)
+                var fechasUnicas = dataOC.Select(x => new { x.FechaEmision.Value.Year, x.FechaEmision.Value.Month })
+                    .Union(dataOS.Select(x => new { x.FechaEmision.Value.Year, x.FechaEmision.Value.Month }))
+                    .Union(dataPagosC.Select(x => new { x.FechaPago.Year, x.FechaPago.Month }))
+                    .Union(dataPagosS.Select(x => new { x.FechaPago.Year, x.FechaPago.Month }))
+                    .OrderBy(x => x.Year).ThenBy(x => x.Month)
+                    .ToList();
 
                 var categoriasMes = new List<string>();
-                var serieCompra = new List<decimal>();
-                var serieServicio = new List<decimal>();
+
+                // Series Compras
+                var serieCompraEjec = new List<decimal>();
+                var serieCompraPag = new List<decimal>();
+
+                // Series Servicios
+                var serieServEjec = new List<decimal>();
+                var serieServPag = new List<decimal>();
 
                 foreach (var f in fechasUnicas)
                 {
                     categoriasMes.Add(new DateTime(f.Year, f.Month, 1).ToString("MMM-yyyy", CultureInfo.CreateSpecificCulture("es-PE")));
 
-                    decimal sumOC = dataOC_List.Where(x => x.FechaEmision.Value.Year == f.Year && x.FechaEmision.Value.Month == f.Month)
+                    // 1. COMPRAS
+                    decimal sumOC_Ejec = dataOC.Where(x => x.FechaEmision.Value.Year == f.Year && x.FechaEmision.Value.Month == f.Month)
                         .Sum(x => x.MonedaId == 2 ? x.Total * x.TC : x.Total);
-                    serieCompra.Add(Math.Round(sumOC, 2));
 
-                    decimal sumOS = dataOS_List.Where(x => x.FechaEmision.Value.Year == f.Year && x.FechaEmision.Value.Month == f.Month)
+                    decimal sumOC_Pag = dataPagosC.Where(x => x.FechaPago.Year == f.Year && x.FechaPago.Month == f.Month)
+                        .Sum(x => x.Moneda == 2 ? x.Monto * x.TC : x.Monto).GetValueOrDefault();
+
+                    serieCompraEjec.Add(Math.Round(sumOC_Ejec, 2));
+                    serieCompraPag.Add(Math.Round(sumOC_Pag, 2));
+
+                    // 2. SERVICIOS
+                    decimal sumOS_Ejec = dataOS.Where(x => x.FechaEmision.Value.Year == f.Year && x.FechaEmision.Value.Month == f.Month)
                         .Sum(x => x.MonedaId == 2 ? x.Total * x.TC : x.Total);
-                    serieServicio.Add(Math.Round(sumOS, 2));
+
+                    decimal sumOS_Pag = dataPagosS.Where(x => x.FechaPago.Year == f.Year && x.FechaPago.Month == f.Month)
+                        .Sum(x => x.Moneda == 2 ? x.Monto * x.TC : x.Monto).GetValueOrDefault();
+
+                    serieServEjec.Add(Math.Round(sumOS_Ejec, 2));
+                    serieServPag.Add(Math.Round(sumOS_Pag, 2));
                 }
 
                 // =================================================================================
-                // 5. KPIS Y RETORNO
+                // 5. RETORNO JSON
                 // =================================================================================
-                decimal totalSoles = serieCompra.Sum() + serieServicio.Sum();
-                var idsOC = await qOC.Select(x => x.Id).ToListAsync();
-                var idsOS = await qOS.Select(x => x.Id).ToListAsync();
-                var montoPagado = await _context.OrdenPagos
-                    .Where(p => (p.OrdenCompraId.HasValue && idsOC.Contains(p.OrdenCompraId.Value)) ||
-                                (p.OrdenServicioId.HasValue && idsOS.Contains(p.OrdenServicioId.Value)))
-                    .SumAsync(p => p.MontoAbonado);
+                decimal totalEjecutado = serieCompraEjec.Sum() + serieServEjec.Sum();
+                decimal totalPagado = serieCompraPag.Sum() + serieServPag.Sum();
 
                 return Json(new
                 {
                     status = true,
                     kpis = new
                     {
-                        montoTotal = totalSoles,
+                        montoTotal = totalEjecutado,
                         countOC = await qOC.CountAsync() + await qOS.CountAsync(),
                         countReq = await qRC.CountAsync() + await qRS.CountAsync(),
-                        montoPagado = montoPagado
+                        montoPagado = totalPagado
                     },
                     charts = new
                     {
-                        evolucion = new { categories = categoriasMes, compras = serieCompra, servicios = serieServicio },
-                        // OPERATIVO
+                        evolucionCategories = categoriasMes,
+                        // GRÁFICO 1: COMPRAS
+                        seriesCompra = new { ejecutado = serieCompraEjec, pagado = serieCompraPag },
+                        // GRÁFICO 2: SERVICIOS
+                        seriesServicio = new { ejecutado = serieServEjec, pagado = serieServPag },
+
+                        // TORTAS
                         pieRC = chartRC,
                         pieRS = chartRS,
                         pieOC = chartOC,
                         pieOS = chartOS,
-                        // FINANCIERO (VENCIDO / PAGADO / PARCIAL)
                         piePagoOC = chartPagoOC,
                         piePagoOS = chartPagoOS
                     }
