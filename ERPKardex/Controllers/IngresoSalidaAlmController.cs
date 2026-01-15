@@ -213,7 +213,7 @@ namespace ERPKardex.Controllers
                             detalle.IngresoSalidaAlmId = cabecera.Id;
                             detalle.FechaRegistro = DateTime.Now;
                             detalle.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
-                            detalle.TipoCambio = tcDia;
+                            if (cabecera.TipoMovimiento == true) detalle.TipoCambio = tcDia;
 
                             var prodData = _context.Productos
                                 .Where(p => p.Id == detalle.ProductoId)
