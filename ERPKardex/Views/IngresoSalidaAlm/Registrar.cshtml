@@ -264,6 +264,15 @@
             let pre = 0, ccId = null, ccNom = "", actId = null, actNom = "";
             let subtotal = 0, igv = 0, total = 0;
 
+            // Limpieza visual del nombre producto
+            let codProd = "";
+            let nomProd = nom;
+            if(nom.includes('-')){
+                let parts = nom.split('-');
+                codProd = parts[0].trim();
+                nomProd = parts.slice(1).join('-').trim();
+            }
+
             if (tipoMov === "1") {
                 // ENTRADA: Calculamos Precios
                 pre = parseFloat($("#txt_DetPrecio").val());
@@ -284,7 +293,8 @@
 
             LISTA_DETALLE.push({
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
-                ProductoId: id, DescripcionProducto: nom, CodUnidadMedida: $("#txt_DetUnidad").val(),
+                ProductoId: id, DescripcionProducto: nomProd, CodUnidadMedida: $("#txt_DetUnidad").val(),
+                CodProducto: codProd,
                 Cantidad: can,
                 Precio: pre,
                 Subtotal: subtotal, // Guardamos para mostrar
