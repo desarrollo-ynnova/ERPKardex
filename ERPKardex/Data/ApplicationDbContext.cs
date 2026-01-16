@@ -65,5 +65,31 @@ namespace ERPKardex.Data
         public DbSet<TipoCambio> TipoCambios { get; set; }
         public DbSet<Banco> Bancos { get; set; }
         public DbSet<OrdenPago> OrdenPagos { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // =================================================================
+            // CONFIGURACIÓN DE SEGURIDAD (SOLO RESTRICCIONES)
+            // =================================================================
+
+            // Restricción Única: Evitar que se asigne el mismo permiso 2 veces
+            // al mismo vínculo de usuario.
+            modelBuilder.Entity<EmpresaUsuarioPermiso>()
+                .HasIndex(p => new { p.EmpresaUsuarioId, p.PermisoId })
+                .IsUnique();
+
+            // =================================================================
+            // TIPOS DE DATOS MONETARIOS (Global)
+            // =================================================================
+            foreach (var property in modelBuilder.Model.GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+            {
+                // Si no se especificó un TypeName manual (como en TC), usar default 18,2
+                if (property.GetColumnType() == null)
+                    property.SetColumnType("decimal(18,2)");
+            }
+        }
     }
 }

@@ -161,6 +161,9 @@
 
                             return `
                             <div class="btn-group">
+                                <button class="btn btn-sm btn-secondary" title="Imprimir Formato" onclick="fct_Imprimir(${data.id})">
+                                    <i class="fas fa-print"></i>
+                                </button>
                                 <button class="btn btn-sm btn-info" title="Ver Detalle" onclick="verDetalle(${data.id})">
                                     <i class="bi bi-eye-fill"></i>
                                 </button>
@@ -230,6 +233,11 @@
                     });
                 }
             });
+        }
+
+        function fct_Imprimir(id) {
+            // Abre en una pestaña nueva
+            window.open('/ReqCompra/Imprimir?id=' + id, '_blank');
         }
     </script>
 }

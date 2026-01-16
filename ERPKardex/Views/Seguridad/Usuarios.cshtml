@@ -1,0 +1,417 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Usuarios y Accesos";
+}
+
+<style>
+    .permiso-padre {
+        background-color: #f8f9fc;
+        font-weight: bold;
+        color: #4e73df;
+    }
+
+    .permiso-hijo {
+        padding-left: 35px !important;
+    }
+
+    .check-lg {
+        transform: scale(1.3);
+        cursor: pointer;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .btn-search-dni {
+        z-index: 100;
+    }
+
+    /* FIX: Asegurar que el tab pane inactivo no ocupe espacio */
+    .tab-content > .tab-pane {
+        display: none;
+    }
+
+    .tab-content > .active {
+        display: block;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users-cog mr-2"></i> Directorio de Usuarios</h6>
+            <button class="btn btn-primary btn-sm shadow-sm font-weight-bold px-3" onclick="fct_Nuevo()">
+                <i class="fas fa-user-plus mr-2"></i> Asignar Usuario
+            </button>
+        </div>
+        <div class="card-body px-0 pt-0">
+            <div class="p-3 bg-light border-bottom">
+                <input type="text" id="txtBuscarTabla" class="form-control form-control-sm" placeholder="Filtrar por nombre, dni, cargo o empresa...">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tblUsuarios" width="100%">
+                    <thead class="bg-light text-dark">
+                        <tr>
+                            <th class="pl-4">Empresa Asignada</th>
+                            <th>Usuario</th>
+                            <th>Cargo</th>
+                            <th>Contacto</th>
+                            <th class="text-center">Rol</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-dark"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="lblTituloModal">Asignar Usuario</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body bg-light">
+
+                <ul class="nav nav-tabs mb-3 border-bottom-0" id="tabUser" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold text-dark" id="datos-tab" data-toggle="tab" href="#datos" role="tab" aria-controls="datos" aria-selected="true">Datos Generales</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold text-dark" id="permisos-tab" data-toggle="tab" href="#permisos" role="tab" aria-controls="permisos" aria-selected="false">Permisos</a>
+                    </li>
+                </ul>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="tab-content" id="myTabContent">
+
+                            <div class="tab-pane fade show active" id="datos" role="tabpanel" aria-labelledby="datos-tab">
+                                <form id="frmUsuario">
+                                    <input type="hidden" id="hdnIdVinculo" value="0">
+
+                                    <div id="alertMultiEmpresa" class="alert alert-info d-none small mb-3">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        <strong>Usuario Existente:</strong> Al guardar, se creará un vínculo de acceso para la empresa seleccionada.
+                                    </div>
+
+                                    <div class="form-group bg-white p-3 border rounded shadow-sm mb-3">
+                                        <label class="small font-weight-bold text-primary mb-1">EMPRESA DESTINO:</label>
+                                        <select id="cbxEmpresa" class="form-control font-weight-bold text-dark border-0 bg-light"></select>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-4">
+                                            <label class="small font-weight-bold">DNI <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control font-weight-bold" id="txtDni" maxlength="8" placeholder="Ingrese DNI">
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-primary btn-search-dni" type="button" onclick="fct_BuscarDniGlobal()" id="btnBuscarDni" title="Buscar">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-md-8">
+                                            <label class="small font-weight-bold">Nombre Completo <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control font-weight-bold text-uppercase" id="txtNombre">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label class="small font-weight-bold">Cargo</label>
+                                            <input type="text" class="form-control" id="txtCargo">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label class="small font-weight-bold">Teléfono</label>
+                                            <input type="text" class="form-control" id="txtTelefono">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label class="small font-weight-bold">Email</label>
+                                            <input type="email" class="form-control" id="txtEmail">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label class="small font-weight-bold">Rol en esta Empresa <span class="text-danger">*</span></label>
+                                            <select id="cbxRol" class="form-control bg-light border-primary text-primary font-weight-bold"></select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group border-top pt-3 mt-2">
+                                        <label class="small font-weight-bold text-danger"><i class="fas fa-lock mr-1"></i> Contraseña</label>
+                                        <input type="password" class="form-control" id="txtPassword" placeholder="Dejar vacío para mantener la actual">
+                                    </div>
+
+                                    <div class="text-right mt-3">
+                                        <button type="button" class="btn btn-success px-4 font-weight-bold shadow-sm" onclick="fct_GuardarDatos()">
+                                            <i class="fas fa-save mr-2"></i> Guardar Asignación
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="tab-pane fade" id="permisos" role="tabpanel" aria-labelledby="permisos-tab">
+                                <div id="alertAdmin" class="alert alert-warning d-none mb-3">
+                                    <i class="fas fa-crown mr-2"></i> Usuario <strong>Administrador</strong> tiene acceso total.
+                                </div>
+
+                                <div id="containerPermisos" class="mb-0">
+                                    <div class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover mb-0 w-100">
+                                            <thead class="bg-light sticky-top">
+                                                <tr>
+                                                    <th class="py-2 pl-3">Módulo / Acción</th>
+                                                    <th class="text-center py-2" style="width: 100px;">Habilitar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bodyPermisos"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-right mt-2 text-muted small">
+                                        <i class="fas fa-check-circle text-success"></i> Cambios guardados automáticamente.
+                                    </div>
+                                </div>
+
+                                <div id="blockPermisos" class="text-center py-5 text-muted">
+                                    <i class="fas fa-ban fa-3x mb-3 text-gray-300"></i>
+                                    <p class="mb-0">Guarde la asignación primero para configurar permisos.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ... (Tu código JS se mantiene EXACTAMENTE IGUAL) ...
+        // No es necesario cambiar nada en el JS, ya que los IDs de los inputs y funciones siguen siendo los mismos.
+        $(document).ready(function () {
+            fct_CargarCombos();
+            fct_Listar();
+
+            $("#txtBuscarTabla").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $("#tblUsuarios tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+
+            $('#txtDni').keypress(function(e){
+                if(e.which == 13) { e.preventDefault(); fct_BuscarDniGlobal(); }
+            });
+        });
+
+        function fct_CargarCombos() {
+            $.get('/Seguridad/GetTiposUsuario', function (res) {
+                let html = '';
+                res.data.forEach(r => html += `<option value="${r.id}" data-admin="${r.esAdministrador}">${r.nombre}</option>`);
+                $('#cbxRol').html(html);
+            });
+            $.get('/Activo/GetEmpresasCombo', function (res) {
+                if (res.status) {
+                    let html = '';
+                    res.data.forEach(e => html += `<option value="${e.id}">${e.nombre}</option>`);
+                    $('#cbxEmpresa').html(html);
+                }
+            });
+        }
+
+        function fct_Listar() {
+            $('#tblUsuarios tbody').html('<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i> Cargando...</td></tr>');
+            $.get('/Seguridad/GetUsuariosEmpresa', function (res) {
+                let html = '';
+                if(res.data.length === 0) { $('#tblUsuarios tbody').html('<tr><td colspan="6" class="text-center text-muted py-3">Sin datos registrados.</td></tr>'); return; }
+
+                res.data.forEach(u => {
+                    let badge = u.esAdministrador ? '<span class="badge badge-danger">ADMIN</span>' : '<span class="badge badge-info">USER</span>';
+                    let cargo = u.cargo || '<span class="text-muted small font-italic">-</span>';
+                    let contacto = '';
+                    if(u.email) contacto += `<div class="small"><i class="fas fa-envelope text-muted mr-1"></i> ${u.email}</div>`;
+                    if(u.telefono) contacto += `<div class="small"><i class="fas fa-phone text-muted mr-1"></i> ${u.telefono}</div>`;
+                    if(!contacto) contacto = '-';
+
+                    html += `
+                        <tr>
+                            <td class="pl-4 font-weight-bold text-primary small text-uppercase">${u.empresa}</td>
+                            <td>
+                                <div class="font-weight-bold text-dark">${u.nombre}</div>
+                                <div class="small text-muted"><i class="fas fa-id-card mr-1"></i>${u.dni}</div>
+                            </td>
+                            <td>${cargo}</td>
+                            <td>${contacto}</td>
+                            <td class="text-center">${badge} ${u.rol}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary" onclick="fct_Editar(${u.idVinculo}, '${u.dni}', '${u.nombre}', '${u.cargo||''}', '${u.email||''}', '${u.telefono||''}', '${u.rol}', ${u.empresaId})">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                });
+                $('#tblUsuarios tbody').html(html);
+            });
+        }
+
+        function fct_BuscarDniGlobal() {
+            let dni = $('#txtDni').val();
+            if(dni.length < 8) { toastr.warning('Ingrese un DNI válido'); return; }
+
+            let btn = $('#btnBuscarDni');
+            let icon = btn.find('i');
+            icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
+
+            $.get('/Seguridad/BuscarDniGlobal?dni=' + dni, function(res) {
+                icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
+
+                if(res.encontrado) {
+                    toastr.info('Usuario encontrado.');
+                    $('#txtNombre').val(res.data.nombre);
+                    $('#txtCargo').val(res.data.cargo);
+                    $('#txtEmail').val(res.data.email);
+                    $('#txtTelefono').val(res.data.telefono);
+                    $('#alertMultiEmpresa').removeClass('d-none');
+                    $('#txtPassword').attr('placeholder', 'Dejar vacío (ya tiene contraseña global)');
+                } else {
+                    toastr.success('DNI disponible.');
+                    $('#alertMultiEmpresa').addClass('d-none');
+                    $('#txtNombre').focus();
+                }
+            });
+        }
+
+        function fct_Nuevo() {
+            $('#frmUsuario')[0].reset();
+            $('#hdnIdVinculo').val(0);
+            $('#txtDni').prop('readonly', false);
+            $('#btnBuscarDni').prop('disabled', false);
+            $('#cbxEmpresa').prop('disabled', false);
+
+            $('#alertMultiEmpresa').addClass('d-none');
+            $('#lblTituloModal').text('Asignar Usuario');
+
+            $('#permisos-tab').addClass('disabled');
+            $('#containerPermisos').hide();
+            $('#blockPermisos').show();
+            $('#alertAdmin').addClass('d-none');
+
+            $('#datos-tab').tab('show');
+            $('#modalUsuario').modal('show');
+        }
+
+        function fct_Editar(id, dni, nombre, cargo, email, telefono, rol, empresaId) {
+            $('#hdnIdVinculo').val(id);
+            $('#txtDni').val(dni).prop('readonly', true);
+            $('#btnBuscarDni').prop('disabled', true);
+            $('#cbxEmpresa').val(empresaId).prop('disabled', true);
+
+            $('#txtNombre').val(nombre);
+            $('#txtCargo').val(cargo);
+            $('#txtEmail').val(email);
+            $('#txtTelefono').val(telefono);
+            $('#txtPassword').val('');
+
+            $("#cbxRol option").filter(function() { return $(this).text() == rol; }).prop('selected', true);
+
+            $('#lblTituloModal').text('Editar Acceso');
+            $('#alertMultiEmpresa').addClass('d-none');
+
+            $('#permisos-tab').removeClass('disabled');
+            fct_CargarPermisos(id);
+
+            $('#modalUsuario').modal('show');
+        }
+
+        function fct_GuardarDatos() {
+            if(!$('#txtDni').val() || !$('#txtNombre').val()) { toastr.warning('DNI y Nombre obligatorios'); return; }
+
+            let data = {
+                dni: $('#txtDni').val(),
+                nombre: $('#txtNombre').val(),
+                cargo: $('#txtCargo').val(),
+                email: $('#txtEmail').val(),
+                telefono: $('#txtTelefono').val(),
+                password: $('#txtPassword').val(),
+                tipoUsuarioId: $('#cbxRol').val(),
+                empresaIdDestino: $('#cbxEmpresa').val()
+            };
+
+            $.post('/Seguridad/GuardarUsuario', data, function (res) {
+                if (res.status) {
+                    Swal.fire('Éxito', res.message, 'success');
+                    fct_Listar();
+                    if($('#hdnIdVinculo').val() == 0) $('#modalUsuario').modal('hide');
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            });
+        }
+
+        function fct_CargarPermisos(idVinculo) {
+            let esAdmin = $('#cbxRol option:selected').data('admin');
+            if (esAdmin == true || esAdmin == "True") {
+                $('#alertAdmin').removeClass('d-none');
+                $('#containerPermisos').addClass('d-none');
+                $('#blockPermisos').hide();
+                return;
+            }
+
+            $('#alertAdmin').addClass('d-none');
+            $('#blockPermisos').hide();
+            $('#containerPermisos').removeClass('d-none');
+            $('#bodyPermisos').html('<tr><td colspan="2" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            $.get('/Seguridad/GetArbolPermisos?idVinculo=' + idVinculo, function (res) {
+                let html = '';
+                let padres = res.data.filter(x => x.padreId == null);
+
+                padres.forEach(padre => {
+                    html += `
+                        <tr class="permiso-padre">
+                            <td class="pl-3"><i class="fas fa-folder-open mr-2"></i> ${padre.descripcion}</td>
+                            <td class="text-center">
+                                <input type="checkbox" class="check-lg" onchange="fct_Toggle(${idVinculo}, ${padre.id}, this.checked)" ${padre.activo ? 'checked' : ''}>
+                            </td>
+                        </tr>`;
+
+                    let hijos = res.data.filter(x => x.padreId == padre.id);
+                    hijos.forEach(hijo => {
+                        html += `
+                            <tr>
+                                <td class="permiso-hijo text-secondary"><i class="fas fa-angle-right mr-2"></i> ${hijo.descripcion}</td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="check-lg" onchange="fct_Toggle(${idVinculo}, ${hijo.id}, this.checked)" ${hijo.activo ? 'checked' : ''}>
+                                </td>
+                            </tr>`;
+
+                        let nietos = res.data.filter(x => x.padreId == hijo.id);
+                        nietos.forEach(nieto => {
+                            html += `
+                            <tr>
+                                <td class="permiso-hijo text-muted" style="padding-left: 60px !important;"><i class="fas fa-dot-circle mr-2" style="font-size:0.7em"></i> ${nieto.descripcion}</td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="check-lg" onchange="fct_Toggle(${idVinculo}, ${nieto.id}, this.checked)" ${nieto.activo ? 'checked' : ''}>
+                                </td>
+                            </tr>`;
+                        });
+                    });
+                });
+                $('#bodyPermisos').html(html);
+            });
+        }
+
+        function fct_Toggle(idVinculo, idPermiso, activo) {
+            $.post('/Seguridad/TogglePermiso', { idVinculo, idPermiso, activar: activo });
+        }
+    </script>
+}

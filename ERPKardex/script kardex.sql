@@ -71,6 +71,7 @@ CREATE TABLE tipo_documento_interno (
 CREATE TABLE tipo_usuario (
     id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
     nombre VARCHAR(255),
+    es_administrador BIT DEFAULT 0,
     estado BIT DEFAULT 1
 );
 
@@ -79,10 +80,12 @@ CREATE TABLE usuario (
     id INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
     dni CHAR(8) NOT NULL,
     nombre VARCHAR(255) NOT NULL,
+    cargo VARCHAR(255),
     email VARCHAR(255),
     telefono VARCHAR(20),
-    password VARCHAR(255) NOT NULL,
-    estado BIT NOT NULL DEFAULT 1
+    password VARCHAR(MAX) NOT NULL,
+    estado BIT NOT NULL DEFAULT 1,
+    fecha_registro DATETIME DEFAULT GETDATE()
 );
 
 -- Tabla Intermedia (Relación N a N Manual)
@@ -97,10 +100,19 @@ CREATE TABLE empresa_usuario (
 -- 1. TABLA PERMISOS (El catálogo de qué se puede hacer)
 CREATE TABLE permiso (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    codigo VARCHAR(50) NOT NULL UNIQUE,  -- Ej: 'MOD_LOGISTICA', 'BTN_ANULAR'
-    descripcion VARCHAR(100),
-    modulo VARCHAR(50),                  -- Agrupador visual (LOGISTICA, VENTAS)
-    estado BIT DEFAULT 1
+    -- Identificador único para el código C# (AuthorizePermiso)
+    codigo VARCHAR(50) NOT NULL UNIQUE, 
+    -- Texto visible para el usuario en la configuración
+    descripcion VARCHAR(100) NOT NULL,
+    -- Agrupación visual (Opcional si usas jerarquía, pero útil para iconos)
+    modulo VARCHAR(50), 
+    -- Jerarquía (Árbol)
+    padre_id INT NULL, 
+    -- Orden de visualización (1, 2, 3...)
+    orden INT DEFAULT 0,
+    estado BIT DEFAULT 1,
+    -- FK recursiva (Un permiso apunta a otro permiso padre)
+    CONSTRAINT FK_Permiso_Padre FOREIGN KEY (padre_id) REFERENCES permiso(id)
 );
 
 -- 2. TABLA ASIGNACIÓN (Quién tiene qué, en qué empresa)
@@ -125,6 +137,7 @@ create table empresa (
 	ruc char(11),
     nombre varchar(255),
 	razon_social varchar(255),
+    direccion varchar(255),
 	estado BIT,
 );
 
@@ -1290,10 +1303,8 @@ INSERT INTO actividad (codigo, nombre, estado, empresa_id) VALUES
 ('007', 'GESTIÓN OPERATIVA', 1, 1);
 
 PRINT '>> Insertando Roles...';
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('ADMINISTRADOR DEL SISTEMA', 1); -- ID 1
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('LOGISTICO', 1);  -- ID 2
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('APROBADOR', 1);  -- ID 3
-INSERT INTO tipo_usuario (nombre, estado) VALUES ('USUARIO', 1);       -- ID 4
+INSERT INTO tipo_usuario (nombre, estado, es_administrador) VALUES ('ADMINISTRADOR DEL SISTEMA', 1, 1); -- ID 1
+INSERT INTO tipo_usuario (nombre, estado, es_administrador) VALUES ('USUARIO', 1, 0);       -- ID 4
 
 INSERT INTO tipo_existencia (codigo, nombre, estado) 
 VALUES 
@@ -1330,19 +1341,19 @@ PRINT '>> Insertando usuarios para Empresa 1...';
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('74814548', 'James de la Cruz Calopino', 'jproduccion@agrosayans.com', '910467055', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), 4, 1);
+VALUES (1, SCOPE_IDENTITY(), 2, 1);
 
 -- Lilyan Lozada Diaz
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('73138239', 'Lilyan Lozada Diaz', 'llozada@agrosayans.com', '930939954', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), 4, 1);
+VALUES (1, SCOPE_IDENTITY(), 2, 1);
 
 -- Katherin Espinal Vasquez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('75185380', 'Katherin Espinal Vasquez', 'kespinal@agrosayans.com', '977796697', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (1, SCOPE_IDENTITY(), 4, 1);
+VALUES (1, SCOPE_IDENTITY(), 2, 1);
 
 -- ======================================================
 -- 2. USUARIOS PARA EMPRESA_ID = 2 (MAQSA)
@@ -1353,9 +1364,9 @@ PRINT '>> Insertando usuario para Empresa 2...';
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
 VALUES ('42642076', 'Edwin Roy Suárez Sánchez', 'almacen@maqsa.pe', '983059270', 'password123', 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (2, SCOPE_IDENTITY(), 4, 1);
+VALUES (2, SCOPE_IDENTITY(), 2, 1);
 INSERT INTO empresa_usuario (empresa_id, usuario_id, tipo_usuario_id, estado)
-VALUES (3, SCOPE_IDENTITY(), 4, 1);
+VALUES (3, SCOPE_IDENTITY(), 2, 1);
 
 -- Magno Martínez
 INSERT INTO usuario (dni, nombre, email, telefono, password, estado)
@@ -1443,3 +1454,111 @@ INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-11
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-12',3.358,3.365,1);
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-13',3.355,3.368,1);
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14',3.356,3.361,1);
+
+GO
+
+-- Limpiamos permisos anteriores para reiniciar limpio
+TRUNCATE TABLE empresa_usuario_permiso;
+DELETE FROM permiso;
+DBCC CHECKIDENT ('permiso', RESEED, 0);
+GO
+
+-- 1. MÓDULOS PRINCIPALES (Padres)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('MOD_DASHBOARD', 'Módulo Dashboard', 'SISTEMA', NULL, 1),
+('MOD_LOGISTICA', 'Módulo Logística', 'SISTEMA', NULL, 2),
+('MOD_FINANZAS', 'Módulo Finanzas', 'SISTEMA', NULL, 3),
+('MOD_SEGURIDAD', 'Módulo Seguridad', 'SISTEMA', NULL, 99);
+
+-- Variables para obtener IDs (SQL Server)
+DECLARE @ID_DASH INT = (SELECT id FROM permiso WHERE codigo = 'MOD_DASHBOARD');
+DECLARE @ID_LOG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_LOGISTICA');
+DECLARE @ID_FIN INT = (SELECT id FROM permiso WHERE codigo = 'MOD_FINANZAS');
+DECLARE @ID_SEG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_SEGURIDAD');
+
+-- 2. SUB-MENÚS Y ACCIONES (Hijos)
+
+-- DASHBOARD
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('DASH_VER_GLOBAL', 'Ver Todo (Consolidado)', 'DASHBOARD', @ID_DASH, 1);
+
+-- LOGÍSTICA
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('LOG_REQ_VER', 'Ver Requerimientos', 'LOGISTICA', @ID_LOG, 1),
+('LOG_REQ_CREAR', 'Crear/Editar Requerimiento', 'LOGISTICA', @ID_LOG, 2),
+('LOG_ORD_VER', 'Ver Órdenes Compra/Serv', 'LOGISTICA', @ID_LOG, 3),
+('LOG_ORD_CREAR', 'Crear Orden', 'LOGISTICA', @ID_LOG, 4),
+('LOG_ORD_APROBAR', 'Aprobar Orden (Jefatura)', 'LOGISTICA', @ID_LOG, 5),
+('LOG_ORD_ANULAR', 'Anular Orden', 'LOGISTICA', @ID_LOG, 6);
+
+-- FINANZAS
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('FIN_PAGO_VER', 'Ver Historial Pagos', 'FINANZAS', @ID_FIN, 1),
+('FIN_PAGO_REG', 'Registrar Nuevo Pago', 'FINANZAS', @ID_FIN, 2),
+('FIN_PAGO_ANULAR', 'Anular/Extornar Pago', 'FINANZAS', @ID_FIN, 3);
+
+-- SEGURIDAD
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('SEG_USU_GEST', 'Gestionar Usuarios', 'SEGURIDAD', @ID_SEG, 1),
+('SEG_PERM_GEST', 'Asignar Permisos', 'SEGURIDAD', @ID_SEG, 2);
+GO
+
+-- 1. NODOS RAÍZ (Las Cabeceras o Menús Principales)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('MOD_MAESTROS', 'Módulo Registros Maestros', 'MAESTROS', NULL, 1),
+('MOD_ALMACEN', 'Módulo Control Almacén', 'ALMACEN', NULL, 2),
+('MOD_LOGISTICA', 'Módulo Logística Operativa', 'LOGISTICA', NULL, 3),
+('MOD_FINANZAS', 'Módulo Gestión Financiera', 'FINANZAS', NULL, 4),
+('MOD_ACTIVOS', 'Módulo Activos Fijos', 'ACTIVOS', NULL, 5);
+
+-- Obtenemos los IDs generados para asignar los hijos
+DECLARE @ID_MAE INT = (SELECT id FROM permiso WHERE codigo = 'MOD_MAESTROS');
+DECLARE @ID_ALM INT = (SELECT id FROM permiso WHERE codigo = 'MOD_ALMACEN');
+DECLARE @ID_LOG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_LOGISTICA');
+DECLARE @ID_FIN INT = (SELECT id FROM permiso WHERE codigo = 'MOD_FINANZAS');
+DECLARE @ID_ACT INT = (SELECT id FROM permiso WHERE codigo = 'MOD_ACTIVOS');
+
+-- 2. SUB-MENÚS (Maestros)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('MAE_PROD_REG', 'Registrar Producto', 'MAESTROS', @ID_MAE, 1),
+('MAE_SERV_REG', 'Registrar Servicio', 'MAESTROS', @ID_MAE, 2),
+('MAE_PROV_VER', 'Ver Proveedores', 'MAESTROS', @ID_MAE, 3);
+
+-- 3. SUB-MENÚS (Almacén)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('ALM_STOCK_VER', 'Ver Reporte Stock', 'ALMACEN', @ID_ALM, 1),
+('ALM_MOV_VER', 'Ver Ingresos/Salidas', 'ALMACEN', @ID_ALM, 2),
+('ALM_KARDEX_VER', 'Ver Reporte Kardex', 'ALMACEN', @ID_ALM, 3);
+
+-- 4. SUB-MENÚS (Logística)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('LOG_DASH_VER', 'Ver Dashboard Logístico', 'LOGISTICA', @ID_LOG, 0), -- Nivel superior
+('LOG_REQ_COMPRA_VER', 'Ver Req. Compra', 'LOGISTICA', @ID_LOG, 1),
+('LOG_REQ_SERV_VER', 'Ver Req. Servicio', 'LOGISTICA', @ID_LOG, 2),
+-- Grupo Proceso de Compras
+('LOG_PED_COMPRA_VER', 'Ver Pedidos Compra', 'LOGISTICA', @ID_LOG, 3),
+('LOG_PED_SERV_VER', 'Ver Pedidos Servicio', 'LOGISTICA', @ID_LOG, 4),
+('LOG_ORD_COMPRA_VER', 'Ver Órdenes Compra', 'LOGISTICA', @ID_LOG, 5),
+('LOG_ORD_SERV_VER', 'Ver Órdenes Servicio', 'LOGISTICA', @ID_LOG, 6);
+
+-- 5. SUB-MENÚS (Finanzas)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('FIN_CC_VER', 'Ver Centros de Costo', 'FINANZAS', @ID_FIN, 1),
+('FIN_PAGO_VER', 'Gestión de Pagos', 'FINANZAS', @ID_FIN, 2),
+('FIN_TC_VER', 'Ver Tipo de Cambio', 'FINANZAS', @ID_FIN, 3);
+
+-- 6. SUB-MENÚS (Activos)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('ACT_DASH_VER', 'Dashboard Activos', 'ACTIVOS', @ID_ACT, 1),
+('ACT_COMPUTO_VER', 'Activos Cómputo', 'ACTIVOS', @ID_ACT, 2),
+('ACT_FLOTA_VER', 'Flota Vehicular', 'ACTIVOS', @ID_ACT, 3);
+
+-- 7. ACCIONES ESPECÍFICAS (Botones de "Ojito", Aprobación, etc.)
+-- Estos no salen en el menú, pero se configuran en el árbol
+DECLARE @ID_OC INT = (SELECT id FROM permiso WHERE codigo = 'LOG_ORD_COMPRA_VER');
+
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('BTN_OC_VER_DETALLE', 'Botón: Ver Detalle (Ojito)', 'LOGISTICA', @ID_OC, 1),
+('BTN_OC_APROBAR', 'Botón: Aprobar Orden', 'LOGISTICA', @ID_OC, 2),
+('BTN_OC_ANULAR', 'Botón: Anular Orden', 'LOGISTICA', @ID_OC, 3);
+GO

@@ -12,15 +12,23 @@ namespace ERPKardex.Models
         [Required]
         [Column("codigo")]
         [StringLength(50)]
-        public string Codigo { get; set; } // Ej: "MOD_LOGISTICA"
+        public string? Codigo { get; set; }
 
         [Column("descripcion")]
         [StringLength(100)]
-        public string Descripcion { get; set; } // Ej: "Acceso al módulo Logística"
+        public string? Descripcion { get; set; }
 
         [Column("modulo")]
         [StringLength(50)]
-        public string Modulo { get; set; } // Ej: "LOGISTICA", "FINANZAS"
+        public string? Modulo { get; set; }
+
+        // Aquí mantenemos el ID para saber la jerarquía, 
+        // pero la armaremos manualmente en el Controller si hace falta.
+        [Column("padre_id")]
+        public int? PadreId { get; set; }
+
+        [Column("orden")]
+        public int Orden { get; set; } = 0;
 
         [Column("estado")]
         public bool? Estado { get; set; }

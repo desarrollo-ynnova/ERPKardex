@@ -10,6 +10,7 @@ namespace ERPKardex.Models
         [Column("razon_social")]
         public string? RazonSocial { get; set; }
         public string? Nombre { get; set; }
+        public string? Direccion { get; set; }
         public bool? Estado { get; set; }
     }
 }

@@ -49,6 +49,7 @@ namespace ERPKardex.Controllers
                 var datosUsuario = await (from e in _context.Empresas
                                           join eu in _context.EmpresaUsuarios on e.Id equals eu.EmpresaId
                                           join u in _context.Usuarios on eu.UsuarioId equals u.Id
+                                          join tu in _context.TipoUsuarios on eu.TipoUsuarioId equals tu.Id
                                           where e.Ruc == ruc
                                           where u.Dni == dni
                                           where u.Password == password
@@ -61,7 +62,8 @@ namespace ERPKardex.Controllers
                                               EmpresaId = e.Id, // Este es el EmpresaId real
                                               RazonSocial = e.RazonSocial,
                                               eu.TipoUsuarioId, // El rol por si lo necesitas luego
-                                              EmpresaUsuarioId = eu.Id
+                                              EmpresaUsuarioId = eu.Id,
+                                              EsAdmin = tu.EsAdministrador,
                                           }).FirstOrDefaultAsync();
 
                 if (datosUsuario == null)
@@ -79,6 +81,7 @@ namespace ERPKardex.Controllers
                 new Claim("EmpresaUsuarioId", datosUsuario.EmpresaUsuarioId.ToString()), // GUARDAMOS ESTO
                 new Claim("RazonSocial", datosUsuario.RazonSocial),
                 new Claim("DNI", datosUsuario.Dni),
+                new Claim("EsAdministrador", datosUsuario.EsAdmin.GetValueOrDefault() ? "true" : "false"), // LO GUARDAMOS COMO STRING
                 new Claim(ClaimTypes.Role, datosUsuario.TipoUsuarioId.GetValueOrDefault().ToString())
             };
 

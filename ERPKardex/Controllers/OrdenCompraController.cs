@@ -465,5 +465,61 @@ namespace ERPKardex.Controllers
         }
 
         #endregion
+        #region 4. IMPRESIÓN
+        [HttpGet]
+        public async Task<IActionResult> Imprimir(int id)
+        {
+            try
+            {
+                // 1. CABECERA (JOIN con Empresa, Proveedor, Moneda, Usuario y Estado)
+                var dataCabecera = await (from o in _context.OrdenCompras
+                                          join e in _context.Empresas on o.EmpresaId equals e.Id
+                                          join prov in _context.Entidades on o.EntidadId equals prov.Id // PROVEEDOR
+                                          join mon in _context.Monedas on o.MonedaId equals mon.Id      // MONEDA
+                                          join u in _context.Usuarios on o.UsuarioCreacionId equals u.Id
+                                          join est in _context.Estados on o.EstadoId equals est.Id
+                                          where o.Id == id
+                                          select new
+                                          {
+                                              Orden = o,
+                                              Empresa = e,
+                                              Proveedor = prov,
+                                              Moneda = mon,
+                                              Usuario = u,
+                                              Estado = est.Nombre
+                                          }).FirstOrDefaultAsync();
+
+                if (dataCabecera == null) return NotFound();
+
+                // 2. DETALLES (JOIN con Centro Costo)
+                var detalles = await (from d in _context.DOrdenCompras
+                                      join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
+                                      from cc in ccJoin.DefaultIfEmpty()
+                                      where d.OrdenCompraId == id
+                                      select new
+                                      {
+                                          d.Item,
+                                          d.Descripcion,
+                                          d.UnidadMedida,
+                                          d.Cantidad,
+                                          d.PrecioUnitario,
+                                          d.Total,          // Importe total de la línea
+                                          d.Lugar,          // Lugar de entrega por ítem si aplica
+                                          CentroCosto = cc != null ? cc.Nombre : ""
+                                      }).ToListAsync();
+
+                // 3. Pasar a la vista
+                ViewBag.Empresa = dataCabecera.Empresa;
+                ViewBag.Proveedor = dataCabecera.Proveedor; // Vital para la OC
+                ViewBag.Moneda = dataCabecera.Moneda;       // S/. o $
+                ViewBag.Usuario = dataCabecera.Usuario;
+                ViewBag.Estado = dataCabecera.Estado;
+                ViewBag.Detalles = detalles;
+
+                return View(dataCabecera.Orden);
+            }
+            catch (Exception ex) { return Content($"Error: {ex.Message}"); }
+        }
+        #endregion
     }
 }

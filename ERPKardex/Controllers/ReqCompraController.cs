@@ -249,5 +249,57 @@ namespace ERPKardex.Controllers
         }
 
         #endregion
+        #region 4. IMPRESIÓN
+        [HttpGet]
+        public async Task<IActionResult> Imprimir(int id)
+        {
+            try
+            {
+                // 1. OBTENER CABECERA (JOIN MANUAL CON EMPRESA Y USUARIO)
+                var dataCabecera = await (from r in _context.ReqCompras
+                                          join e in _context.Empresas on r.EmpresaId equals e.Id
+                                          join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
+                                          join est in _context.Estados on r.EstadoId equals est.Id // <--- NUEVO JOIN
+                                          where r.Id == id
+                                          select new
+                                          {
+                                              Req = r,      // Objeto ReqCompra
+                                              Emp = e,      // Objeto Empresa (Para RUC, Logo)
+                                              Usu = u,       // Objeto Usuario (Para Firma)
+                                              NombreEstado = est.Nombre // <--- OBTENER NOMBRE
+                                          }).FirstOrDefaultAsync();
+
+                if (dataCabecera == null) return NotFound();
+
+                // 2. OBTENER DETALLES (JOIN MANUAL CON CENTRO COSTO)
+                var detalles = await (from d in _context.DReqCompras
+                                      join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
+                                      from cc in ccJoin.DefaultIfEmpty() // Left Join por si no tiene CC
+                                      where d.ReqCompraId == id
+                                      select new
+                                      {
+                                          d.Item,
+                                          d.DescripcionProducto,
+                                          d.UnidadMedida,
+                                          d.CantidadSolicitada,
+                                          d.Lugar,
+                                          CentroCosto = cc != null ? cc.Nombre : ""
+                                      }).ToListAsync();
+
+                // 3. PASAR DATOS A LA VISTA
+                // Como 'Model' solo soporta un tipo, usamos ViewBag para los satélites
+                ViewBag.Empresa = dataCabecera.Emp;
+                ViewBag.Usuario = dataCabecera.Usu;
+                ViewBag.Estado = dataCabecera.NombreEstado; // <--- PASAR A LA VISTA
+                ViewBag.Detalles = detalles;
+
+                return View(dataCabecera.Req); // El Modelo principal sigue siendo ReqCompra
+            }
+            catch (Exception ex)
+            {
+                return Content($"Error al generar formato: {ex.Message}");
+            }
+        }
+        #endregion
     }
 }

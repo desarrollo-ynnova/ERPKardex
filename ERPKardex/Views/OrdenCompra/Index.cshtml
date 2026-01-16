@@ -242,7 +242,12 @@
                 {
                     data: 'id', className: 'text-center',
                     render: function(data, type, row) {
-                        let btns = `<button class="btn btn-sm btn-info mr-1" onclick="verDetalle(${data})" title="Ver"><i class="fas fa-eye"></i></button>`;
+                        let btns = '';
+                        
+                        // 1. BOTÓN IMPRIMIR (Siempre visible)
+                        btns += `<button class="btn btn-sm btn-secondary mr-1" onclick="fct_Imprimir(${data})" title="Imprimir Formato"><i class="fas fa-print"></i></button>`;
+
+                        btns += `<button class="btn btn-sm btn-info mr-1" onclick="verDetalle(${data})" title="Ver"><i class="fas fa-eye"></i></button>`;
 
                         // CAMBIO AQUÍ: Solo mostrar botones de acción si dice "Generado"
                         if(row.estado === 'Generado') {
@@ -337,4 +342,9 @@
             }
         });
     }
+    
+    function fct_Imprimir(id) {
+        window.open('/OrdenCompra/Imprimir?id=' + id, '_blank');
+    }
+
 </script>

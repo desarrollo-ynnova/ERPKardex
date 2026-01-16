@@ -260,5 +260,53 @@ namespace ERPKardex.Controllers
         }
 
         #endregion
+        [HttpGet]
+        public async Task<IActionResult> Imprimir(int id)
+        {
+            try
+            {
+                // 1. CABECERA
+                var dataCabecera = await (from r in _context.ReqServicios // <-- CAMBIO AQUÍ
+                                          join e in _context.Empresas on r.EmpresaId equals e.Id
+                                          join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
+                                          join est in _context.Estados on r.EstadoId equals est.Id // <--- NUEVO JOIN
+                                          where r.Id == id
+                                          select new
+                                          {
+                                              Req = r,
+                                              Emp = e,
+                                              Usu = u,
+                                              NombreEstado = est.Nombre // <--- OBTENER NOMBRE
+                                          }).FirstOrDefaultAsync();
+
+                if (dataCabecera == null) return NotFound();
+
+                // 2. DETALLES
+                var detalles = await (from d in _context.DReqServicios // <-- CAMBIO AQUÍ
+                                      join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
+                                      from cc in ccJoin.DefaultIfEmpty()
+                                      where d.ReqServicioId == id // <-- CAMBIO AQUÍ
+                                      select new
+                                      {
+                                          d.Item,
+                                          d.DescripcionServicio, // O DescripcionServicio según tu modelo
+                                          d.UnidadMedida,
+                                          d.CantidadSolicitada,
+                                          d.Lugar,
+                                          CentroCosto = cc != null ? cc.Nombre : ""
+                                      }).ToListAsync();
+
+                ViewBag.Empresa = dataCabecera.Emp;
+                ViewBag.Usuario = dataCabecera.Usu;
+                ViewBag.Estado = dataCabecera.NombreEstado; // <--- PASAR A LA VISTA
+                ViewBag.Detalles = detalles;
+
+                return View(dataCabecera.Req);
+            }
+            catch (Exception ex)
+            {
+                return Content($"Error: {ex.Message}");
+            }
+        }
     }
 }

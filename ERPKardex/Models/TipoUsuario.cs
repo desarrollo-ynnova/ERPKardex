@@ -7,6 +7,8 @@ namespace ERPKardex.Models
     {
         public int Id { get; set; }
         public string? Nombre { get; set; }
+        [Column("es_administrador")]
+        public bool? EsAdministrador { get; set; }
         public bool? Estado { get; set; }
     }
 }
