@@ -58,7 +58,7 @@ namespace ERPKardex.Controllers
                                      where isa.AlmacenId == almacenId
                                      join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
                                      from td in joinDoc.DefaultIfEmpty()
-                                     join ent in _context.Entidades on isa.EntidadId equals ent.Id into joinEnt
+                                     join ent in _context.Proveedores on isa.ProveedorId equals ent.Id into joinEnt
                                      from ent in joinEnt.DefaultIfEmpty()
                                      where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
                                      select new

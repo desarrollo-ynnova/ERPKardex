@@ -32,9 +32,7 @@ namespace ERPKardex.Models
 
         [Column("valor_venta")]
         public decimal? ValorVenta { get; set; } // Subtotal sin IGV
-
         public decimal? Impuesto { get; set; }   // Monto IGV
-
         public decimal? Total { get; set; }
 
         [Column("centro_costo_id")]
@@ -47,6 +45,8 @@ namespace ERPKardex.Models
 
         [Column("tabla_referencia")]
         public string? TablaReferencia { get; set; } // "DPEDCOMPRA"
+        [Column("estado_id")]
+        public int? EstadoId { get; set; }
 
         [Column("observacion_item")]
         public string? ObservacionItem { get; set; }

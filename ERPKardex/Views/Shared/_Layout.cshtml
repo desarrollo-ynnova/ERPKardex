@@ -191,7 +191,7 @@
                             <li class="nav-header font-weight-bold">ADMINISTRACIÓN DE DATOS</li>
 
                             // Maestros open
-                            bool isRegistroOpen = (controllerName == "Entidad") || (controllerName == "Producto" && (actionName == "Registrar" || actionName == "RegistroServicio"));
+                            bool isRegistroOpen = (controllerName == "Proveedor") || (controllerName == "Cliente") || (controllerName == "Producto" && (actionName == "Registrar" || actionName == "RegistroServicio"));
 
                             <li class="nav-item @(isRegistroOpen ? "menu-open" : "")">
                                 <a href="#" class="nav-link @(isRegistroOpen ? "active" : "")">
@@ -215,8 +215,16 @@
                                     }
                                     @if (await _permisos.TienePermiso("MAE_PROV_VER")) {
                                         <li class="nav-item">
-                                            <a href="/Entidad/Index" class="nav-link @((controllerName == "Entidad") ? "active" : "")">
+                                            <a href="/Proveedor/Index" class="nav-link @((controllerName == "Proveedor") ? "active" : "")">
                                                 <i class="fas fa-address-book nav-icon text-info"></i><p>Proveedores</p>
+                                            </a>
+                                        </li>
+                                    }
+                                    @if (await _permisos.TienePermiso("MAE_CLIEN_VER"))
+                                    {
+                                        <li class="nav-item">
+                                            <a href="/Cliente/Index" class="nav-link @((controllerName == "Cliente") ? "active" : "")">
+                                                <i class="fas fa-address-book nav-icon text-info"></i><p>Clientes</p>
                                             </a>
                                         </li>
                                     }

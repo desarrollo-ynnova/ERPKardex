@@ -14,8 +14,8 @@ namespace ERPKardex.Models
 
         public string? Numero { get; set; }
 
-        [Column("entidad_id")]
-        public int? EntidadId { get; set; }
+        [Column("proveedor_id")]
+        public int? ProveedorId { get; set; }
 
         [Column("fecha_emision")]
         public DateTime? FechaEmision { get; set; }

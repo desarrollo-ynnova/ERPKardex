@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPKardex.Controllers
 {
-    public class EntidadController : BaseController
+    public class ProveedorController : BaseController
     {
         private readonly ApplicationDbContext _context;
 
-        public EntidadController(ApplicationDbContext context)
+        public ProveedorController(ApplicationDbContext context)
         {
             _context = context;
         }
@@ -42,7 +42,7 @@ namespace ERPKardex.Controllers
                 var esGlobal = EsAdminGlobal;
 
                 // Hacemos Join con Banco para mostrar el nombre
-                var query = from e in _context.Entidades
+                var query = from e in _context.Proveedores
                             join b in _context.Bancos on e.BancoId equals b.Id into bancoJoin
                             from b in bancoJoin.DefaultIfEmpty() // Left Join (puede no tener banco)
                             where e.Estado == true
@@ -93,7 +93,7 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var entidad = await _context.Entidades.FindAsync(id);
+                var entidad = await _context.Proveedores.FindAsync(id);
                 if (entidad == null) return Json(new { status = false, message = "No encontrado" });
 
                 return Json(new { status = true, data = entidad });
@@ -106,7 +106,7 @@ namespace ERPKardex.Controllers
 
         // 3. GUARDAR (Creación y Edición con Cambio de Estado)
         [HttpPost]
-        public async Task<JsonResult> Guardar(Entidad modelo)
+        public async Task<JsonResult> Guardar(Proveedor modelo)
         {
             try
             {
@@ -115,7 +115,7 @@ namespace ERPKardex.Controllers
                 modelo.NombreContacto = modelo.NombreContacto?.ToUpper();
 
                 // Validación de RUC duplicado en la misma empresa
-                var existeRuc = await _context.Entidades
+                var existeRuc = await _context.Proveedores
                     .AnyAsync(x => x.Ruc == modelo.Ruc
                                 && x.EmpresaId == empresaId
                                 && x.Id != modelo.Id); // Excluirse a sí mismo si edita
@@ -129,12 +129,12 @@ namespace ERPKardex.Controllers
                     modelo.EmpresaId = empresaId;
                     // Al crear, forzamos Activo (o respetamos lo que venga del front si quisieran crear inactivos)
                     modelo.Estado = true;
-                    _context.Entidades.Add(modelo);
+                    _context.Proveedores.Add(modelo);
                 }
                 else
                 {
                     // --- EDICIÓN ---
-                    var entidadDb = await _context.Entidades.FindAsync(modelo.Id);
+                    var entidadDb = await _context.Proveedores.FindAsync(modelo.Id);
                     if (entidadDb == null) return Json(new { status = false, message = "No encontrado" });
 
                     // Actualizar datos
@@ -168,14 +168,14 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var entidad = await _context.Entidades.FindAsync(id);
+                var entidad = await _context.Proveedores.FindAsync(id);
                 if (entidad == null) return Json(new { status = false, message = "No encontrado" });
 
                 // VALIDACIÓN DE INTEGRIDAD REFERENCIAL MANUAL
                 // Consultamos si el ID aparece en alguna tabla transaccional
-                bool tieneOrdenCompra = await _context.OrdenCompras.AnyAsync(x => x.EntidadId == id);
-                bool tieneOrdenServicio = await _context.OrdenServicios.AnyAsync(x => x.EntidadId == id);
-                bool tieneMovimientoAlmacen = await _context.IngresoSalidaAlms.AnyAsync(x => x.EntidadId == id);
+                bool tieneOrdenCompra = await _context.OrdenCompras.AnyAsync(x => x.ProveedorId == id);
+                bool tieneOrdenServicio = await _context.OrdenServicios.AnyAsync(x => x.ProveedorId == id);
+                bool tieneMovimientoAlmacen = await _context.IngresoSalidaAlms.AnyAsync(x => x.ProveedorId == id);
 
                 if (tieneOrdenCompra || tieneOrdenServicio || tieneMovimientoAlmacen)
                 {
@@ -188,7 +188,7 @@ namespace ERPKardex.Controllers
                 }
 
                 // SI ESTÁ LIMPIO, BORRAMOS FÍSICAMENTE
-                _context.Entidades.Remove(entidad);
+                _context.Proveedores.Remove(entidad);
                 await _context.SaveChangesAsync();
 
                 return Json(new { status = true, message = "Registro eliminado físicamente de la base de datos." });

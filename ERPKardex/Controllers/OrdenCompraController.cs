@@ -32,7 +32,7 @@ namespace ERPKardex.Controllers
                 var esGlobal = EsAdminGlobal;       // BaseController
 
                 var query = from o in _context.OrdenCompras
-                            join ent in _context.Entidades on o.EntidadId equals ent.Id
+                            join ent in _context.Proveedores on o.ProveedorId equals ent.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
                             join est2 in _context.Estados on o.EstadoPagoId equals est2.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
@@ -103,7 +103,7 @@ namespace ERPKardex.Controllers
                 var miEmpresaId = EmpresaUsuarioId;
                 var esGlobal = EsAdminGlobal;
 
-                var proveedores = _context.Entidades
+                var proveedores = _context.Proveedores
                     .Where(x => x.Estado == true && (esGlobal || x.EmpresaId == miEmpresaId))
                     .Select(x => new { x.Id, x.Ruc, x.RazonSocial }).ToList();
 
@@ -201,11 +201,11 @@ namespace ERPKardex.Controllers
                                    }).ToList();
 
                 // 2. Comprometido en Borradores (Generado)
-                var estadoGeneradoOS = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN")?.Id ?? 0;
+                var estadoGeneradoOC = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN")?.Id ?? 0;
 
                 var comprometidos = (from doc in _context.DOrdenCompras
                                      join oc in _context.OrdenCompras on doc.OrdenCompraId equals oc.Id
-                                     where oc.EstadoId == estadoGeneradoOS
+                                     where oc.EstadoId == estadoGeneradoOC
                                         && doc.TablaReferencia == "DPEDCOMPRA"
                                      select new { doc.IdReferencia, doc.Cantidad })
                                     .ToList();
@@ -253,14 +253,15 @@ namespace ERPKardex.Controllers
                     var empresaId = EmpresaUsuarioId;
                     var usuarioId = UsuarioActualId;
 
-                    if (cabecera.EntidadId == 0) throw new Exception("Debe seleccionar un proveedor.");
+                    if (cabecera.ProveedorId == 0) throw new Exception("Debe seleccionar un proveedor.");
 
                     // Correlativo y datos fijos...
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
+                    var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DORDEN");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OCO");
-                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "FINANZAS");
+                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "ORDEN");
 
-                    if (estadoGenerado == null || estadoPendientePago == null || tipoDoc == null) throw new Exception("Estados o tipo de documento no configurado");
+                    if (estadoGenerado == null || estadoPendientePago == null || tipoDoc == null || estadoPendiente == null) throw new Exception("Estados o tipo de documento no configurado");
 
                     var ultimo = _context.OrdenCompras
                         .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
@@ -323,6 +324,7 @@ namespace ERPKardex.Controllers
                     {
                         det.Id = 0;
                         det.OrdenCompraId = cabecera.Id;
+                        det.EstadoId = estadoPendiente.Id;
                         det.EmpresaId = empresaId;
                         det.Item = item.ToString("D3");
 
@@ -492,7 +494,7 @@ namespace ERPKardex.Controllers
                 // 1. CABECERA (JOIN con Empresa, Proveedor, Moneda, Usuario y Estado)
                 var dataCabecera = await (from o in _context.OrdenCompras
                                           join e in _context.Empresas on o.EmpresaId equals e.Id
-                                          join prov in _context.Entidades on o.EntidadId equals prov.Id // PROVEEDOR
+                                          join prov in _context.Proveedores on o.ProveedorId equals prov.Id // PROVEEDOR
                                           join mon in _context.Monedas on o.MonedaId equals mon.Id      // MONEDA
                                           join u in _context.Usuarios on o.UsuarioCreacionId equals u.Id
                                           join est in _context.Estados on o.EstadoId equals est.Id

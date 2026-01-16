@@ -40,7 +40,7 @@ namespace ERPKardex.Controllers
 
                 // 2. Compras: Aprobadas Y (EstadoPago ES NULL O EstadoPago != PagadoTotal)
                 var compras = from o in _context.OrdenCompras
-                              join ent in _context.Entidades on o.EntidadId equals ent.Id
+                              join ent in _context.Proveedores on o.ProveedorId equals ent.Id
                               join mon in _context.Monedas on o.MonedaId equals mon.Id
                               join est in _context.Estados on o.EstadoPagoId equals est.Id
                               where o.EstadoId == idAprobado
@@ -61,7 +61,7 @@ namespace ERPKardex.Controllers
 
                 // 3. Servicios
                 var servicios = from o in _context.OrdenServicios
-                                join ent in _context.Entidades on o.EntidadId equals ent.Id
+                                join ent in _context.Proveedores on o.ProveedorId equals ent.Id
                                 join mon in _context.Monedas on o.MonedaId equals mon.Id
                                 join est in _context.Estados on o.EstadoPagoId equals est.Id
                                 where o.EstadoId == idAprobado

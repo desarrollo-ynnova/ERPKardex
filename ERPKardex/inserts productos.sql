@@ -483,14 +483,14 @@ DECLARE @EmpresaID INT = 1; -- Control Science
 DECLARE @EntidadComexdiID INT;
 
 -- Insertamos el entidad solo si no existe
-IF NOT EXISTS (SELECT 1 FROM entidad WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID)
+IF NOT EXISTS (SELECT 1 FROM proveedor WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID)
 BEGIN
-    INSERT INTO entidad (ruc, razon_social, estado, empresa_id)
+    INSERT INTO proveedor (ruc, razon_social, estado, empresa_id)
     VALUES ('20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1, @EmpresaID); -- RUC en NULL como indicaste
 END
 
 -- Recuperamos el ID (Sea el 1 o cualquiera que le asigne el Identity)
-SELECT @EntidadComexdiID = id FROM entidad WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID;
+SELECT @EntidadComexdiID = id FROM proveedor WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID;
 
 -- =============================================
 -- 5. MIGRACIÓN HISTÓRICA (ALMACÉN TERCEROS) - CORREGIDO CON ENTIDAD_ID
@@ -512,7 +512,7 @@ INSERT INTO ingresosalidaalm (
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
     empresa_id, 
-    entidad_id -- <--- CAMBIO AQUÍ
+    proveedor_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
     @IdTipoIALM,
@@ -543,7 +543,7 @@ INSERT INTO ingresosalidaalm (
     fecha_documento, tipo_documento_id, serie_documento, numero_documento, 
     moneda_id, estado_id, usuario_id, fecha_registro, 
     empresa_id, 
-    entidad_id -- <--- CAMBIO AQUÍ
+    proveedor_id -- <--- CAMBIO AQUÍ
 ) 
 VALUES (
     @IdTipoIALM,

@@ -1,11 +1,11 @@
 ﻿@{
-    ViewData["Title"] = "Gestión de Entidades";
+    ViewData["Title"] = "Gestión de Proveedores";
 }
 
 <div class="container-fluid py-4">
     <div class="card shadow mb-4">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="m-0 font-weight-bold">Directorio de Entidades (Proveedores)</h5>
+            <h5 class="m-0 font-weight-bold">Directorio de Proveedores</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -110,7 +110,7 @@
                     text: '<i class="bi bi-file-earmark-excel"></i>',
                     titleAttr: 'Exportar a Excel',
                     className: 'btn btn-success',
-                    filename: 'Entidades ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Proveedores ' + moment().format('DD-MM-YYYY HH_mm'),
                     footer: true,
                     exportOptions:
                     {
@@ -123,7 +123,7 @@
                     text: '<i class="bi bi-file-earmark-pdf"></i>',
                     titleAttr: 'Exportar a PDF',
                     className: 'btn btn-danger',
-                    filename: 'Entidades ' + moment().format('DD-MM-YYYY HH_mm'),
+                    filename: 'Proveedores ' + moment().format('DD-MM-YYYY HH_mm'),
                     exportOptions:
                     {
                         stripHtml: true,
@@ -151,16 +151,16 @@
                     columns: ':not(.noVis)',
                 },
                 {
-                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nueva entidad',
+                    text: '<i class= "bi bi-plus-circle" style="margin-right: 5px;"></i>Nuevo proveedor',
                     className: 'btn bg-success m-1',
                     titleAttr: 'Nuevo',
                     action: function (e, dt, node, config) {
-                        window.location.href = '/Entidad/Registrar';
+                        window.location.href = '/Proveedor/Registrar';
                     },
                 },
             ],
             ajax: {
-                url: '/Entidad/GetData',
+                url: '/Proveedor/GetData',
                 type: 'GET'
             },
             columns: [
@@ -183,7 +183,7 @@
                     className: 'text-center',
                     render: function(data, type, row) {
                         return `
-                            <a href="/Entidad/Registrar?id=${data}" class="btn btn-sm btn-warning" title="Editar / Dar de Baja"><i class="fas fa-edit"></i></a>
+                            <a href="/Proveedor/Registrar?id=${data}" class="btn btn-sm btn-warning" title="Editar / Dar de Baja"><i class="fas fa-edit"></i></a>
                             <button class="btn btn-sm btn-danger" onclick="eliminar(${data})" title="Eliminar Físicamente"><i class="fas fa-trash"></i></button>
                         `;
                     }
@@ -217,7 +217,7 @@
             confirmButtonText: 'Sí, intentar eliminar'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('/Entidad/Eliminar', { id: id }, function(res) {
+                $.post('/Proveedor/Eliminar', { id: id }, function(res) {
                     if (res.status) {
                         Swal.fire('Eliminado', res.message, 'success');
                         cargarTabla();

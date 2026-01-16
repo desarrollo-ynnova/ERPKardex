@@ -50,7 +50,7 @@ namespace ERPKardex.Models
         public DateTime? FechaAnulacion { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
-        [Column("entidad_id")]
-        public int? EntidadId { get; set; }
+        [Column("proveedor_id")]
+        public int? ProveedorId { get; set; }
     }
 }

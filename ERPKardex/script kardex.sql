@@ -30,7 +30,6 @@ drop table if exists estado;
 drop table if exists usuario;
 drop table if exists tipo_usuario;
 drop table if exists empresa_usuario;
-drop table if exists entidad;
 drop table if exists tipo_existencia;
 drop table if exists dpedservicio;
 drop table if exists pedservicio;
@@ -57,6 +56,8 @@ drop table if exists dmovimiento_activo;
 drop table if exists banco;
 drop table if exists tipo_cambio;
 drop table if exists orden_pago;
+drop table if exists proveedor;
+drop table if exists cliente;
 
 GO
 
@@ -216,7 +217,7 @@ create table tipo_documento (
 	estado BIT
 );
 
-CREATE TABLE entidad (
+CREATE TABLE proveedor (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	ruc varchar(255),
 	razon_social varchar(255),
@@ -229,6 +230,23 @@ CREATE TABLE entidad (
     numero_cci VARCHAR(255),
 	estado BIT,
 	empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE cliente (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+	ruc varchar(255),
+	razon_social varchar(255),
+	nombre_contacto varchar(255),
+    telefono varchar(255),
+    email varchar(255),
+    banco_id INT,
+    numero_cuenta VARCHAR(255),
+    numero_detraccion VARCHAR(255),
+    numero_cci VARCHAR(255),
+	estado BIT,
+	empresa_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
 );
 
 create table ingresosalidaalm (
@@ -256,7 +274,7 @@ create table ingresosalidaalm (
     usuario_anulacion_id INT,
     fecha_anulacion DATETIME,
 	empresa_id INT,
-	entidad_id INT,
+	proveedor_id INT,
 );
 
 create table dingresosalidaalm (
@@ -586,7 +604,7 @@ CREATE TABLE ordencompra (
     numero VARCHAR(20),            -- Ej: OCO-0000001
     
     -- Datos del Proveedor (Vital para la Orden)
-    entidad_id INT,                -- Proveedor seleccionado
+    proveedor_id INT,                -- Proveedor seleccionado
     
     fecha_emision DATE,
     fecha_entrega DATE,            -- NISIRA: Plazo de Entrega
@@ -635,6 +653,7 @@ CREATE TABLE dordencompra (
     
     -- Cantidades
     cantidad DECIMAL(12,2),        -- La cantidad que FINALMENTE se compra
+    cantidad_atendida DECIMAL(12,2) DEFAULT 0,
     
     -- Valores Monetarios (Lo que negociaste con el proveedor)
     precio_unitario DECIMAL(18,6), -- NISIRA: P.Unitario
@@ -647,6 +666,7 @@ CREATE TABLE dordencompra (
     centro_costo_id INT,           -- NISIRA: Destino/Centro de Costo
     lugar VARCHAR(255),
     -- TRAZABILIDAD (La clave para no "rayarse" con los pedidos)
+    estado_id INT,
     id_referencia INT,             -- ID de dpedcompra
     tabla_referencia VARCHAR(50) DEFAULT 'DPEDCOMPRA',
     
@@ -661,7 +681,7 @@ CREATE TABLE ordenservicio (
     tipo_documento_interno_id INT, -- 'OS'
     numero VARCHAR(20),
     
-    entidad_id INT,                -- Proveedor del Servicio
+    proveedor_id INT,                -- Proveedor del Servicio
     
     fecha_emision DATE,
     fecha_inicio_servicio DATE,    -- NISIRA: Fecha Inicio
@@ -705,6 +725,7 @@ CREATE TABLE dordenservicio (
     unidad_medida VARCHAR(50),
     
     cantidad DECIMAL(12,2),
+    cantidad_atendida DECIMAL(12,2) DEFAULT 0,
     precio_unitario DECIMAL(18,6),
     
     valor_venta DECIMAL(18,2),
@@ -715,6 +736,7 @@ CREATE TABLE dordenservicio (
     lugar VARCHAR(255),
 
     -- TRAZABILIDAD
+    estado_id INT,
     id_referencia INT,             -- ID de dpedservicio
     tabla_referencia VARCHAR(50) DEFAULT 'DPEDSERVICIO',
     
@@ -966,19 +988,30 @@ INSERT INTO estado (nombre, tabla) VALUES
 -- Estados para el Pedido (Operativos)
 INSERT INTO estado (nombre, tabla) VALUES 
 ('Generado', 'PED'),
-('Anulado', 'PED'),
 ('Atendido Parcial', 'PED'),
 ('Atendido Total', 'PED');
 
+-- ORDEN DE COMPRA
 INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
 
--- 1. Crear nuevos estados financieros si no existen
-INSERT INTO estado (nombre, tabla) VALUES ('Pendiente Pago', 'FINANZAS'); -- ID X
-INSERT INTO estado (nombre, tabla) VALUES ('Pagado Parcial', 'FINANZAS'); -- ID Y
-INSERT INTO estado (nombre, tabla) VALUES ('Pagado Total', 'FINANZAS');   -- ID Z
-INSERT INTO estado (nombre, tabla) VALUES ('Vencido', 'FINANZAS');        -- ID W
+-- ORDEN DE SERVICIO
+INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
+INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
+
+-- ORDEN DE COMPRA Y ORDEN DE SERVICIO
+INSERT INTO estado (nombre, tabla) VALUES ('Pendiente Pago', 'ORDEN'); -- ID X
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado Parcial', 'ORDEN'); -- ID Y
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado Total', 'ORDEN');   -- ID Z
+INSERT INTO estado (nombre, tabla) VALUES ('Vencido', 'ORDEN');        -- ID W
+
+-- Solo los estados que pediste para los DORDEN
+INSERT INTO estado (nombre, tabla) VALUES 
+('Pendiente', 'DORDEN'),
+('Atendido Parcial', 'DORDEN'),
+('Atendido Total', 'DORDEN');
 
 GO
 
@@ -1476,7 +1509,8 @@ DECLARE @ID_ACT INT = (SELECT id FROM permiso WHERE codigo = 'MOD_ACTIVOS');
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
 ('MAE_PROD_REG', 'Registrar Producto', 'MAESTROS', @ID_MAE, 1),
 ('MAE_SERV_REG', 'Registrar Servicio', 'MAESTROS', @ID_MAE, 2),
-('MAE_PROV_VER', 'Ver Proveedores', 'MAESTROS', @ID_MAE, 3);
+('MAE_PROV_VER', 'Ver Proveedores', 'MAESTROS', @ID_MAE, 3),
+('MAE_CLIE_VER', 'Ver Clientes', 'MAESTROS', @ID_MAE, 4);
 
 -- 3. SUB-MENÚS (Almacén)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 

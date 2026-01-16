@@ -1,6 +1,6 @@
 ﻿@{
-    ViewData["Title"] = ViewBag.Id == 0 ? "Nueva Entidad" : "Editar Entidad";
-    int idEntidad = ViewBag.Id;
+    ViewData["Title"] = ViewBag.Id == 0 ? "Nuevo Cliente" : "Editar Cliente";
+    int idCliente = ViewBag.Id;
 }
 
 <div class="container-fluid py-4">
@@ -9,11 +9,11 @@
             <div class="card shadow mb-4">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="m-0 font-weight-bold">
-                        <i class="fas fa-user-tag"></i> @(idEntidad == 0 ? "Registro de Entidad" : "Edición de Entidad")
+                        <i class="fas fa-user-tag"></i> @(idCliente == 0 ? "Registro de Cliente" : "Edición de Cliente")
                     </h5>
                 </div>
                 <div class="card-body">
-                    <input type="hidden" id="hdn_Id" value="@idEntidad" />
+                    <input type="hidden" id="hdn_Id" value="@idCliente" />
 
                     <div class="form-row">
                         <div class="form-group col-md-6">
@@ -75,7 +75,7 @@
                     </div>
                     <hr />
                     <div class="text-right">
-                        <a href="/Entidad/Index" class="btn btn-secondary mr-2">
+                        <a href="/Cliente/Index" class="btn btn-secondary mr-2">
                             <i class="fas fa-arrow-left"></i> Volver
                         </a>
                         <button class="btn btn-success px-4" onclick="guardar()">
@@ -97,7 +97,7 @@
 
         // 1. CARGAR BANCOS
         function fct_CargarBancos() {
-            $.get('/Entidad/GetBancosCombo', function (res) {
+            $.get('/Cliente/GetBancosCombo', function (res) {
                 if (res.status) {
                     let html = '<option value="">-- Sin Banco --</option>';
                     res.data.forEach(b => {
@@ -117,7 +117,7 @@
         }
 
         function cargarDatos(id) {
-            $.get('/Entidad/Obtener?id=' + id, function(res) {
+            $.get('/Cliente/Obtener?id=' + id, function(res) {
                 if(res.status) {
                     // Datos Generales
                     $('#txt_Ruc').val(res.data.ruc);
@@ -166,10 +166,10 @@
                 Estado: $('#cbo_Estado').val() === "1"
             };
 
-            $.post('/Entidad/Guardar', { modelo: modelo }, function(res) {
+            $.post('/Cliente/Guardar', { modelo: modelo }, function(res) {
                 if(res.status) {
                     Swal.fire("Éxito", res.message, "success").then(() => {
-                        window.location.href = '/Entidad/Index';
+                        window.location.href = '/Cliente/Index';
                     });
                 } else {
                     Swal.fire("Error", res.message, "error");

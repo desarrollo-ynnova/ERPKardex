@@ -403,7 +403,7 @@ namespace ERPKardex.Controllers
         public JsonResult GetEntidades()
         {
             // Entidades generalmente son globales o filtradas por empresa según tu lógica. Asumiré filtradas.
-            var data = _context.Entidades.Where(a => a.Estado == true && a.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
+            var data = _context.Proveedores.Where(a => a.Estado == true && a.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
             return Json(new { data = data, status = true });
         }
         [HttpGet]
@@ -616,12 +616,12 @@ namespace ERPKardex.Controllers
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
         [HttpPost]
-        public async Task<JsonResult> GuardarEntidadRapido(Entidad modelo)
+        public async Task<JsonResult> GuardarEntidadRapido(Proveedor modelo)
         {
             try
             {
                 // 2. Validar si ya existe en esta empresa
-                var existe = await _context.Entidades
+                var existe = await _context.Proveedores
                     .AnyAsync(x => x.Ruc == modelo.Ruc && x.EmpresaId == EmpresaUsuarioId);
 
                 if (existe)
@@ -631,7 +631,7 @@ namespace ERPKardex.Controllers
                 modelo.EmpresaId = EmpresaUsuarioId;
                 modelo.Estado = true;
 
-                _context.Entidades.Add(modelo);
+                _context.Proveedores.Add(modelo);
                 await _context.SaveChangesAsync();
 
                 // 4. Retornamos el ID para seleccionarlo automáticamente en el combo

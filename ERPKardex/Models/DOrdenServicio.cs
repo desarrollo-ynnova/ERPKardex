@@ -44,6 +44,8 @@ namespace ERPKardex.Models
 
         [Column("tabla_referencia")]
         public string? TablaReferencia { get; set; } // "DPEDSERVICIO"
+        [Column("estado_id")]
+        public int? EstadoId { get; set; }
 
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }

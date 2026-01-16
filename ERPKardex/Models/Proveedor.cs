@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPKardex.Models
 {
-    [Table("entidad")]
-    public class Entidad
+    [Table("proveedor")]
+    public class Proveedor
     {
         [Key] // Es buena práctica marcar la llave primaria
         public int Id { get; set; }

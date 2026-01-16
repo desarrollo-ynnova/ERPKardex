@@ -14,8 +14,8 @@ namespace ERPKardex.Models
 
         public string? Numero { get; set; }
 
-        [Column("entidad_id")]
-        public int? EntidadId { get; set; } // Proveedor
+        [Column("proveedor_id")]
+        public int? ProveedorId { get; set; } // Proveedor
 
         [Column("fecha_emision")]
         public DateTime? FechaEmision { get; set; }
@@ -40,7 +40,6 @@ namespace ERPKardex.Models
 
         [Column("almacen_id")]
         public int? AlmacenId { get; set; }
-
         public string? Observacion { get; set; }
 
         [Column("incluye_igv")]

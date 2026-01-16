@@ -316,7 +316,7 @@
             if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío");
             
             let cab = {
-                EntidadId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
+                ProveedorId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
                 Fecha: $("#dtp_FechaMov").val(),
                 TipoMovimiento: MOTIVOS_FULL.find(x => x.id == $("#cbx_Motivo").val())?.tipoMovimiento,
                 SucursalId: parseInt($("#cbx_Sucursal").val()),
