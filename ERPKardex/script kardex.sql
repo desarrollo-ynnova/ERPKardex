@@ -1457,52 +1457,6 @@ INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14
 
 GO
 
--- Limpiamos permisos anteriores para reiniciar limpio
-TRUNCATE TABLE empresa_usuario_permiso;
-DELETE FROM permiso;
-DBCC CHECKIDENT ('permiso', RESEED, 0);
-GO
-
--- 1. MÓDULOS PRINCIPALES (Padres)
-INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('MOD_DASHBOARD', 'Módulo Dashboard', 'SISTEMA', NULL, 1),
-('MOD_LOGISTICA', 'Módulo Logística', 'SISTEMA', NULL, 2),
-('MOD_FINANZAS', 'Módulo Finanzas', 'SISTEMA', NULL, 3),
-('MOD_SEGURIDAD', 'Módulo Seguridad', 'SISTEMA', NULL, 99);
-
--- Variables para obtener IDs (SQL Server)
-DECLARE @ID_DASH INT = (SELECT id FROM permiso WHERE codigo = 'MOD_DASHBOARD');
-DECLARE @ID_LOG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_LOGISTICA');
-DECLARE @ID_FIN INT = (SELECT id FROM permiso WHERE codigo = 'MOD_FINANZAS');
-DECLARE @ID_SEG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_SEGURIDAD');
-
--- 2. SUB-MENÚS Y ACCIONES (Hijos)
-
--- DASHBOARD
-INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('DASH_VER_GLOBAL', 'Ver Todo (Consolidado)', 'DASHBOARD', @ID_DASH, 1);
-
--- LOGÍSTICA
-INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('LOG_REQ_VER', 'Ver Requerimientos', 'LOGISTICA', @ID_LOG, 1),
-('LOG_REQ_CREAR', 'Crear/Editar Requerimiento', 'LOGISTICA', @ID_LOG, 2),
-('LOG_ORD_VER', 'Ver Órdenes Compra/Serv', 'LOGISTICA', @ID_LOG, 3),
-('LOG_ORD_CREAR', 'Crear Orden', 'LOGISTICA', @ID_LOG, 4),
-('LOG_ORD_APROBAR', 'Aprobar Orden (Jefatura)', 'LOGISTICA', @ID_LOG, 5),
-('LOG_ORD_ANULAR', 'Anular Orden', 'LOGISTICA', @ID_LOG, 6);
-
--- FINANZAS
-INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('FIN_PAGO_VER', 'Ver Historial Pagos', 'FINANZAS', @ID_FIN, 1),
-('FIN_PAGO_REG', 'Registrar Nuevo Pago', 'FINANZAS', @ID_FIN, 2),
-('FIN_PAGO_ANULAR', 'Anular/Extornar Pago', 'FINANZAS', @ID_FIN, 3);
-
--- SEGURIDAD
-INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('SEG_USU_GEST', 'Gestionar Usuarios', 'SEGURIDAD', @ID_SEG, 1),
-('SEG_PERM_GEST', 'Asignar Permisos', 'SEGURIDAD', @ID_SEG, 2);
-GO
-
 -- 1. NODOS RAÍZ (Las Cabeceras o Menús Principales)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
 ('MOD_MAESTROS', 'Módulo Registros Maestros', 'MAESTROS', NULL, 1),
