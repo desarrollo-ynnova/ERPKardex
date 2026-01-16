@@ -250,17 +250,20 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    var usuarioId = UsuarioActualId; // BaseController
+                    var empresaId = EmpresaUsuarioId;
+                    var usuarioId = UsuarioActualId;
 
+                    if (cabecera.EntidadId == 0) throw new Exception("Debe seleccionar un proveedor.");
+
+                    // Correlativo y datos fijos...
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
-                    var estPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "FINANZAS");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OCO");
+                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "FINANZAS");
 
-                    if (estadoGenerado == null || tipoDoc == null || estPendientePago == null) throw new Exception("Configuración faltante (Estados/TiposDoc).");
+                    if (estadoGenerado == null || estadoPendientePago == null || tipoDoc == null) throw new Exception("Estados o tipo de documento no configurado");
 
-                    // Correlativo
                     var ultimo = _context.OrdenCompras
-                        .Where(x => x.EmpresaId == cabecera.EmpresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
+                        .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
                         .OrderByDescending(x => x.Numero)
                         .Select(x => x.Numero).FirstOrDefault();
 
@@ -268,81 +271,96 @@ namespace ERPKardex.Controllers
                     if (!string.IsNullOrEmpty(ultimo))
                     {
                         var partes = ultimo.Split('-');
-                        if (partes.Length > 1 && int.TryParse(partes[1], out int val)) nro = val + 1;
+                        if (partes.Length > 1 && int.TryParse(partes[1], out int correlativo)) nro = correlativo + 1;
                     }
 
-                    var tcDia = _context.TipoCambios
-                                          .Where(x => x.Fecha.Date == cabecera.FechaEmision.GetValueOrDefault().Date)
-                                          .Select(x => x.TcVenta)
-                                          .FirstOrDefault();
-
-                    if (tcDia <= 0) return Json(new { status = false, message = $"No existe Tipo de Cambio registrado para la fecha de pago {cabecera.FechaEmision.GetValueOrDefault().Date:dd/MM/yyyy}." });
-
-                    // Cabecera
                     cabecera.Numero = $"OCO-{nro.ToString("D10")}";
                     cabecera.TipoDocumentoInternoId = tipoDoc.Id;
                     cabecera.UsuarioCreacionId = usuarioId;
-                    cabecera.FechaRegistro = DateTime.Now;
-                    cabecera.TipoCambio = tcDia;
+                    cabecera.EmpresaId = empresaId;
                     cabecera.EstadoId = estadoGenerado.Id;
-                    cabecera.EstadoPagoId = estPendientePago.Id;
+                    cabecera.EstadoPagoId = estadoPendientePago.Id;
+                    cabecera.FechaRegistro = DateTime.Now;
 
-                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
+                    // --------------------------------------------------------------------------------
+                    // 3. CÁLCULO CONTABLE (BASE + IGV)
+                    // --------------------------------------------------------------------------------
+                    var listaDetalles = JsonConvert.DeserializeObject<List<DOrdenCompra>>(detallesJson);
+                    decimal sumaBases = 0; // Suma de (Cant * Precio)
+
+                    foreach (var det in listaDetalles)
+                    {
+                        sumaBases += (det.Cantidad ?? 0) * (det.PrecioUnitario ?? 0);
+                    }
+
+                    decimal igvTasa = 0.18m;
+
+                    if (cabecera.IncluyeIgv == true)
+                    {
+                        // CASO A: NACIONAL (BASE + IGV)
+                        // Lo que sumamos es la BASE IMPONIBLE (Total Afecto)
+                        cabecera.TotalAfecto = sumaBases;
+                        cabecera.IgvTotal = Math.Round(cabecera.TotalAfecto.Value * igvTasa, 2);
+                        cabecera.Total = cabecera.TotalAfecto + cabecera.IgvTotal;
+                        cabecera.TotalInafecto = 0;
+                    }
+                    else
+                    {
+                        // CASO B: IMPORTACIÓN (SIN IGV)
+                        // Lo que sumamos es el TOTAL DIRECTO (Inafecto)
+                        cabecera.Total = sumaBases;
+                        cabecera.TotalInafecto = sumaBases;
+                        cabecera.TotalAfecto = 0;
+                        cabecera.IgvTotal = 0;
+                    }
 
                     _context.OrdenCompras.Add(cabecera);
                     _context.SaveChanges();
 
-                    // Detalles
-                    if (!string.IsNullOrEmpty(detallesJson))
+                    // 4. GUARDAR DETALLES
+                    int item = 1;
+                    foreach (var det in listaDetalles)
                     {
-                        var items = JsonConvert.DeserializeObject<List<DOrdenCompra>>(detallesJson);
-                        int itemCounter = 1;
+                        det.Id = 0;
+                        det.OrdenCompraId = cabecera.Id;
+                        det.EmpresaId = empresaId;
+                        det.Item = item.ToString("D3");
 
-                        foreach (var det in items)
+                        decimal subtotalLinea = (det.Cantidad ?? 0) * (det.PrecioUnitario ?? 0);
+
+                        if (cabecera.IncluyeIgv == true)
                         {
-                            // VALIDACIÓN DE SALDO (COMENTADA PARA PERMITIR SOBRE-ATENCIÓN)
-                            // La advertencia se maneja en el Frontend.
-                            /*
-                            if (det.IdReferencia != null && det.TablaReferencia == "DPEDCOMPRA")
-                            {
-                                var pedItem = _context.DPedidoCompras.AsNoTracking().FirstOrDefault(x => x.Id == det.IdReferencia);
-                                if (pedItem != null)
-                                {
-                                    var emitidosOtros = _context.DOrdenCompras
-                                        .Where(x => x.IdReferencia == det.IdReferencia && x.TablaReferencia == "DPEDCOMPRA"
-                                                 && x.OrdenCompraId != cabecera.Id
-                                                 && _context.OrdenCompras.Any(o => o.Id == x.OrdenCompraId && o.EstadoId == estadoGenerado.Id))
-                                        .Sum(x => x.Cantidad ?? 0);
-
-                                    decimal saldoReal = (pedItem.CantidadSolicitada ?? 0) - (pedItem.CantidadAtendida ?? 0) - emitidosOtros;
-
-                                    if ((det.Cantidad ?? 0) > saldoReal)
-                                    {
-                                        throw new Exception($"Item {det.Item} excede saldo: {saldoReal}");
-                                    }
-                                }
-                            }
-                            */
-
-                            det.Id = 0;
-                            det.OrdenCompraId = cabecera.Id;
-                            det.EmpresaId = cabecera.EmpresaId;
-                            det.Item = itemCounter.ToString("D3");
-
-                            if (cabecera.IncluyeIgv == false)
-                            {
-                                det.Impuesto = 0;
-                                det.ValorVenta = det.Total;
-                            }
-
-                            _context.DOrdenCompras.Add(det);
-                            itemCounter++;
+                            // Nacional: El subtotal es Valor Venta. Se agrega impuesto.
+                            det.ValorVenta = subtotalLinea;
+                            det.Impuesto = subtotalLinea * igvTasa;
+                            det.Total = det.ValorVenta + det.Impuesto;
                         }
-                        _context.SaveChanges();
+                        else
+                        {
+                            // Importación: Sin impuesto.
+                            det.ValorVenta = subtotalLinea;
+                            det.Impuesto = 0;
+                            det.Total = subtotalLinea;
+                        }
+
+                        // Actualizar Saldos Pedido
+                        if (det.IdReferencia != null && det.TablaReferencia == "DPEDCOMPRA")
+                        {
+                            var lineaPedido = _context.DPedidoCompras.Find(det.IdReferencia);
+                            if (lineaPedido != null)
+                            {
+                                lineaPedido.CantidadAtendida = (lineaPedido.CantidadAtendida ?? 0) + det.Cantidad;
+                                _context.DPedidoCompras.Update(lineaPedido);
+                            }
+                        }
+
+                        _context.DOrdenCompras.Add(det);
+                        item++;
                     }
+                    _context.SaveChanges();
 
                     transaction.Commit();
-                    return Json(new { status = true, message = $"Orden {cabecera.Numero} generada." });
+                    return Json(new { status = true, message = $"Orden {cabecera.Numero} generada correctamente." });
                 }
                 catch (Exception ex)
                 {

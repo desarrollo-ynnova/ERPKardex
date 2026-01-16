@@ -6,7 +6,7 @@
     var empresa = ViewBag.Empresa as ERPKardex.Models.Empresa;
     var usuario = ViewBag.Usuario as ERPKardex.Models.Usuario;
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
-    var nombreEstado = ViewBag.Estado as string; // <--- RECUPERAR
+    var nombreEstado = ViewBag.Estado as string;
 }
 
 <!DOCTYPE html>
@@ -59,6 +59,8 @@
             .box-border {
                 border: 1px solid #000 !important;
             }
+
+            -webkit-print-color-adjust: exact;
         }
     </style>
 </head>
@@ -84,6 +86,13 @@
                 <div class="box-border text-center bg-light">
                     <h6 class="font-weight-bold mb-1">REQUERIMIENTO DE SERVICIO</h6>
                     <h4 class="font-weight-bold text-danger m-0">@Model.Numero</h4>
+
+                    <div class="mt-2 border-top border-secondary pt-1">
+                        <small class="text-muted d-block">ESTADO DEL DOCUMENTO</small>
+                        <span class="font-weight-bold text-dark" style="font-size: 1.3em; letter-spacing: 1px;">
+                            @nombreEstado?.ToUpper()
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,10 +107,7 @@
                         </div>
                         <div class="col-md-5 mb-2 text-right">
                             <strong>FECHA EMISIÓN:</strong> @Model.FechaEmision?.ToString("dd/MM/yyyy") <br>
-                            <strong>FECHA NECESARIA:</strong> @Model.FechaNecesaria?.ToString("dd/MM/yyyy") <br>
-
-                            <strong class="text-secondary">ESTADO ACTUAL:</strong>
-                            <span class="font-weight-bold border px-1 rounded">@nombreEstado?.ToUpper()</span>
+                            <strong>FECHA NECESARIA:</strong> @Model.FechaNecesaria?.ToString("dd/MM/yyyy")
                         </div>
                         <div class="col-md-12 border-top pt-2">
                             <strong>OBSERVACIÓN:</strong> <br>
@@ -132,7 +138,7 @@
                             <td class="text-center">@item.Item</td>
                             <td class="text-center font-weight-bold">@Convert.ToInt32(item.CantidadSolicitada)</td>
                             <td class="text-center">@item.UnidadMedida</td>
-                            <td>@item.DescripcionServicio</td>
+                            <td>@item.DescripcionProducto</td>
                             <td class="text-center small">@item.Lugar</td>
                             <td class="text-center small">@item.CentroCosto</td>
                         </tr>

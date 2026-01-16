@@ -63,6 +63,10 @@
                 background-color: #eee !important;
                 -webkit-print-color-adjust: exact;
             }
+
+            .box-border {
+                border: 1px solid #000 !important;
+            }
         }
     </style>
 </head>
@@ -88,6 +92,13 @@
                 <div class="box-border text-center bg-light">
                     <h6 class="font-weight-bold mb-1">ORDEN DE SERVICIO</h6>
                     <h4 class="font-weight-bold text-danger m-0">@Model.Numero</h4>
+
+                    <div class="mt-2 border-top border-secondary pt-1">
+                        <small class="text-muted d-block">ESTADO ACTUAL</small>
+                        <span class="font-weight-bold text-dark" style="font-size: 1.3em; letter-spacing: 1px;">
+                            @estado?.ToUpper()
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -128,8 +139,8 @@
                                 <div class="col-5 font-weight-bold">FORMA PAGO:</div>
                                 <div class="col-7">@Model.CondicionPago</div>
 
-                                <div class="col-5 font-weight-bold">ESTADO:</div>
-                                <div class="col-7"><span class="badge badge-light border">@estado?.ToUpper()</span></div>
+                                <div class="col-5 font-weight-bold">MONEDA:</div>
+                                <div class="col-7">@moneda?.Nombre.ToUpper()</div>
                             </div>
                         </div>
                     </div>
@@ -189,16 +200,23 @@
         </table>
 
         <div class="row justify-content-end mb-4">
-            <div class="col-4">
+            <div class="col-5">
                 <table class="table table-sm table-bordered mb-0">
                     <tr>
-                        <td class="bg-light font-weight-bold text-right">SUBTOTAL:</td>
-                        <td class="text-right">@simbolo @Model.TotalAfecto?.ToString("N2")</td>
+                        <td class="bg-light font-weight-bold text-right">SUBTOTAL (VALOR VENTA):</td>
+                        <td class="text-right">
+                            @simbolo @((Model.TotalAfecto + Model.TotalInafecto)?.ToString("N2"))
+                        </td>
                     </tr>
-                    <tr>
-                        <td class="bg-light font-weight-bold text-right">I.G.V. (18%):</td>
-                        <td class="text-right">@simbolo @Model.IgvTotal?.ToString("N2")</td>
-                    </tr>
+
+                    @if (Model.IgvTotal > 0)
+                    {
+                        <tr>
+                            <td class="bg-light font-weight-bold text-right">I.G.V. (18%):</td>
+                            <td class="text-right">@simbolo @Model.IgvTotal?.ToString("N2")</td>
+                        </tr>
+                    }
+
                     <tr>
                         <td class="bg-light font-weight-bold text-right" style="font-size: 1.1em;">TOTAL:</td>
                         <td class="text-right font-weight-bold" style="font-size: 1.1em;">@simbolo @Model.Total?.ToString("N2")</td>

@@ -3,7 +3,7 @@
     Layout = null;
 
     var empresa = ViewBag.Empresa as ERPKardex.Models.Empresa;
-    var proveedor = ViewBag.Proveedor as ERPKardex.Models.Entidad; // Objeto Entidad
+    var proveedor = ViewBag.Proveedor as ERPKardex.Models.Entidad;
     var moneda = ViewBag.Moneda as ERPKardex.Models.Moneda;
     var usuario = ViewBag.Usuario as ERPKardex.Models.Usuario;
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
@@ -63,6 +63,10 @@
                 background-color: #eee !important;
                 -webkit-print-color-adjust: exact;
             }
+            /* Ajuste para que el borde del estado se vea bien impreso */
+            .box-border {
+                border: 1px solid #000 !important;
+            }
         }
     </style>
 </head>
@@ -88,6 +92,13 @@
                 <div class="box-border text-center bg-light">
                     <h6 class="font-weight-bold mb-1">ORDEN DE COMPRA</h6>
                     <h4 class="font-weight-bold text-danger m-0">@Model.Numero</h4>
+
+                    <div class="mt-2 border-top border-secondary pt-1">
+                        <small class="text-muted d-block">ESTADO ACTUAL</small>
+                        <span class="font-weight-bold text-dark" style="font-size: 1.3em; letter-spacing: 1px;">
+                            @estado?.ToUpper()
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,8 +136,6 @@
                                 <div class="col-5 font-weight-bold">MONEDA:</div>
                                 <div class="col-7">@moneda?.Nombre.ToUpper()</div>
 
-                                <div class="col-5 font-weight-bold">ESTADO:</div>
-                                <div class="col-7"><span class="badge badge-light border">@estado?.ToUpper()</span></div>
                             </div>
                         </div>
                     </div>
@@ -146,7 +155,7 @@
         <table class="table table-bordered table-sm mt-3">
             <thead class="bg-header text-center">
                 <tr>
-                    <th style="width: 5%">ITM</th>
+                    <th style="width: 5%">ITEM</th>
                     <th style="width: 8%">CANT.</th>
                     <th style="width: 8%">UND.</th>
                     <th style="width: 40%">DESCRIPCIÓN</th>
@@ -163,14 +172,22 @@
                             <td class="text-center">@item.Item</td>
                             <td class="text-center font-weight-bold">@Convert.ToDecimal(item.Cantidad).ToString("N2")</td>
                             <td class="text-center">@item.UnidadMedida</td>
-                            <td>@item.Descripcion</td>
+                            <td>
+                                @item.Descripcion
+                                @if (!string.IsNullOrEmpty(item.Lugar))
+                                {
+                                    <br>
+                        
+                                    <small class="text-muted">Destino: @item.Lugar</small>
+                                }
+                            </td>
                             <td class="text-right">@simbolo @Convert.ToDecimal(item.PrecioUnitario).ToString("N2")</td>
                             <td class="text-right font-weight-bold">@simbolo @Convert.ToDecimal(item.Total).ToString("N2")</td>
                         </tr>
                     }
                 }
 
-                @for (int i = 0; i < (8 - (detalles?.Count() ?? 0)); i++)
+                @for (int i = 0; i < (10 - (detalles?.Count() ?? 0)); i++)
                 {
                     <tr><td colspan="6" style="height: 25px;">&nbsp;</td></tr>
                 }
@@ -178,16 +195,23 @@
         </table>
 
         <div class="row justify-content-end mb-4">
-            <div class="col-4">
+            <div class="col-5">
                 <table class="table table-sm table-bordered mb-0">
                     <tr>
-                        <td class="bg-light font-weight-bold text-right">SUBTOTAL:</td>
-                        <td class="text-right">@simbolo @Model.TotalAfecto?.ToString("N2")</td>
+                        <td class="bg-light font-weight-bold text-right">SUBTOTAL (VALOR VENTA):</td>
+                        <td class="text-right">
+                            @simbolo @((Model.TotalAfecto + Model.TotalInafecto)?.ToString("N2"))
+                        </td>
                     </tr>
-                    <tr>
-                        <td class="bg-light font-weight-bold text-right">I.G.V. (18%):</td>
-                        <td class="text-right">@simbolo @Model.IgvTotal?.ToString("N2")</td>
-                    </tr>
+
+                    @if (Model.IgvTotal > 0)
+                    {
+                        <tr>
+                            <td class="bg-light font-weight-bold text-right">I.G.V. (18%):</td>
+                            <td class="text-right">@simbolo @Model.IgvTotal?.ToString("N2")</td>
+                        </tr>
+                    }
+
                     <tr>
                         <td class="bg-light font-weight-bold text-right" style="font-size: 1.1em;">TOTAL:</td>
                         <td class="text-right font-weight-bold" style="font-size: 1.1em;">@simbolo @Model.Total?.ToString("N2")</td>
