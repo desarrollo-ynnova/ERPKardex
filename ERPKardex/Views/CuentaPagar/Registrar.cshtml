@@ -1,0 +1,432 @@
+﻿@{
+    ViewData["Title"] = "Registro de Provisión (Cuentas por Pagar)";
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between">
+        <h5 class="m-0 font-weight-bold">Registro de Documento por Pagar</h5>
+        <span class="badge badge-light text-dark align-self-center">Nuevo Registro</span>
+    </div>
+    <div class="card-body">
+
+        <div class="row mb-3">
+            <div class="col-md-5">
+                <label class="font-weight-bold">Proveedor (*)</label>
+                <select id="cbx_Proveedor" class="form-control select2-basic">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>Tipo Documento (*)</label>
+                <select id="cbx_TipoDoc" class="form-control"></select>
+            </div>
+            <div class="col-md-2">
+                <label>Serie (*)</label>
+                <input type="text" id="txt_Serie" class="form-control text-uppercase" maxlength="4" placeholder="F001">
+            </div>
+            <div class="col-md-2">
+                <label>Número (*)</label>
+                <input type="text" id="txt_Numero" class="form-control" maxlength="15" placeholder="000001">
+            </div>
+        </div>
+
+        <div class="row mb-3 bg-light p-3 rounded">
+            <div class="col-md-3">
+                <label>Fecha Emisión</label>
+                <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </div>
+            <div class="col-md-3">
+                <label>Fecha Vencimiento</label>
+                <input type="date" id="txt_FechaVencimiento" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </div>
+            <div class="col-md-3">
+                <label>Fecha Contable</label>
+                <input type="date" id="txt_FechaContable" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </div>
+            <div class="col-md-3">
+                <label class="font-weight-bold text-danger">Moneda Doc.</label>
+                <select id="cbx_Moneda" class="form-control"></select>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-2">
+                <label class="small font-weight-bold">T. Cambio</label>
+                <input type="text" id="txt_TC" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="0.000">
+                <small class="text-muted d-block mt-1 font-weight-bold" id="msgTC">...</small>
+            </div>
+
+            <div class="col-md-4">
+                <label class="text-info font-weight-bold">¿Es Anticipo? (Vincular Orden)</label>
+                <select id="cbx_OrdenVinculada" class="form-control select2-basic">
+                    <option value="">-- Ninguna --</option>
+                </select>
+                <small class="text-muted">Seleccione SOLO si es un anticipo financiero.</small>
+            </div>
+
+            <div class="col-md-6">
+                <label>Glosa / Descripción General</label>
+                <input type="text" id="txt_Glosa" class="form-control" placeholder="Ej: Pago a cuenta de orden...">
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-12 text-right">
+                <div class="btn-group shadow-sm">
+                    <button class="btn btn-warning font-weight-bold" onclick="abrirModalPendientes()">
+                        <i class="fas fa-search"></i> BUSCAR ÓRDENES (MERCADERÍA)
+                    </button>
+                    <button class="btn btn-secondary font-weight-bold" onclick="agregarLineaManual()">
+                        <i class="fas fa-plus"></i> AGREGAR MANUAL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm table-striped" id="tbl_Detalle">
+                <thead class="thead-dark text-center">
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="35%">Descripción</th>
+                        <th width="10%">U.M.</th>
+                        <th width="10%">Origen</th>
+                        <th width="12%" class="bg-warning text-dark">Cantidad</th>
+                        <th width="12%" class="bg-warning text-dark">P. Unit</th>
+                        <th width="10%">Total</th>
+                        <th width="6%"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbl_Body">
+                    <tr><td colspan="8" class="text-center text-muted p-3">Agregue ítems para continuar.</td></tr>
+                </tbody>
+                <tfoot class="bg-light font-weight-bold border-top">
+                    <tr>
+                        <td colspan="6" class="text-right">Base Imponible:</td>
+                        <td class="text-right" id="lbl_Base">0.00</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-right">I.G.V. (18%):</td>
+                        <td class="text-right" id="lbl_Igv">0.00</td>
+                        <td></td>
+                    </tr>
+                    <tr class="h5 text-primary">
+                        <td colspan="6" class="text-right">TOTAL:</td>
+                        <td class="text-right" id="lbl_Total">0.00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="fixed-bottom bg-white border-top p-3 text-right shadow" style="opacity: 0.95;">
+            <a href="/CuentaPagar/Index" class="btn btn-danger mr-2">Cancelar</a>
+            <button class="btn btn-success px-5 font-weight-bold" onclick="guardarProvision()">
+                <i class="fas fa-save"></i> REGISTRAR DOCUMENTO
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPendientes" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-list"></i> Órdenes Pendientes de Atender</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm border" id="tbl_Pendientes">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="text-center"><input type="checkbox" id="chk_Todos" /></th>
+                                <th>Orden</th>
+                                <th>Fecha</th>
+                                <th>Producto / Servicio</th>
+                                <th>U.M.</th>
+                                <th class="text-right">Saldo Pte.</th>
+                                <th class="text-right">Precio Ref.</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary font-weight-bold" onclick="agregarSeleccionados()">
+                    <i class="fas fa-plus-circle"></i> Agregar Seleccionados
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let DETALLES = [];
+        let PENDIENTES_CACHE = [];
+        const IGV_TASA = 0.18;
+
+        $(document).ready(function() {
+            $('.select2-basic').select2({ theme: 'bootstrap4' });
+            cargarCombos();
+            consultarTC();
+
+            // Eventos
+            $('#txt_FechaEmision').change(function() { consultarTC(); });
+
+            $('#chk_Todos').change(function() {
+                $('.chk-pendiente').prop('checked', $(this).prop('checked'));
+            });
+
+            // AL CAMBIAR PROVEEDOR: Limpiamos todo y cargamos sus órdenes activas (para anticipos)
+            $('#cbx_Proveedor').on('select2:select', function (e) {
+                let id = $(this).val();
+                limpiarDetalles();
+                cargarOrdenesActivas(id);
+            });
+        });
+
+        // --- 1. CARGA INICIAL Y COMBOS ---
+        function cargarCombos() {
+            $.get('/CuentaPagar/GetCombos', function(res) {
+                let htmlP = '<option value="">-- Seleccione --</option>';
+                res.proveedores.forEach(x => htmlP += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+                $('#cbx_Proveedor').html(htmlP);
+
+                let htmlT = '';
+                res.tiposDoc.forEach(x => htmlT += `<option value="${x.id}" data-cod="${x.codigo}">${x.descripcion}</option>`);
+                $('#cbx_TipoDoc').html(htmlT);
+
+                let htmlM = '';
+                res.monedas.forEach(x => htmlM += `<option value="${x.id}">${x.nombre}</option>`);
+                $('#cbx_Moneda').html(htmlM);
+            });
+        }
+
+        // --- 2. CARGAR ÓRDENES PARA ANTICIPOS (CABECERA) ---
+        function cargarOrdenesActivas(proveedorId) {
+            $('#cbx_OrdenVinculada').html('<option value="">-- Cargando... --</option>');
+
+            $.get('/CuentaPagar/GetOrdenesActivas?proveedorId=' + proveedorId, function(res) {
+                if (res.status && res.data) {
+                    let html = '<option value="">-- Ninguna --</option>';
+                    res.data.forEach(x => {
+                        html += `<option value="${x.id}">${x.texto}</option>`;
+                    });
+                    $('#cbx_OrdenVinculada').html(html);
+                } else {
+                    $('#cbx_OrdenVinculada').html('<option value="">-- Ninguna --</option>');
+                }
+            });
+        }
+
+        function consultarTC() {
+            let fecha = $('#txt_FechaEmision').val();
+            $('#msgTC').html('Buscando...').addClass('text-muted');
+
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + fecha, function(res) {
+                if (res.status) {
+                    $('#txt_TC').val(res.valor.toFixed(3));
+                    $('#msgTC').html('T.C. OK').removeClass('text-danger').addClass('text-success');
+                } else {
+                    $('#txt_TC').val('0.000');
+                    $('#msgTC').html('No encontrado').removeClass('text-success').addClass('text-danger');
+                }
+            });
+        }
+
+        function limpiarDetalles() {
+            DETALLES = [];
+            renderTabla();
+        }
+
+        // --- 3. AGREGAR MANUALMENTE ---
+        function agregarLineaManual() {
+            DETALLES.push({
+                TablaOrigen: null,
+                OrigenId: null,
+                Descripcion: "INGRESE DESCRIPCIÓN...",
+                UnidadMedida: "NIU",
+                Cantidad: 1,
+                PrecioUnitario: 0,
+                Total: 0,
+                RefOrden: "MANUAL",
+                CentroCostoId: null
+            });
+            renderTabla();
+        }
+
+        // --- 4. MODAL Y JALAR ÓRDENES (MERCADERÍA) ---
+        function abrirModalPendientes() {
+            let provId = $('#cbx_Proveedor').val();
+            if (!provId) return Swal.fire("Aviso", "Seleccione un proveedor primero.", "warning");
+
+            $('#tbl_Pendientes tbody').html('<tr><td colspan="7" class="text-center">Cargando...</td></tr>');
+            $('#modalPendientes').modal('show');
+
+            $.get('/CuentaPagar/GetPendientesPorProveedor?proveedorId=' + provId, function(res) {
+                if (res.status) {
+                    PENDIENTES_CACHE = res.data;
+                    let html = '';
+                    if (res.data.length === 0) html = '<tr><td colspan="7" class="text-center text-muted">No hay pendientes.</td></tr>';
+
+                    res.data.forEach((item, idx) => {
+                        html += `<tr>
+                            <td class="text-center"><input type="checkbox" class="chk-pendiente" data-idx="${idx}"></td>
+                            <td class="font-weight-bold">${item.nroOrden}</td>
+                            <td>${item.fecha}</td>
+                            <td><small>${item.producto}</small></td>
+                            <td>${item.um}</td>
+                            <td class="text-right text-primary font-weight-bold">${item.saldo.toFixed(2)}</td>
+                            <td class="text-right">${item.precio.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_Pendientes tbody').html(html);
+                }
+            });
+        }
+
+        function agregarSeleccionados() {
+            let count = 0;
+            $('.chk-pendiente:checked').each(function() {
+                let idx = $(this).data('idx');
+                let item = PENDIENTES_CACHE[idx];
+
+                DETALLES.push({
+                    TablaOrigen: item.origen,
+                    OrigenId: item.idDetalle,
+                    Descripcion: item.producto,
+                    UnidadMedida: item.um,
+                    Cantidad: item.saldo,
+                    PrecioUnitario: item.precio,
+                    Total: item.saldo * item.precio,
+                    RefOrden: item.nroOrden,
+                    CentroCostoId: item.centroCostoId
+                });
+                count++;
+            });
+
+            if(count > 0) {
+                renderTabla();
+                $('#modalPendientes').modal('hide');
+            } else {
+                toastr.warning("Seleccione al menos un ítem.");
+            }
+        }
+
+        // --- 5. RENDER Y CÁLCULOS ---
+        function renderTabla() {
+            let html = '';
+            let totalGeneral = 0;
+
+            DETALLES.forEach((d, idx) => {
+                let totalLinea = d.Cantidad * d.PrecioUnitario;
+                d.Total = totalLinea;
+                totalGeneral += totalLinea;
+
+                let badge = d.TablaOrigen ? `<span class="badge badge-info">${d.RefOrden}</span>` : `<span class="badge badge-secondary">MANUAL</span>`;
+
+                html += `<tr>
+                    <td class="align-middle text-center">${idx + 1}</td>
+                    <td class="align-middle">
+                        ${d.TablaOrigen ? `<small>${d.Descripcion}</small>` : `<input type="text" class="form-control form-control-sm" value="${d.Descripcion}" onchange="updateLinea(${idx}, 'desc', this.value)">`}
+                    </td>
+                    <td class="align-middle text-center">${d.UnidadMedida}</td>
+                    <td class="align-middle text-center">${badge}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center font-weight-bold"
+                               value="${d.Cantidad}" step="0.01" min="0" onchange="updateLinea(${idx}, 'cant', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center"
+                               value="${d.PrecioUnitario}" step="0.01" min="0" onchange="updateLinea(${idx}, 'prec', this.value)">
+                    </td>
+                    <td class="align-middle text-right font-weight-bold">${totalLinea.toFixed(2)}</td>
+                    <td class="align-middle text-center">
+                        <button class="btn btn-danger btn-sm rounded-circle" onclick="borrarLinea(${idx})"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            if (DETALLES.length === 0) html = '<tr><td colspan="8" class="text-center text-muted p-3">Sin ítems.</td></tr>';
+            $('#tbl_Body').html(html);
+
+            let base = totalGeneral;
+            let igv = totalGeneral * IGV_TASA;
+            let total = base + igv;
+
+            $('#lbl_Base').text(base.toFixed(2));
+            $('#lbl_Igv').text(igv.toFixed(2));
+            $('#lbl_Total').text(total.toFixed(2));
+        }
+
+        function updateLinea(idx, campo, valor) {
+            let val = parseFloat(valor) || 0;
+            if (campo === 'cant') DETALLES[idx].Cantidad = val;
+            if (campo === 'prec') DETALLES[idx].PrecioUnitario = val;
+            if (campo === 'desc') DETALLES[idx].Descripcion = valor;
+            renderTabla();
+        }
+
+        function borrarLinea(idx) {
+            DETALLES.splice(idx, 1);
+            renderTabla();
+        }
+
+        // --- 6. GUARDAR FINAL ---
+        function guardarProvision() {
+            if (DETALLES.length === 0) return Swal.fire("Falta Detalle", "Agregue al menos un ítem.", "warning");
+            if (!$('#cbx_Proveedor').val()) return Swal.fire("Falta Datos", "Seleccione el proveedor.", "warning");
+            if (!$('#txt_Serie').val() || !$('#txt_Numero').val()) return Swal.fire("Falta Datos", "Ingrese Serie y Número.", "warning");
+
+            let cabecera = {
+                ProveedorId: parseInt($('#cbx_Proveedor').val()),
+                TipoDocumentoId: parseInt($('#cbx_TipoDoc').val()),
+                Serie: $('#txt_Serie').val(),
+                Numero: $('#txt_Numero').val(),
+                FechaEmision: $('#txt_FechaEmision').val(),
+                FechaVencimiento: $('#txt_FechaVencimiento').val(),
+                FechaContable: $('#txt_FechaContable').val(),
+                MonedaId: parseInt($('#cbx_Moneda').val()),
+                TipoCambio: parseFloat($('#txt_TC').val()) || 0,
+                Glosa: $('#txt_Glosa').val(),
+
+                // Aquí va el amarre del ANTICIPO (Puede ir nulo si es factura normal)
+                OrdenCompraId: $('#cbx_OrdenVinculada').val() ? parseInt($('#cbx_OrdenVinculada').val()) : null,
+
+                // Totales
+                Total: parseFloat($('#lbl_Total').text()),
+                Igv: parseFloat($('#lbl_Igv').text()),
+                TotalGravado: parseFloat($('#lbl_Base').text()),
+                TotalInafecto: 0
+            };
+
+            Swal.fire({
+                title: '¿Registrar Documento?',
+                text: "Verifique los montos antes de guardar.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Registrar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/CuentaPagar/Guardar', {
+                        cabecera: cabecera,
+                        detallesJson: JSON.stringify(DETALLES)
+                    }, function(res) {
+                        if (res.status) {
+                            Swal.fire("Registrado", res.message, "success").then(() => window.location.href = '/CuentaPagar/Index');
+                        } else {
+                            Swal.fire("Error", res.message, "error");
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

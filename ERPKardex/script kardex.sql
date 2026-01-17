@@ -58,6 +58,8 @@ drop table if exists tipo_cambio;
 drop table if exists orden_pago;
 drop table if exists proveedor;
 drop table if exists cliente;
+drop table if exists ddocumento_pagar;
+drop table if exists documento_pagar;
 
 GO
 
@@ -946,6 +948,76 @@ CREATE TABLE banco (
     estado BIT DEFAULT 1
 );
 
+CREATE TABLE documento_pagar (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    
+    -- IDENTIFICACIÓN INTERNA (NUEVO)
+    tipo_documento_interno_id INT,    -- FK a tipo_documento_interno (FAC, NC, etc.)
+    codigo_interno VARCHAR(20),       -- Ej: FAC-00000001
+
+    empresa_id INT NOT NULL,
+    proveedor_id INT NOT NULL,        -- Relación Lógica (Sin FK física estricta por agilidad)
+    
+    -- Identificación
+    tipo_documento_id INT NOT NULL,   -- 01:Factura, 07:NC, 08:ND
+    serie VARCHAR(20),
+    numero VARCHAR(20),
+    
+    -- Fechas
+    fecha_emision DATE NOT NULL,
+    fecha_contable DATE NOT NULL,     -- Mes tributario
+    fecha_vencimiento DATE NOT NULL,  -- Para proyecciones de pago
+    
+    moneda_id INT,
+    tipo_cambio DECIMAL(12,4),
+    
+    -- Importes
+    total_gravado DECIMAL(18,2) DEFAULT 0,  -- Base Imponible
+    total_inafecto DECIMAL(18,2) DEFAULT 0, -- No Gravado
+    igv DECIMAL(18,2) DEFAULT 0,
+    total DECIMAL(18,2) DEFAULT 0,
+    
+    -- SALDO VIVO (Vital para Tesorería)
+    saldo_pendiente DECIMAL(18,2),    
+    
+    -- Referencias Lógicas (Para saber de dónde vino, meramente informativo)
+    orden_compra_id INT NULL, 
+    orden_servicio_id INT NULL,
+    
+    -- Para Notas de Crédito que matan Facturas
+    doc_referencia_id INT NULL, 
+    
+    -- Estados (IDs directos a tabla 'estado')
+    estado_id INT,                    -- Registrado, Anulado
+    estado_pago_id INT,               -- Pendiente, Pagado
+    
+    glosa VARCHAR(500),
+    usuario_creacion_id INT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE ddocumento_pagar (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    documento_pagar_id INT NOT NULL,
+    item INT,
+    
+    -- TRAZABILIDAD (La clave del cruce)
+    tabla_origen VARCHAR(50), -- 'DORDENCOMPRA', 'DORDENSERVICIO' o NULL
+    origen_id INT,            -- El ID específico de la línea de la orden
+    
+    descripcion VARCHAR(500),
+    unidad_medida VARCHAR(20),
+    
+    -- Valores de la Factura (Pueden diferir de la orden)
+    cantidad DECIMAL(12,2),
+    precio_unitario DECIMAL(18,6),
+    total DECIMAL(18,2),
+    
+    -- Imputación
+    centro_costo_id INT,
+    cuenta_contable VARCHAR(20)
+);
+
 GO
 
 -- ==========================================
@@ -961,6 +1033,18 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 ('PS',   'PEDIDO DE SERVICIO', 0),
 ('OCO',  'ORDEN DE COMPRA', 0),
 ('OS',  'ORDEN DE SERVICIO', 0);
+
+-- =============================================================================
+-- 3. TIPOS DE DOCUMENTO INTERNO (Para tu correlativo FAC-0001, etc.)
+-- =============================================================================
+-- Esto es vital para el 'switch' que haremos en el Controlador
+INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
+('FAC', 'PROVISIÓN FACTURA', 0),
+('BOL', 'PROVISIÓN BOLETA', 0),
+('RH',  'PROVISIÓN RECIBO HONORARIOS', 0),
+('NC',  'PROVISIÓN NOTA CRÉDITO', 0),
+('ND',  'PROVISIÓN NOTA DÉBITO', 0),
+('LET', 'LETRA POR PAGAR', 0);
 
 -- inserts de 'estado'
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
@@ -1012,6 +1096,17 @@ INSERT INTO estado (nombre, tabla) VALUES
 ('Pendiente', 'DORDEN'),
 ('Atendido Parcial', 'DORDEN'),
 ('Atendido Total', 'DORDEN');
+
+INSERT INTO estado (nombre, tabla) VALUES ('Registrado', 'CXP'); -- El documento existe y es válido
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'CXP');    -- El documento fue anulado (extornado)
+
+-- =============================================================================
+-- 2. ESTADOS PARA LA DEUDA (El ciclo de vida del dinero)
+-- =============================================================================
+-- Tabla: 'PAGO' (Finanzas General)
+INSERT INTO estado (nombre, tabla) VALUES ('Pendiente', 'PAGO'); -- Se debe el 100%
+INSERT INTO estado (nombre, tabla) VALUES ('Parcial', 'PAGO');   -- Se ha pagado algo, pero falta
+INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'PAGO'); -- Deuda saldada (Saldo 0)
 
 GO
 

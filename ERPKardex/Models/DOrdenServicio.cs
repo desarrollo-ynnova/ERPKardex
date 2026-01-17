@@ -24,6 +24,9 @@ namespace ERPKardex.Models
 
         public decimal? Cantidad { get; set; }
 
+        [Column("cantidad_atendida")]
+        public decimal? CantidadAtendida { get; set; }
+
         [Column("precio_unitario")]
         public decimal? PrecioUnitario { get; set; }
 
