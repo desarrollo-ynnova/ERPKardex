@@ -1,7 +1,7 @@
 ﻿using ERPKardex.Data;
 using ERPKardex.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace ERPKardex.Controllers
 {
@@ -14,52 +14,125 @@ namespace ERPKardex.Controllers
             _context = context;
         }
 
-        // =========================================================================
-        // 0. VISTAS (Tus interfaces separadas)
-        // =========================================================================
+        #region VISTAS
         public IActionResult Index() => View();
         public IActionResult RegistroAnticipo() => View();
-        public IActionResult RegistroProvision() => View(); // Facturas, Boletas, RH
+        public IActionResult RegistroProvision() => View();
         public IActionResult RegistroNotaCredito() => View();
         public IActionResult RegistroNotaDebito() => View();
+        public IActionResult AplicacionDocumentos() => View();
+        #endregion
 
-        // =========================================================================
-        // 1. UTILITARIOS COMPARTIDOS (Para llenar combos y datos)
-        // =========================================================================
-
+        #region 1. UTILITARIOS Y BÚSQUEDAS (Sin cambios)
+        // ... (Se mantienen igual BuscarOrdenesPendientes, GetDetallesOrden, BuscarFacturasProveedor) ...
         [HttpGet]
-        public JsonResult GetDatosOrden(int ordenId, string tipoOrigen) // 'OC' o 'OS'
+        public JsonResult BuscarOrdenesPendientes(string tipoOrigen)
         {
             try
             {
-                // Buscamos la data para "pintar" el formulario automáticamente
+                var estadosOrdenValidos = new List<string> { "Aprobado", "Atendido Parcial", "Atendido Total" };
+                var estadoAnuladoDoc = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Anulado");
+                int idAnulado = estadoAnuladoDoc?.Id ?? -1;
+                var codigosFacturables = new List<string> { "FAC", "BOL", "RH" };
+
                 if (tipoOrigen == "OC")
                 {
-                    var orden = _context.OrdenCompras
-                        .Where(x => x.Id == ordenId)
-                        .Select(x => new
-                        {
-                            x.ProveedorId,
-                            Proveedor = _context.Proveedores.Where(p => p.Id == x.ProveedorId).Select(p => p.RazonSocial).FirstOrDefault(),
-                            x.MonedaId,
-                            x.TipoCambio,
-                            x.Total // Total de la orden para referencia
-                        }).FirstOrDefault();
-                    return Json(new { status = true, data = orden });
+                    var query = from o in _context.OrdenCompras
+                                join p in _context.Proveedores on o.ProveedorId equals p.Id
+                                join e in _context.Estados on o.EstadoId equals e.Id
+                                join m in _context.Monedas on o.MonedaId equals m.Id
+                                where estadosOrdenValidos.Contains(e.Nombre)
+                                orderby o.FechaEmision descending
+                                select new
+                                {
+                                    o.Id,
+                                    o.Numero,
+                                    Proveedor = p.RazonSocial,
+                                    p.Ruc,
+                                    o.ProveedorId,
+                                    o.MonedaId,
+                                    MonedaNombre = m.Simbolo,
+                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                    SubTotal = o.TotalAfecto,
+                                    Igv = o.IgvTotal,
+                                    TotalOrden = o.Total
+                                };
+
+                    var listaOrdenes = query.ToList();
+                    var resultado = new List<object>();
+
+                    foreach (var item in listaOrdenes)
+                    {
+                        var totalYaFacturado = (from d in _context.DocumentosPagar
+                                                join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                                where d.OrdenCompraId == item.Id
+                                                   && d.EstadoId != idAnulado
+                                                   && codigosFacturables.Contains(t.Codigo)
+                                                select d.Total).Sum();
+
+                        if (item.TotalOrden > (totalYaFacturado + 0.10m))
+                            resultado.Add(item);
+                    }
+                    return Json(new { status = true, data = resultado });
                 }
                 else
                 {
-                    var orden = _context.OrdenServicios
-                        .Where(x => x.Id == ordenId)
-                        .Select(x => new
-                        {
-                            x.ProveedorId,
-                            Proveedor = _context.Proveedores.Where(p => p.Id == x.ProveedorId).Select(p => p.RazonSocial).FirstOrDefault(),
-                            x.MonedaId,
-                            x.TipoCambio,
-                            x.Total
-                        }).FirstOrDefault();
-                    return Json(new { status = true, data = orden });
+                    var query = from o in _context.OrdenServicios
+                                join p in _context.Proveedores on o.ProveedorId equals p.Id
+                                join e in _context.Estados on o.EstadoId equals e.Id
+                                join m in _context.Monedas on o.MonedaId equals m.Id
+                                where estadosOrdenValidos.Contains(e.Nombre)
+                                orderby o.FechaEmision descending
+                                select new
+                                {
+                                    o.Id,
+                                    o.Numero,
+                                    Proveedor = p.RazonSocial,
+                                    p.Ruc,
+                                    o.ProveedorId,
+                                    o.MonedaId,
+                                    MonedaNombre = m.Simbolo,
+                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                    SubTotal = o.TotalAfecto,
+                                    Igv = o.IgvTotal,
+                                    TotalOrden = o.Total
+                                };
+
+                    var listaOrdenes = query.ToList();
+                    var resultado = new List<object>();
+
+                    foreach (var item in listaOrdenes)
+                    {
+                        var totalYaFacturado = (from d in _context.DocumentosPagar
+                                                join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                                where d.OrdenServicioId == item.Id
+                                                   && d.EstadoId != idAnulado
+                                                   && codigosFacturables.Contains(t.Codigo)
+                                                select d.Total).Sum();
+
+                        if (item.TotalOrden > (totalYaFacturado + 0.10m))
+                            resultado.Add(item);
+                    }
+                    return Json(new { status = true, data = resultado });
+                }
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public JsonResult GetDetallesOrden(int ordenId, string tipoOrigen)
+        {
+            try
+            {
+                if (tipoOrigen == "OC")
+                {
+                    var data = _context.DOrdenCompras.Where(x => x.OrdenCompraId == ordenId).Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
+                    return Json(new { status = true, data = data });
+                }
+                else
+                {
+                    var data = _context.DOrdenServicios.Where(x => x.OrdenServicioId == ordenId).Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
+                    return Json(new { status = true, data = data });
                 }
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
@@ -70,341 +143,296 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. Tipos válidos (Facturas, Boletas, RH)
-                var tiposValidos = _context.TiposDocumentoInterno
-                    .Where(t => t.Codigo == "FAC" || t.Codigo == "BOL" || t.Codigo == "RH")
-                    .Select(t => t.Id).ToList();
+                var est = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                var tipos = _context.TiposDocumentoInterno.Where(t => t.Codigo == "FAC" || t.Codigo == "BOL" || t.Codigo == "RH").Select(t => t.Id).ToList();
+                var data = _context.DocumentosPagar.Where(x => x.ProveedorId == proveedorId && tipos.Contains(x.TipoDocumentoInternoId) && x.EstadoId == est.Id && x.Saldo > 0)
+                    .OrderByDescending(x => x.FechaEmision).Select(x => new { x.Id, x.Serie, x.Numero, Fecha = x.FechaEmision.Value.ToString("dd/MM/yyyy"), x.Total, x.Saldo, x.MonedaId }).ToList();
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+        #endregion
 
-                // 2. Consulta: Solo documentos activos con Saldo pendiente (Opcional: Si quieres permitir NC a facturas pagadas, quita x.Saldo > 0)
-                // Usualmente la NC se aplica a lo que sea, pero aquí mostramos datos útiles.
-                var facturas = _context.DocumentosPagar
-                    .Where(x => x.ProveedorId == proveedorId
-                             && tiposValidos.Contains(x.TipoDocumentoInternoId)
-                             && x.EstadoId == 1) // Activo
-                    .OrderByDescending(x => x.FechaEmision)
-                    .Select(x => new
+        #region 2. REGISTRO DE ANTICIPO
+        [HttpPost]
+        public JsonResult GuardarAnticipo(DocumentoPagar doc, string tipoOrigenOrden)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Anticipo requiere Orden.");
+                    var est = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+
+                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
+                    doc.EstadoId = est.Id; doc.Saldo = doc.Total;
+                    doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == "ANT").Id;
+
+                    _context.DocumentosPagar.Add(doc);
+                    _context.SaveChanges();
+                    transaction.Commit();
+                    return Json(new { status = true, message = "Anticipo registrado." });
+                }
+                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
+            }
+        }
+        #endregion
+
+        #region 3. REGISTRO DE PROVISIÓN
+        [HttpPost]
+        public JsonResult GuardarProvision(DocumentoPagar doc, string codigoTipoDoc, string tipoOrigenOrden, string detallesJson)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    if (codigoTipoDoc == "PROV") throw new Exception("Provisión requiere documento físico.");
+                    if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Requiere Orden.");
+
+                    decimal totalOrden = 0, totalPrevio = 0;
+                    int idAnulado = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Anulado").Id;
+                    var codigosFacturables = new List<string> { "FAC", "BOL", "RH" };
+
+                    if (doc.OrdenCompraId != null)
                     {
-                        x.Id,
-                        x.Serie,
-                        x.Numero,
-                        Fecha = x.FechaEmision.Value.ToString("dd/MM/yyyy"),
-                        x.Total,
-                        x.Saldo,
-                        x.MonedaId
-                    }).ToList();
+                        totalOrden = _context.OrdenCompras.Find(doc.OrdenCompraId).Total ?? 0;
+                        totalPrevio = (from d in _context.DocumentosPagar
+                                       join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                       where d.OrdenCompraId == doc.OrdenCompraId && d.EstadoId != idAnulado && codigosFacturables.Contains(t.Codigo)
+                                       select d.Total).Sum();
+                    }
+                    else
+                    {
+                        totalOrden = _context.OrdenServicios.Find(doc.OrdenServicioId).Total ?? 0;
+                        totalPrevio = (from d in _context.DocumentosPagar
+                                       join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                       where d.OrdenServicioId == doc.OrdenServicioId && d.EstadoId != idAnulado && codigosFacturables.Contains(t.Codigo)
+                                       select d.Total).Sum();
+                    }
 
-                return Json(new { status = true, data = facturas });
+                    if (doc.Total > ((totalOrden - totalPrevio) + 1m)) throw new Exception("Monto excede saldo pendiente de la orden.");
+
+                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
+                    doc.EstadoId = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar").Id;
+                    doc.Saldo = doc.Total;
+                    doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc).Id;
+
+                    _context.DocumentosPagar.Add(doc);
+                    _context.SaveChanges();
+
+                    var dets = JsonConvert.DeserializeObject<List<DDocumentoPagar>>(detallesJson);
+                    int i = 1;
+                    foreach (var d in dets) { d.Id = 0; d.DocumentoPagarId = doc.Id; d.Item = i++.ToString("D3"); _context.DDocumentosPagar.Add(d); }
+
+                    _context.SaveChanges();
+                    transaction.Commit();
+                    return Json(new { status = true, message = "Comprobante registrado." });
+                }
+                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
+            }
+        }
+        #endregion
+
+        #region 4. MÓDULO DE APLICACIÓN (CORREGIDO CON ORDEN NUMERO)
+
+        [HttpGet]
+        public JsonResult GetDocumentosParaAplicacion(int proveedorId)
+        {
+            try
+            {
+                var estadoPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                int idActivo = estadoPorPagar?.Id ?? 0;
+
+                // 1. PENDIENTES (FAC, BOL, RH) - Izquierda
+                // Traemos Numero de Orden para visualización
+                var pendientes = (from d in _context.DocumentosPagar
+                                  join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                  // Left Joins Manuales para obtener numero de orden
+                                  join oc in _context.OrdenCompras on d.OrdenCompraId equals oc.Id into ocG
+                                  from oc in ocG.DefaultIfEmpty()
+                                  join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
+                                  from os in osG.DefaultIfEmpty()
+                                  where d.ProveedorId == proveedorId
+                                     && d.EstadoId == idActivo
+                                     && d.Saldo > 0
+                                     && (t.Codigo == "FAC" || t.Codigo == "BOL" || t.Codigo == "RH")
+                                  select new
+                                  {
+                                      d.Id,
+                                      Documento = d.Serie + "-" + d.Numero,
+                                      Tipo = t.Codigo,
+                                      Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                      TotalOriginal = d.Total,
+                                      SaldoActual = d.Saldo,
+                                      OrdenNumero = oc != null ? oc.Numero : (os != null ? os.Numero : "--"),
+                                      OrdenId = d.OrdenCompraId ?? d.OrdenServicioId // ID para el match
+                                  }).ToList();
+
+                // 2. DISPONIBLES (ANT, NC) - Derecha
+                // También traemos Numero de Orden para mostrar en lugar del ID
+                var disponibles = (from d in _context.DocumentosPagar
+                                   join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                   join oc in _context.OrdenCompras on d.OrdenCompraId equals oc.Id into ocG
+                                   from oc in ocG.DefaultIfEmpty()
+                                   join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
+                                   from os in osG.DefaultIfEmpty()
+                                   where d.ProveedorId == proveedorId
+                                      && d.EstadoId == idActivo
+                                      && d.Saldo > 0
+                                      && (t.Codigo == "ANT" || t.Codigo == "NC")
+                                   select new
+                                   {
+                                       d.Id,
+                                       Documento = d.Serie + "-" + d.Numero,
+                                       Tipo = t.Codigo,
+                                       Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                       d.Total,
+                                       d.Saldo,
+                                       OrdenNumero = oc != null ? oc.Numero : (os != null ? os.Numero : "--"),
+                                       OrdenId = d.OrdenCompraId ?? d.OrdenServicioId // ID para el match
+                                   }).ToList();
+
+                return Json(new { status = true, pendientes = pendientes, disponibles = disponibles });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
-        // =========================================================================
-        // 2. LÓGICA DE ANTICIPOS (Formulario 1)
-        // =========================================================================
+        [HttpGet]
+        public JsonResult GetHistorialDocumento(int documentoId)
+        {
+            try
+            {
+                var historial = new List<object>();
+
+                var cruces = (from a in _context.DocumentoPagarAplicaciones
+                              join docAbono in _context.DocumentosPagar on a.DocumentoAbonoId equals docAbono.Id
+                              join tipo in _context.TiposDocumentoInterno on docAbono.TipoDocumentoInternoId equals tipo.Id
+                              where a.DocumentoCargoId == documentoId
+                              select new
+                              {
+                                  Fecha = a.FechaAplicacion,
+                                  Concepto = "PAGO / APLICACIÓN",
+                                  Documento = tipo.Codigo + " " + docAbono.Serie + "-" + docAbono.Numero,
+                                  Monto = a.MontoAplicado * -1,
+                                  Color = "text-success"
+                              }).ToList();
+
+                var notasDebito = (from d in _context.DocumentosPagar
+                                   join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                   where d.DocumentoReferenciaId == documentoId && t.Codigo == "ND"
+                                   select new
+                                   {
+                                       Fecha = d.FechaRegistro ?? DateTime.Now,
+                                       Concepto = "CARGO ADICIONAL (ND)",
+                                       Documento = t.Codigo + " " + d.Serie + "-" + d.Numero,
+                                       Monto = d.Total,
+                                       Color = "text-danger"
+                                   }).ToList();
+
+                historial.AddRange(cruces);
+                historial.AddRange(notasDebito);
+
+                var resultado = historial.OrderByDescending(x => ((dynamic)x).Fecha)
+                    .Select(x => new
+                    {
+                        Fecha = ((dynamic)x).Fecha.ToString("dd/MM/yyyy HH:mm"),
+                        ((dynamic)x).Concepto,
+                        Doc = ((dynamic)x).Documento,
+                        Monto = ((decimal)((dynamic)x).Monto).ToString("N2"),
+                        ((dynamic)x).Color
+                    }).ToList();
+
+                return Json(new { status = true, data = resultado });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
         [HttpPost]
-        public JsonResult GuardarAnticipo(DocumentoPagar doc, string tipoOrigenOrden) // tipoOrigenOrden: 'OC' o 'OS'
+        public JsonResult GuardarAplicacion(int idCargo, int idAbono, decimal montoAplicar)
         {
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    // 1. Configuración Inicial
-                    PrepararDocumentoBase(doc);
+                    if (montoAplicar <= 0) throw new Exception("Monto inválido");
+                    var estVivo = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                    var estFin = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
 
-                    // 2. Obtener ID del Tipo 'ANT'
-                    var tipoAnt = _context.TiposDocumentoInterno.FirstOrDefault(x => x.Codigo == "ANT");
-                    if (tipoAnt == null) throw new Exception("El tipo de documento ANTICIPO (ANT) no está configurado en BD.");
-                    doc.TipoDocumentoInternoId = tipoAnt.Id;
+                    var c = _context.DocumentosPagar.Find(idCargo); var a = _context.DocumentosPagar.Find(idAbono);
+                    if (c.Saldo < montoAplicar || a.Saldo < montoAplicar) throw new Exception("Saldo insuficiente.");
 
-                    // 3. Validar Amarre a Orden (Obligatorio para Anticipo)
-                    ValidarExistenciaOrden(doc, tipoOrigenOrden);
+                    c.Saldo -= montoAplicar; a.Saldo -= montoAplicar;
 
-                    // 4. Lógica de Negocio Anticipo:
-                    // - Nace con saldo a favor (Saldo = Total)
-                    // - NO tiene detalle de ítems (d_documento_pagar vacío)
-                    doc.Saldo = doc.Total;
-                    doc.DocumentoReferenciaId = null; // No nace de una factura, nace de una orden
+                    if (c.Saldo <= 0) c.EstadoId = estFin.Id; else c.EstadoId = estVivo.Id;
+                    if (a.Saldo <= 0) a.EstadoId = estFin.Id; else a.EstadoId = estVivo.Id;
 
-                    _context.DocumentosPagar.Add(doc);
-                    _context.SaveChanges();
+                    _context.DocumentoPagarAplicaciones.Add(new DocumentoPagarAplicacion
+                    {
+                        EmpresaId = EmpresaUsuarioId,
+                        DocumentoCargoId = idCargo,
+                        DocumentoAbonoId = idAbono,
+                        MontoAplicado = montoAplicar,
+                        FechaAplicacion = DateTime.Now,
+                        UsuarioId = UsuarioActualId
+                    });
 
-                    transaction.Commit();
-                    return Json(new { status = true, message = "Anticipo registrado correctamente." });
+                    _context.SaveChanges(); transaction.Commit();
+                    return Json(new { status = true, message = "Aplicación exitosa." });
                 }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return Json(new { status = false, message = ex.Message });
-                }
+                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
             }
         }
+        #endregion
 
-        // =========================================================================
-        // 3. LÓGICA DE PROVISIONES - FACTURAS/BOLETAS (Formulario 2)
-        // =========================================================================
-        [HttpPost]
-        public JsonResult GuardarProvision(DocumentoPagar doc, string codigoTipoDoc, string tipoOrigenOrden)
-        {
-            // codigoTipoDoc: 'FAC', 'BOL', 'RH'
-            using (var transaction = _context.Database.BeginTransaction())
-            {
-                try
-                {
-                    PrepararDocumentoBase(doc);
-
-                    // 1. Validar Tipo
-                    var tipo = _context.TiposDocumentoInterno.FirstOrDefault(x => x.Codigo == codigoTipoDoc);
-                    if (tipo == null) throw new Exception($"El tipo {codigoTipoDoc} no existe.");
-                    doc.TipoDocumentoInternoId = tipo.Id;
-
-                    // 2. Validar Orden
-                    ValidarExistenciaOrden(doc, tipoOrigenOrden);
-
-                    // 3. Guardar Cabecera
-                    doc.Saldo = doc.Total; // La deuda total es el saldo inicial
-                    _context.DocumentosPagar.Add(doc);
-                    _context.SaveChanges(); // Necesitamos el ID para el detalle
-
-                    // 4. LA CLAVE: JALAR ÍTEMS (SNAPSHOT)
-                    // Aquí se cumple tu requerimiento: "Jalar tal cual sin modificar"
-                    if (tipoOrigenOrden == "OC" && doc.OrdenCompraId.HasValue)
-                    {
-                        var items = _context.DOrdenCompras.Where(x => x.OrdenCompraId == doc.OrdenCompraId).ToList();
-                        foreach (var item in items)
-                        {
-                            _context.DDocumentosPagar.Add(new DDocumentoPagar
-                            {
-                                DocumentoPagarId = doc.Id,
-                                IdReferencia = item.Id,
-                                TablaReferencia = "DORDENCOMPRA", // Trazabilidad
-                                ProductoId = item.ProductoId,
-                                Descripcion = item.Descripcion,
-                                UnidadMedida = item.UnidadMedida,
-                                Cantidad = item.Cantidad,         // Cantidad original de la orden
-                                PrecioUnitario = item.PrecioUnitario, // Precio pactado
-                                Total = item.Total
-                            });
-                        }
-                    }
-                    else if (tipoOrigenOrden == "OS" && doc.OrdenServicioId.HasValue)
-                    {
-                        var items = _context.DOrdenServicios.Where(x => x.OrdenServicioId == doc.OrdenServicioId).ToList();
-                        foreach (var item in items)
-                        {
-                            _context.DDocumentosPagar.Add(new DDocumentoPagar
-                            {
-                                DocumentoPagarId = doc.Id,
-                                IdReferencia = item.Id,
-                                TablaReferencia = "DORDENSERVICIO",
-                                ProductoId = item.ProductoId,
-                                Descripcion = item.Descripcion,
-                                UnidadMedida = item.UnidadMedida,
-                                Cantidad = item.Cantidad,
-                                PrecioUnitario = item.PrecioUnitario,
-                                Total = item.Total
-                            });
-                        }
-                    }
-
-                    _context.SaveChanges();
-                    transaction.Commit();
-                    return Json(new { status = true, message = "Documento provisionado y detalle copiado correctamente." });
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return Json(new { status = false, message = ex.Message });
-                }
-            }
-        }
-
-        // =========================================================================
-        // 4. LÓGICA DE NOTAS DE CRÉDITO / DÉBITO (Formulario 3 y 4)
-        // =========================================================================
+        #region 5. REGISTRO NOTAS
         [HttpPost]
         public JsonResult GuardarNotaCreditoDebito(DocumentoPagar doc, string codigoTipoDoc)
         {
-            // codigoTipoDoc: 'NC' o 'ND'
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    PrepararDocumentoBase(doc);
-
-                    var tipo = _context.TiposDocumentoInterno.FirstOrDefault(x => x.Codigo == codigoTipoDoc);
-                    if (tipo == null) throw new Exception("Tipo de nota no configurado.");
+                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
+                    var estFin = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
+                    var tipo = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc);
                     doc.TipoDocumentoInternoId = tipo.Id;
 
-                    // 1. VALIDACIÓN ESPECÍFICA: DEBE TENER FACTURA PADRE
-                    if (doc.DocumentoReferenciaId == null || doc.DocumentoReferenciaId == 0)
-                        throw new Exception("La Nota de Crédito/Débito debe estar amarrada a una Factura obligatoriamente.");
+                    if (doc.DocumentoReferenciaId == null) throw new Exception("Falta referencia.");
+                    var docPadre = _context.DocumentosPagar.Find(doc.DocumentoReferenciaId);
 
-                    // Verificar que la factura padre exista (Simulación FK)
-                    var facturaPadre = _context.DocumentosPagar.Find(doc.DocumentoReferenciaId);
-                    if (facturaPadre == null) throw new Exception("La factura de referencia no existe.");
+                    if (codigoTipoDoc == "NC")
+                    {
+                        doc.EstadoId = estFin.Id; doc.Saldo = 0;
+                        _context.DocumentosPagar.Add(doc); _context.SaveChanges();
+                        if (doc.Total > docPadre.Saldo) throw new Exception("Monto NC excede saldo.");
+                        docPadre.Saldo -= doc.Total;
+                        _context.DocumentoPagarAplicaciones.Add(new DocumentoPagarAplicacion
+                        {
+                            EmpresaId = EmpresaUsuarioId,
+                            UsuarioId = UsuarioActualId,
+                            FechaAplicacion = DateTime.Now,
+                            DocumentoCargoId = docPadre.Id,
+                            DocumentoAbonoId = doc.Id,
+                            MontoAplicado = doc.Total
+                        });
+                    }
+                    else if (codigoTipoDoc == "ND")
+                    {
+                        doc.EstadoId = estFin.Id; doc.Saldo = 0;
+                        _context.DocumentosPagar.Add(doc);
+                        docPadre.Saldo += doc.Total;
+                    }
 
-                    // 2. HERENCIA DE DATOS (Opcional, pero recomendado para consistencia)
-                    // Una NC suele heredar la Orden de la Factura Padre para reportes
-                    doc.OrdenCompraId = facturaPadre.OrdenCompraId;
-                    doc.OrdenServicioId = facturaPadre.OrdenServicioId;
+                    if (docPadre.Saldo <= 0) docPadre.EstadoId = estFin.Id;
+                    else docPadre.EstadoId = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar").Id;
 
-                    // 3. REGISTRO
-                    // La NC nace con saldo = Total. 
-                    // Luego en el módulo "Aplicación" se cruza: Factura vs NC.
-                    doc.Saldo = doc.Total;
-
-                    _context.DocumentosPagar.Add(doc);
                     _context.SaveChanges();
-
-                    // NOTA: Si quisieras registrar detalle de items devueltos en la NC,
-                    // se haría aquí insertando en ddocumento_pagar manualmente.
-                    // Por ahora, según tu flujo, registramos el valor financiero.
-
                     transaction.Commit();
-                    return Json(new { status = true, message = "Nota registrada correctamente." });
+                    return Json(new { status = true, message = "Nota registrada." });
                 }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return Json(new { status = false, message = ex.Message });
-                }
+                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
             }
         }
-
-        // =========================================================================
-        // 5. MÉTODOS PRIVADOS (HELPER) - PARA EVITAR CÓDIGO REPETIDO
-        // =========================================================================
-
-        private void PrepararDocumentoBase(DocumentoPagar doc)
-        {
-            doc.EmpresaId = EmpresaUsuarioId; // BaseController
-            doc.UsuarioRegistroId = UsuarioActualId; // BaseController
-            doc.FechaRegistro = DateTime.Now;
-            doc.EstadoId = 1; // Activo/Registrado
-
-            // Seguridad: Si viene nulo el saldo, asumimos total
-            if (doc.Saldo == 0 && doc.Total > 0) doc.Saldo = doc.Total;
-        }
-
-        private void ValidarExistenciaOrden(DocumentoPagar doc, string tipoOrigen)
-        {
-            if (tipoOrigen == "OC")
-            {
-                if (doc.OrdenCompraId == null) throw new Exception("Debe seleccionar una Orden de Compra.");
-                var existe = _context.OrdenCompras.Any(x => x.Id == doc.OrdenCompraId);
-                if (!existe) throw new Exception("La Orden de Compra indicada no existe.");
-                doc.OrdenServicioId = null; // Limpiar por si acaso
-            }
-            else if (tipoOrigen == "OS")
-            {
-                if (doc.OrdenServicioId == null) throw new Exception("Debe seleccionar una Orden de Servicio.");
-                var existe = _context.OrdenServicios.Any(x => x.Id == doc.OrdenServicioId);
-                if (!existe) throw new Exception("La Orden de Servicio indicada no existe.");
-                doc.OrdenCompraId = null;
-            }
-        }
-        [HttpGet]
-        public JsonResult BuscarOrdenesPendientes(string tipoOrigen) // 'OC' o 'OS'
-        {
-            try
-            {
-                // Regla de Negocio: Solo mostrar órdenes APROBADAS (que ya son oficiales)
-                // y que no estén Anuladas.
-
-                var lista = new List<object>();
-
-                if (tipoOrigen == "OC")
-                {
-                    // Filtramos Estado Aprobado (ajusta el ID o nombre según tu tabla Estado)
-                    // Asumo que 'Aprobado' existe en tu tabla Estado para ORDEN
-                    var query = from o in _context.OrdenCompras
-                                join p in _context.Proveedores on o.ProveedorId equals p.Id
-                                join m in _context.Monedas on o.MonedaId equals m.Id
-                                join e in _context.Estados on o.EstadoId equals e.Id
-                                where e.Nombre == "Aprobado" // O "Generado" si permites anticipos antes de aprobar
-                                orderby o.FechaEmision descending
-                                select new
-                                {
-                                    o.Id,
-                                    o.Numero,
-                                    Proveedor = p.RazonSocial,
-                                    p.Ruc,
-                                    o.ProveedorId,
-                                    o.MonedaId,
-                                    MonedaNombre = m.Simbolo,
-                                    Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
-                                    o.Total
-                                };
-
-                    return Json(new { status = true, data = query.ToList() });
-                }
-                else
-                {
-                    // Lógica para Orden Servicio
-                    var query = from o in _context.OrdenServicios
-                                join p in _context.Proveedores on o.ProveedorId equals p.Id
-                                join m in _context.Monedas on o.MonedaId equals m.Id
-                                join e in _context.Estados on o.EstadoId equals e.Id
-                                where e.Nombre == "Aprobado"
-                                orderby o.FechaEmision descending
-                                select new
-                                {
-                                    o.Id,
-                                    o.Numero,
-                                    Proveedor = p.RazonSocial,
-                                    p.Ruc,
-                                    o.ProveedorId,
-                                    o.MonedaId,
-                                    MonedaNombre = m.Simbolo,
-                                    Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
-                                    o.Total
-                                };
-
-                    return Json(new { status = true, data = query.ToList() });
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
-        }
-        [HttpGet]
-        public JsonResult GetDetallesOrden(int ordenId, string tipoOrigen) // 'OC' o 'OS'
-        {
-            try
-            {
-                if (tipoOrigen == "OC")
-                {
-                    var detalles = _context.DOrdenCompras
-                        .Where(x => x.OrdenCompraId == ordenId)
-                        .Select(x => new
-                        {
-                            x.Item,
-                            Producto = x.Descripcion, // O join con Producto si prefieres el nombre del maestro
-                            x.UnidadMedida,
-                            x.Cantidad,
-                            x.PrecioUnitario,
-                            x.Total
-                        }).ToList();
-                    return Json(new { status = true, data = detalles });
-                }
-                else
-                {
-                    var detalles = _context.DOrdenServicios
-                        .Where(x => x.OrdenServicioId == ordenId)
-                        .Select(x => new
-                        {
-                            x.Item,
-                            Producto = x.Descripcion,
-                            x.UnidadMedida,
-                            x.Cantidad,
-                            x.PrecioUnitario,
-                            x.Total
-                        }).ToList();
-                    return Json(new { status = true, data = detalles });
-                }
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
+        #endregion
     }
 }

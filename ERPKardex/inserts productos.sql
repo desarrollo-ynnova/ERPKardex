@@ -389,7 +389,7 @@ GO
 PRINT '>> Generando Ingreso Masivo (Saldo Inicial)...'
 
 DECLARE @IdIngreso INT;
-DECLARE @Fecha DATE = GETDATE();
+DECLARE @Fecha DATE = '2025-12-31';
 DECLARE @EmpresaID INT = 1;
 DECLARE @AlmacenPrincipalID INT;
 DECLARE @MotivoSaldoInicialID INT;
@@ -735,7 +735,7 @@ DECLARE @SucursalID INT;
 DECLARE @AlmacenID INT;
 DECLARE @MotivoID INT;
 DECLARE @ClienteID INT;
-DECLARE @Fecha DATE = GETDATE();
+DECLARE @Fecha DATE = '2025-12-31';
 
 -- Recuperar IDs de infraestructura MAQSA (Creados en el paso anterior)
 SELECT @SucursalID = id FROM sucursal WHERE codigo = '001' AND empresa_id = @EmpresaID;

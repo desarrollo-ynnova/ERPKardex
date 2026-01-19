@@ -68,6 +68,7 @@ namespace ERPKardex.Data
         public DbSet<OrdenPago> OrdenPagos { get; set; }
         public DbSet<DocumentoPagar> DocumentosPagar { get; set; }
         public DbSet<DDocumentoPagar> DDocumentosPagar { get; set; }
+        public DbSet<DocumentoPagarAplicacion> DocumentoPagarAplicaciones { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

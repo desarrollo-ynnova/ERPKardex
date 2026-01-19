@@ -14,25 +14,25 @@
             <div class="card shadow mb-4 border-left-danger">
                 <div class="card-header bg-danger text-white d-flex justify-content-between">
                     <h5 class="m-0 font-weight-bold"><i class="fas fa-file-invoice"></i> Registrar Nota de Crédito</h5>
-                    <span class="badge badge-light text-danger align-self-center">CORRECCIÓN</span>
+                    <span class="badge badge-light text-danger align-self-center">DISMINUYE DEUDA</span>
                 </div>
 
                 <div class="card-body">
                     <div class="row mb-3 p-3 bg-light rounded border mx-1">
                         <div class="col-12 mb-2">
-                            <label class="font-weight-bold text-danger">1. Documento a Corregir (Factura/Boleta)</label>
+                            <label class="font-weight-bold text-danger">1. Comprobante de Origen (Afectado)</label>
                         </div>
 
                         <div class="col-md-12">
                             <div class="input-group">
-                                <input type="text" id="txt_DocReferencia" class="form-control font-weight-bold bg-white" readonly placeholder="Busque la factura a afectar..." style="cursor: pointer;" onclick="abrirModalFacturas()">
+                                <input type="text" id="txt_DocReferencia" class="form-control font-weight-bold bg-white" readonly placeholder="Haga clic para buscar el comprobante..." style="cursor: pointer;" onclick="abrirModalDocumentos()">
                                 <div class="input-group-append">
-                                    <button class="btn btn-danger" type="button" onclick="abrirModalFacturas()">
-                                        <i class="fas fa-search"></i> BUSCAR FACTURA
+                                    <button class="btn btn-danger" type="button" onclick="abrirModalDocumentos()">
+                                        <i class="fas fa-search"></i> BUSCAR COMPROBANTE
                                     </button>
                                 </div>
                             </div>
-                            <small class="text-muted">La Nota de Crédito debe estar amarrada obligatoriamente a un comprobante de pago.</small>
+                            <small class="text-muted">La Nota de Crédito debe estar amarrada obligatoriamente a un comprobante (Factura, Boleta, RxH).</small>
                         </div>
                     </div>
 
@@ -72,7 +72,7 @@
                     <div class="row">
                         <div class="col-12">
                             <label>Motivo / Sustento</label>
-                            <textarea id="txt_Observacion" class="form-control" rows="2" placeholder="Ej: Devolución de mercadería por falla..."></textarea>
+                            <textarea id="txt_Observacion" class="form-control" rows="2" placeholder="Ej: Devolución de mercadería, Error en precio, Descuento comercial..."></textarea>
                         </div>
                     </div>
 
@@ -88,11 +88,11 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalFacturas" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalDocumentos" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title font-weight-bold">Seleccionar Factura/Boleta</h5>
+                <h5 class="modal-title font-weight-bold">Seleccionar Comprobante Origen</h5>
                 <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
@@ -114,8 +114,8 @@
                                 <th class="text-right">Saldo</th>
                             </tr>
                         </thead>
-                        <tbody id="tbl_BodyFacturas">
-                            <tr><td colspan="5" class="text-center py-3 text-muted">Seleccione un proveedor para ver sus documentos.</td></tr>
+                        <tbody id="tbl_BodyDocumentos">
+                            <tr><td colspan="5" class="text-center py-3 text-muted">Seleccione un proveedor para ver sus comprobantes pendientes.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -128,14 +128,15 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
-            $('.select2-basic').select2({ theme: 'bootstrap4', dropdownParent: $('#modalFacturas') });
+            // Inicializar Select2 en Modal
+            $('.select2-basic').select2({ theme: 'bootstrap4', dropdownParent: $('#modalDocumentos') });
             cargarProveedores();
             buscarTipoCambio();
 
             // Evento al cambiar proveedor en el modal
             $('#cbx_FiltroProveedor').on('select2:select', function(e){
                 let provId = $(this).val();
-                listarFacturas(provId);
+                listarDocumentos(provId);
             });
         });
 
@@ -158,24 +159,21 @@
             });
         }
 
-        function abrirModalFacturas() {
-            $('#modalFacturas').modal('show');
+        function abrirModalDocumentos() {
+            $('#modalDocumentos').modal('show');
         }
 
-        // LLAMADA AL CONTROLLER (Necesitamos crear este método en el controller, abajo te lo doy)
-        function listarFacturas(proveedorId) {
-            $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando documentos...</td></tr>');
+        function listarDocumentos(proveedorId) {
+            $('#tbl_BodyDocumentos').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando comprobantes...</td></tr>');
 
             $.get('/CuentasPorPagar/BuscarFacturasProveedor?proveedorId=' + proveedorId, function(res) {
                 if (res.status && res.data.length > 0) {
                     let html = '';
                     res.data.forEach(item => {
-                        // El Controller devuelve "display" concatenado, pero mejor si devolviera campos separados.
-                        // Ajustaremos el controller para que devuelva estructura limpia.
                         html += `<tr>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-danger"
-                                    onclick="seleccionarFactura(${item.id}, '${item.serie}-${item.numero}', '${$('#cbx_FiltroProveedor option:selected').text()}', ${proveedorId}, ${item.monedaId}, ${item.saldo})">
+                                    onclick="seleccionarDocumento(${item.id}, '${item.serie}-${item.numero}', '${$('#cbx_FiltroProveedor option:selected').text()}', ${proveedorId}, ${item.monedaId}, ${item.saldo})">
                                     <i class="fas fa-check"></i>
                                 </button>
                             </td>
@@ -185,33 +183,30 @@
                             <td class="text-right font-weight-bold text-danger">${item.saldo.toFixed(2)}</td>
                         </tr>`;
                     });
-                    $('#tbl_BodyFacturas').html(html);
+                    $('#tbl_BodyDocumentos').html(html);
                 } else {
-                    $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene facturas activas.</td></tr>');
+                    $('#tbl_BodyDocumentos').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene comprobantes activos con deuda.</td></tr>');
                 }
             });
         }
 
-        function seleccionarFactura(id, documento, proveedorTexto, provId, monId, saldo) {
+        function seleccionarDocumento(id, documento, proveedorTexto, provId, monId, saldo) {
             $('#hdn_DocReferenciaId').val(id);
             $('#txt_DocReferencia').val(documento);
 
             $('#hdn_ProveedorId').val(provId);
-            $('#txt_Proveedor').val(proveedorTexto.split('-')[1]); // Hack visual simple
+            $('#txt_Proveedor').val(proveedorTexto.split('-')[1]);
 
             $('#hdn_MonedaId').val(monId);
             $('#lbl_SaldoFactura').text(`Saldo Disp: ${saldo.toFixed(2)}`);
 
-            // Sugerir monto máximo (aunque NC puede ser parcial)
-            // $('#txt_TotalNC').val(saldo.toFixed(2));
-
-            $('#modalFacturas').modal('hide');
+            $('#modalDocumentos').modal('hide');
             $('#txt_Serie').focus();
         }
 
         function guardarNotaCredito() {
             let docRefId = $('#hdn_DocReferenciaId').val();
-            if (!docRefId) return Swal.fire("Aviso", "Debe seleccionar una Factura para aplicar la Nota.", "warning");
+            if (!docRefId) return Swal.fire("Aviso", "Debe seleccionar un Comprobante para aplicar la Nota.", "warning");
 
             let monto = parseFloat($('#txt_TotalNC').val());
             if (!monto || monto <= 0) return toastr.warning("Ingrese el monto de la Nota de Crédito.");
@@ -221,10 +216,6 @@
                 MonedaId: parseInt($('#hdn_MonedaId').val()),
                 DocumentoReferenciaId: parseInt(docRefId),
 
-                // NOTA: No mandamos OrdenCompraId aquí, lo heredamos en el backend si queremos,
-                // o lo dejamos null. La relación fuerte es con la FACTURA.
-
-                TipoDocumentoInternoId: 0, // Se asigna en backend
                 Serie: $('#txt_Serie').val().toUpperCase(),
                 Numero: $('#txt_Numero').val(),
                 FechaEmision: $('#txt_FechaEmision').val(),
@@ -249,7 +240,7 @@
                         type: 'POST',
                         data: {
                             doc: documento,
-                            codigoTipoDoc: 'NC' // 'NC' o 'ND'
+                            codigoTipoDoc: 'NC'
                         },
                         success: function(res) {
                             $('#efec-cargando').addClass('d-none');

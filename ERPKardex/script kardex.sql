@@ -58,8 +58,10 @@ drop table if exists tipo_cambio;
 drop table if exists orden_pago;
 drop table if exists proveedor;
 drop table if exists cliente;
+drop table if exists documento_pagar_aplicacion;
 drop table if exists ddocumento_pagar;
 drop table if exists documento_pagar;
+drop table if exists cuenta_contable;
 
 GO
 
@@ -949,64 +951,115 @@ CREATE TABLE banco (
 );
 
 -- ======================================================
--- 1. TABLA ÚNICA DE DOCUMENTOS (Facturas, Anticipos, NC, ND, Letras)
+-- 1. CABECERA: DOCUMENTO POR PAGAR
+-- Centraliza Facturas, Boletas, RxH, Anticipos, Notas Crédito/Débito
 -- ======================================================
 CREATE TABLE documento_pagar (
     id INT IDENTITY(1,1) PRIMARY KEY,
     
-    -- DATOS DE FILTRO
+    -- FILTROS PRINCIPALES
     empresa_id INT NOT NULL,
     proveedor_id INT NOT NULL,
-    tipo_documento_interno_id INT NOT NULL, -- ID de tu tabla (FAC, ANT, NC, etc.)
+    tipo_documento_interno_id INT NOT NULL, -- FAC, ANT, NC, ND
     
-    -- VÍNCULOS LÓGICOS (Sin Constraints)
-    -- Aquí guardarás el ID, pero la BD no validará si existe. Tu código C# debe asegurarse.
+    -- EL AMARRE SAGRADO (1:1)
+    -- Aunque en SQL permitimos NULL por flexibilidad técnica, 
+    -- tu Lógica de Negocio OBLIGARÁ a que tengan datos.
     orden_compra_id INT NULL,      
     orden_servicio_id INT NULL,    
-    documento_referencia_id INT NULL, -- Para que la NC sepa a qué Factura pertenece
     
-    -- DATOS DEL DOCUMENTO FÍSICO
+    -- REFERENCIA PARA NOTAS DE CRÉDITO/DÉBITO
+    documento_referencia_id INT NULL, 
+
+    -- DATOS DEL PAPEL FÍSICO
     serie VARCHAR(20),
     numero VARCHAR(50),
     fecha_emision DATE NOT NULL,
     fecha_vencimiento DATE,
-    
-    -- IMPORTES
     moneda_id INT,
     tipo_cambio DECIMAL(12,6),
     
-    -- MONTOS
-    total DECIMAL(18,2) DEFAULT 0,  -- El monto total del papel
-    saldo DECIMAL(18,2) DEFAULT 0,  -- El monto que falta pagar o aplicar
+    -- IMPORTES
+    -- Subtotal, IGV, etc. para libros electrónicos
+    subtotal DECIMAL(18,2) DEFAULT 0,
+    monto_igv DECIMAL(18,2) DEFAULT 0,
+    monto_inafecto DECIMAL(18,2) DEFAULT 0,
     
-    -- AUDITORÍA Y ESTADO
-    estado_id INT,
+    total DECIMAL(18,2) DEFAULT 0, 
+    
+    -- EL SALDO VIVO
+    -- Factura: Nace igual al Total. Baja cuando le aplicas un Anticipo o pagas.
+    -- Anticipo: Nace igual al Total. Baja cuando lo usas para matar una Factura.
+    saldo DECIMAL(18,2) DEFAULT 0, 
+
+    estado_id INT, -- Pendiente, Cancelado, Anulado
     observacion VARCHAR(500),
     usuario_registro_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
 -- ======================================================
--- 2. DETALLE (Solo para Facturas, copia de ítems de la Orden)
+-- 2. DETALLE: ÍTEMS DEL DOCUMENTO
+-- Solo para Facturas/Boletas que mueven inventario/gasto
 -- ======================================================
 CREATE TABLE ddocumento_pagar (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    
-    -- RELACIÓN CON CABECERA (Lógica)
     documento_pagar_id INT NOT NULL,
     
-    -- TRAZABILIDAD (De qué detalle de orden vino este ítem)
-    id_referencia INT NULL, 
-    tabla_referencia VARCHAR(255),
+    item VARCHAR(10), -- Correlativo visual '001', '002'
     
-    -- DATOS DEL ÍTEM (Copiados textualmente de la orden para evitar cambios)
+    -- TRAZABILIDAD EXACTA (Para saber qué ítem de la orden mataste)
+    id_referencia INT NULL,      -- ID de dordencompra
+    tabla_referencia VARCHAR(50), -- 'DORDENCOMPRA' o 'DORDENSERVICIO'
+    
+    -- DATOS (Copiados de la orden)
     producto_id INT,
     descripcion VARCHAR(MAX),
     unidad_medida VARCHAR(50),
     
-    cantidad DECIMAL(12,2),
-    precio_unitario DECIMAL(18,6), -- Precio pactado en la orden
-    total DECIMAL(18,2)            -- Subtotal de la línea
+    cantidad DECIMAL(12,2),      -- Cantidad facturada en ESTE documento
+    precio_unitario DECIMAL(18,6),
+    total DECIMAL(18,2)
+);
+
+-- ======================================================
+-- 3. APLICACIONES (EL PANEL DE CRUCE)
+-- Esta es la tabla que te faltaba para "amarrar" Anticipo con Factura
+-- ======================================================
+CREATE TABLE documento_pagar_aplicacion (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    
+    empresa_id INT,
+    
+    -- EL DOCUMENTO QUE DEBE (LA FACTURA)
+    documento_cargo_id INT NOT NULL, 
+    
+    -- EL DOCUMENTO QUE PAGA (EL ANTICIPO O NOTA DE CRÉDITO)
+    documento_abono_id INT NOT NULL,
+    
+    monto_aplicado DECIMAL(18,2) NOT NULL, -- Cuánto del anticipo usé aquí
+    
+    fecha_aplicacion DATETIME DEFAULT GETDATE(),
+    usuario_id INT
+);
+
+CREATE TABLE cuenta_contable (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    
+    codigo VARCHAR(20) NOT NULL, -- Ej: '60', '601', '4212'
+    nombre VARCHAR(255) NOT NULL,
+    
+    -- Relación lógica (Padre-Hijo)
+    padre_id INT NULL, 
+    nivel INT DEFAULT 1, -- 1: Elemento, 2: Cuenta, 3: Subcuenta...
+    
+    -- Clasificación para reportes automáticos
+    tipo_elemento VARCHAR(20), -- 'ACTIVO', 'PASIVO', 'GASTO', 'INGRESO'
+    
+    es_movimiento BIT DEFAULT 1, -- 1: Se puede usar en facturas, 0: Es solo título
+    
+    empresa_id INT NULL, -- NULL si es plan estándar, ID si es específico
+    estado BIT DEFAULT 1
 );
 
 GO
@@ -1067,12 +1120,7 @@ INSERT INTO estado (nombre, tabla) VALUES
 ('Atendido Parcial', 'PED'),
 ('Atendido Total', 'PED');
 
--- ORDEN DE COMPRA
-INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
-INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
-INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
-
--- ORDEN DE SERVICIO
+-- ORDEN DE COMPRA/SERVICIO
 INSERT INTO estado (nombre, tabla) VALUES ('Generado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN');
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'ORDEN');
@@ -1099,6 +1147,10 @@ INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'CXP');    -- El documento
 INSERT INTO estado (nombre, tabla) VALUES ('Pendiente', 'PAGO'); -- Se debe el 100%
 INSERT INTO estado (nombre, tabla) VALUES ('Parcial', 'PAGO');   -- Se ha pagado algo, pero falta
 INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'PAGO'); -- Deuda saldada (Saldo 0)
+
+INSERT INTO estado (nombre, tabla) VALUES ('Por Pagar', 'DOCUMENTO_PAGAR');
+INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'DOCUMENTO_PAGAR');
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'DOCUMENTO_PAGAR');
 
 GO
 

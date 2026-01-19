@@ -14,25 +14,25 @@
             <div class="card shadow mb-4 border-left-info">
                 <div class="card-header bg-info text-white d-flex justify-content-between">
                     <h5 class="m-0 font-weight-bold"><i class="fas fa-file-invoice-dollar"></i> Registrar Nota de Débito</h5>
-                    <span class="badge badge-light text-info align-self-center">AUMENTO DEUDA</span>
+                    <span class="badge badge-light text-info align-self-center">AUMENTA DEUDA</span>
                 </div>
 
                 <div class="card-body">
                     <div class="row mb-3 p-3 bg-light rounded border mx-1">
                         <div class="col-12 mb-2">
-                            <label class="font-weight-bold text-info">1. Documento a Corregir (Factura/Boleta)</label>
+                            <label class="font-weight-bold text-info">1. Comprobante de Origen (Afectado)</label>
                         </div>
 
                         <div class="col-md-12">
                             <div class="input-group">
-                                <input type="text" id="txt_DocReferencia" class="form-control font-weight-bold bg-white" readonly placeholder="Busque la factura de origen..." style="cursor: pointer;" onclick="abrirModalFacturas()">
+                                <input type="text" id="txt_DocReferencia" class="form-control font-weight-bold bg-white" readonly placeholder="Haga clic para buscar el comprobante..." style="cursor: pointer;" onclick="abrirModalDocumentos()">
                                 <div class="input-group-append">
-                                    <button class="btn btn-info" type="button" onclick="abrirModalFacturas()">
-                                        <i class="fas fa-search"></i> BUSCAR FACTURA
+                                    <button class="btn btn-info" type="button" onclick="abrirModalDocumentos()">
+                                        <i class="fas fa-search"></i> BUSCAR COMPROBANTE
                                     </button>
                                 </div>
                             </div>
-                            <small class="text-muted">La Nota de Débito aumentará el saldo por pagar de este documento.</small>
+                            <small class="text-muted">La Nota de Débito aumentará el saldo por pagar de este comprobante.</small>
                         </div>
                     </div>
 
@@ -88,11 +88,11 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalFacturas" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalDocumentos" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content border-info">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title font-weight-bold">Seleccionar Factura/Boleta</h5>
+                <h5 class="modal-title font-weight-bold">Seleccionar Comprobante Origen</h5>
                 <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
@@ -114,8 +114,8 @@
                                 <th class="text-right">Saldo Actual</th>
                             </tr>
                         </thead>
-                        <tbody id="tbl_BodyFacturas">
-                            <tr><td colspan="5" class="text-center py-3 text-muted">Seleccione un proveedor para ver sus documentos.</td></tr>
+                        <tbody id="tbl_BodyDocumentos">
+                            <tr><td colspan="5" class="text-center py-3 text-muted">Seleccione un proveedor para ver sus comprobantes.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -128,13 +128,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
-            $('.select2-basic').select2({ theme: 'bootstrap4', dropdownParent: $('#modalFacturas') });
+            $('.select2-basic').select2({ theme: 'bootstrap4', dropdownParent: $('#modalDocumentos') });
             cargarProveedores();
             buscarTipoCambio();
 
             $('#cbx_FiltroProveedor').on('select2:select', function(e){
                 let provId = $(this).val();
-                listarFacturas(provId);
+                listarDocumentos(provId);
             });
         });
 
@@ -157,14 +157,13 @@
             });
         }
 
-        function abrirModalFacturas() {
-            $('#modalFacturas').modal('show');
+        function abrirModalDocumentos() {
+            $('#modalDocumentos').modal('show');
         }
 
-        function listarFacturas(proveedorId) {
-            $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando documentos...</td></tr>');
+        function listarDocumentos(proveedorId) {
+            $('#tbl_BodyDocumentos').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando comprobantes...</td></tr>');
 
-            // Reutilizamos el mismo endpoint que usaste para NC
             $.get('/CuentasPorPagar/BuscarFacturasProveedor?proveedorId=' + proveedorId, function(res) {
                 if (res.status && res.data.length > 0) {
                     let html = '';
@@ -172,7 +171,7 @@
                         html += `<tr>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-info"
-                                    onclick="seleccionarFactura(${item.id}, '${item.serie}-${item.numero}', '${$('#cbx_FiltroProveedor option:selected').text()}', ${proveedorId}, ${item.monedaId})">
+                                    onclick="seleccionarDocumento(${item.id}, '${item.serie}-${item.numero}', '${$('#cbx_FiltroProveedor option:selected').text()}', ${proveedorId}, ${item.monedaId})">
                                     <i class="fas fa-check"></i>
                                 </button>
                             </td>
@@ -182,27 +181,27 @@
                             <td class="text-right font-weight-bold">${item.saldo.toFixed(2)}</td>
                         </tr>`;
                     });
-                    $('#tbl_BodyFacturas').html(html);
+                    $('#tbl_BodyDocumentos').html(html);
                 } else {
-                    $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene facturas activas.</td></tr>');
+                    $('#tbl_BodyDocumentos').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene comprobantes activos.</td></tr>');
                 }
             });
         }
 
-        function seleccionarFactura(id, documento, proveedorTexto, provId, monId) {
+        function seleccionarDocumento(id, documento, proveedorTexto, provId, monId) {
             $('#hdn_DocReferenciaId').val(id);
             $('#txt_DocReferencia').val(documento);
             $('#hdn_ProveedorId').val(provId);
             $('#txt_Proveedor').val(proveedorTexto.split('-')[1]);
             $('#hdn_MonedaId').val(monId);
 
-            $('#modalFacturas').modal('hide');
+            $('#modalDocumentos').modal('hide');
             $('#txt_Serie').focus();
         }
 
         function guardarNotaDebito() {
             let docRefId = $('#hdn_DocReferenciaId').val();
-            if (!docRefId) return Swal.fire("Aviso", "Debe seleccionar una Factura para aplicar la Nota.", "warning");
+            if (!docRefId) return Swal.fire("Aviso", "Debe seleccionar un Comprobante para aplicar la Nota.", "warning");
 
             let monto = parseFloat($('#txt_TotalND').val());
             if (!monto || monto <= 0) return toastr.warning("Ingrese el monto de la deuda adicional.");
@@ -212,8 +211,6 @@
                 MonedaId: parseInt($('#hdn_MonedaId').val()),
                 DocumentoReferenciaId: parseInt(docRefId),
 
-                // NOTA: Se enviará el código 'ND' al backend
-                TipoDocumentoInternoId: 0,
                 Serie: $('#txt_Serie').val().toUpperCase(),
                 Numero: $('#txt_Numero').val(),
                 FechaEmision: $('#txt_FechaEmision').val(),
@@ -233,12 +230,11 @@
                 if (result.isConfirmed) {
                     $('#efec-cargando').removeClass('d-none');
                     $.ajax({
-                        // Reutilizamos el endpoint genérico de Notas
                         url: '/CuentasPorPagar/GuardarNotaCreditoDebito',
                         type: 'POST',
                         data: {
                             doc: documento,
-                            codigoTipoDoc: 'ND' // Clave: 'ND'
+                            codigoTipoDoc: 'ND'
                         },
                         success: function(res) {
                             $('#efec-cargando').addClass('d-none');

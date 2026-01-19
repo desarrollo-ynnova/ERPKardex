@@ -1,0 +1,302 @@
+﻿@{
+    ViewData["Title"] = "Aplicación de Documentos (Cuentas por Pagar)";
+}
+
+<style>
+    /* Corrección de color para selección */
+    .cls-monto-pend {
+        color: #dc3545;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .bg-warning .cls-monto-pend {
+        color: #212529 !important;
+    }
+
+    .cls-monto-disp {
+        color: #28a745;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .bg-success .cls-monto-disp {
+        color: #ffffff !important;
+    }
+</style>
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="card shadow mb-3 border-left-info">
+        <div class="card-body py-2">
+            <div class="row align-items-center">
+                <div class="col-md-2">
+                    <label class="font-weight-bold m-0 text-info"><i class="fas fa-search"></i> Buscar Proveedor:</label>
+                </div>
+                <div class="col-md-8">
+                    <select id="cbx_Proveedor" class="form-control w-100"></select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-info btn-block font-weight-bold" onclick="cargarDocumentos()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-lg-7">
+            <div class="card shadow mb-4 border-top-danger">
+                <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-danger">1. Comprobantes Pendientes (Deuda)</h6>
+                    <small class="text-muted">Seleccione para ver sus anticipos</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0 font-12">
+                            <thead class="bg-light sticky-top">
+                                <tr>
+                                    <th width="5%"></th>
+                                    <th>Documento</th>
+                                    <th>Ref. Orden</th>
+                                    <th class="text-right text-muted">Total Orig.</th>
+                                    <th class="text-right font-weight-bold">Saldo Actual</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_Pendientes">
+                                <tr><td colspan="5" class="text-center text-muted py-5">Seleccione un proveedor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-2 bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-history"></i> Historial del Documento: <span id="lbl_DocSeleccionado" class="text-warning">---</span></h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="height: 200px; overflow-y: auto;">
+                        <table class="table table-sm table-bordered mb-0 font-11">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Concepto / Movimiento</th>
+                                    <th>Documento Ref.</th>
+                                    <th class="text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_Historial">
+                                <tr><td colspan="4" class="text-center text-muted py-3">Seleccione un comprobante arriba...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow mb-4 border-top-success">
+                <div class="card-header bg-white py-2">
+                    <h6 class="m-0 font-weight-bold text-success">2. Saldos a Favor (Anticipos Disponibles)</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="height: 250px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0 font-12">
+                            <thead class="bg-light sticky-top">
+                                <tr>
+                                    <th width="5%"></th>
+                                    <th>Documento</th>
+                                    <th>Orden</th>
+                                    <th class="text-right font-weight-bold">Disponible</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_Disponibles">
+                                <tr><td colspan="4" class="text-center text-muted py-5">Seleccione una factura de la izquierda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow bg-white border-left-primary">
+                <div class="card-body text-center">
+                    <h5 class="font-weight-bold text-primary mb-3">Aplicar Saldo</h5>
+                    <div class="form-group mb-3">
+                        <label class="small text-muted font-weight-bold text-uppercase">Monto a Aplicar</label>
+                        <input type="number" id="txt_MontoAplicar" class="form-control form-control-lg font-weight-bold text-center text-dark border-primary" placeholder="0.00" step="0.01">
+                        <small class="form-text text-muted">Se descontará del anticipo seleccionado.</small>
+                    </div>
+                    <button class="btn btn-primary btn-block btn-lg font-weight-bold shadow-sm" onclick="ejecutarCruce()">
+                        <i class="fas fa-check-circle"></i> CONFIRMAR APLICACIÓN
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let g_idCargo = 0;
+        let g_idAbono = 0;
+        let g_saldoCargo = 0;
+        let g_saldoAbono = 0;
+
+        // ALMACEN EN MEMORIA DE TODOS LOS ANTICIPOS DEL PROVEEDOR
+        let g_listaDisponibles = [];
+
+        $(document).ready(function() {
+            $('#cbx_Proveedor').select2({
+                theme: 'bootstrap4', placeholder: "Buscar proveedor...",
+                ajax: {
+                    url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250,
+                    processResults: function (data) {
+                        return { results: data.proveedores.map(function(item) { return { id: item.id, text: item.ruc + ' - ' + item.razonSocial }; }) };
+                    }
+                }
+            });
+            $('#cbx_Proveedor').on('select2:select', function(e) { cargarDocumentos(); });
+        });
+
+        function cargarDocumentos() {
+            let idProv = $('#cbx_Proveedor').val();
+            if(!idProv) return;
+
+            resetSeleccion();
+            $('#tbl_Pendientes').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            $('#tbl_Disponibles').html('<tr><td colspan="4" class="text-center text-muted">Seleccione una factura de la izquierda.</td></tr>');
+
+            $.get('/CuentasPorPagar/GetDocumentosParaAplicacion?proveedorId=' + idProv, function(res) {
+                if(res.status) {
+                    // 1. LLENAR PENDIENTES
+                    let htmlP = '';
+                    if(res.pendientes.length > 0) {
+                        res.pendientes.forEach(x => {
+                            htmlP += `
+                            <tr style="cursor: pointer;" onclick="seleccionarPendiente(this, ${x.id}, '${x.documento}', ${x.saldoActual}, ${x.ordenId || 0})">
+                                <td class="text-center align-middle"><input type="radio" name="rbPend"></td>
+                                <td class="align-middle"><span class="badge badge-secondary">${x.tipo}</span> ${x.documento}</td>
+                                <td class="align-middle"><small class="text-muted">${x.ordenNumero}</small></td>
+                                <td class="text-right align-middle text-muted"><small>${x.totalOriginal.toFixed(2)}</small></td>
+                                <td class="text-right align-middle cls-monto-pend">${x.saldoActual.toFixed(2)}</td>
+                            </tr>`;
+                        });
+                    } else {
+                        htmlP = '<tr><td colspan="5" class="text-center text-muted py-3">Sin deudas pendientes.</td></tr>';
+                    }
+                    $('#tbl_Pendientes').html(htmlP);
+
+                    // 2. GUARDAR DISPONIBLES EN MEMORIA (NO PINTAR AÚN)
+                    g_listaDisponibles = res.disponibles;
+                }
+            });
+        }
+
+        // SELECCIÓN DE FACTURA -> FILTRA ANTICIPOS
+        function seleccionarPendiente(tr, id, doc, saldo, ordenId) {
+            // Estilos
+            $('#tbl_Pendientes tr').removeClass('bg-warning text-dark font-weight-bold');
+            $(tr).addClass('bg-warning text-dark font-weight-bold');
+            $(tr).find('input[type="radio"]').prop('checked', true);
+
+            g_idCargo = id; g_saldoCargo = saldo; g_idAbono = 0; g_saldoAbono = 0;
+            $('#lbl_DocSeleccionado').text(doc);
+            $('#txt_MontoAplicar').val('');
+
+            // Cargar Historial
+            cargarHistorial(id);
+
+            // FILTRAR Y PINTAR TABLA DERECHA (SOLO ORDEN COINCIDENTE)
+            let filtrados = g_listaDisponibles.filter(x => x.ordenId == ordenId);
+            let htmlD = '';
+
+            if(filtrados.length > 0) {
+                filtrados.forEach(x => {
+                    htmlD += `
+                    <tr style="cursor: pointer;" onclick="seleccionarDisponible(this, ${x.id}, ${x.saldo})">
+                        <td class="text-center align-middle"><input type="radio" name="rbDisp"></td>
+                        <td class="align-middle"><span class="badge badge-success">${x.tipo}</span> ${x.documento}</td>
+                        <td class="align-middle"><small>${x.ordenNumero}</small></td>
+                        <td class="text-right align-middle cls-monto-disp">${x.saldo.toFixed(2)}</td>
+                    </tr>`;
+                });
+            } else {
+                htmlD = '<tr><td colspan="4" class="text-center text-muted py-3">No hay anticipos para esta Orden.</td></tr>';
+            }
+            $('#tbl_Disponibles').html(htmlD);
+        }
+
+        function seleccionarDisponible(tr, id, saldo) {
+            $('#tbl_Disponibles tr').removeClass('bg-success text-white font-weight-bold');
+            $(tr).addClass('bg-success text-white font-weight-bold');
+            $(tr).find('input[type="radio"]').prop('checked', true);
+
+            g_idAbono = id;
+            g_saldoAbono = saldo;
+            calcularMontoSugerido();
+        }
+
+        function cargarHistorial(docId) {
+            $('#tbl_Historial').html('<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i></td></tr>');
+            $.get('/CuentasPorPagar/GetHistorialDocumento?documentoId=' + docId, function(res) {
+                let html = '';
+                if(res.status && res.data.length > 0) {
+                    res.data.forEach(h => {
+                        html += `<tr>
+                            <td><small>${h.fecha}</small></td>
+                            <td class="${h.color} font-weight-bold"><small>${h.concepto}</small></td>
+                            <td>${h.doc}</td>
+                            <td class="text-right font-weight-bold ${h.color}">${h.monto}</td>
+                        </tr>`;
+                    });
+                } else { html = '<tr><td colspan="4" class="text-center text-muted small py-2">Sin movimientos.</td></tr>'; }
+                $('#tbl_Historial').html(html);
+            });
+        }
+
+        function calcularMontoSugerido() {
+            if(g_idCargo > 0 && g_idAbono > 0) {
+                $('#txt_MontoAplicar').val(Math.min(g_saldoCargo, g_saldoAbono).toFixed(2));
+            }
+        }
+
+        function ejecutarCruce() {
+            if(g_idCargo === 0 || g_idAbono === 0) return toastr.warning("Falta seleccionar documentos.");
+            let monto = parseFloat($('#txt_MontoAplicar').val());
+            if(!monto || monto <= 0) return toastr.error("Monto inválido.");
+            if(monto > g_saldoCargo) return Swal.fire("Error", "Excede deuda pendiente.", "error");
+            if(monto > g_saldoAbono) return Swal.fire("Error", "Excede saldo disponible.", "error");
+
+            Swal.fire({
+                title: "¿Aplicar?", text: `Se descontarán ${monto.toFixed(2)} del anticipo.`, icon: "question",
+                showCancelButton: true, confirmButtonText: "Sí, Aplicar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#efec-cargando').removeClass('d-none');
+                    $.post('/CuentasPorPagar/GuardarAplicacion', {
+                        idCargo: g_idCargo, idAbono: g_idAbono, montoAplicar: monto
+                    }, function(res) {
+                        $('#efec-cargando').addClass('d-none');
+                        if(res.status) { Swal.fire("¡Aplicado!", res.message, "success"); cargarDocumentos(); }
+                        else Swal.fire("Error", res.message, "error");
+                    });
+                }
+            });
+        }
+
+        function resetSeleccion() {
+            g_idCargo = 0; g_idAbono = 0; g_saldoCargo = 0; g_saldoAbono = 0;
+            $('#lbl_DocSeleccionado').text('---'); $('#tbl_Historial').empty(); $('#txt_MontoAplicar').val('');
+        }
+    </script>
+}
