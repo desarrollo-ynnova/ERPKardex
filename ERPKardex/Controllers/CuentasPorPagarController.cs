@@ -186,16 +186,20 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
+                    // 1. Validaciones
                     if (codigoTipoDoc == "PROV") throw new Exception("Provisión requiere documento físico.");
                     if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Requiere Orden.");
 
+                    // 2. Validación Financiera (Misma lógica que ya teníamos)
                     decimal totalOrden = 0, totalPrevio = 0;
-                    int idAnulado = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Anulado").Id;
+                    var estadoAnulado = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Anulado");
+                    int idAnulado = estadoAnulado?.Id ?? -1;
                     var codigosFacturables = new List<string> { "FAC", "BOL", "RH" };
 
                     if (doc.OrdenCompraId != null)
                     {
-                        totalOrden = _context.OrdenCompras.Find(doc.OrdenCompraId).Total ?? 0;
+                        var orden = _context.OrdenCompras.Find(doc.OrdenCompraId);
+                        totalOrden = orden.Total ?? 0;
                         totalPrevio = (from d in _context.DocumentosPagar
                                        join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
                                        where d.OrdenCompraId == doc.OrdenCompraId && d.EstadoId != idAnulado && codigosFacturables.Contains(t.Codigo)
@@ -203,32 +207,81 @@ namespace ERPKardex.Controllers
                     }
                     else
                     {
-                        totalOrden = _context.OrdenServicios.Find(doc.OrdenServicioId).Total ?? 0;
+                        var orden = _context.OrdenServicios.Find(doc.OrdenServicioId);
+                        totalOrden = orden.Total ?? 0;
                         totalPrevio = (from d in _context.DocumentosPagar
                                        join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
                                        where d.OrdenServicioId == doc.OrdenServicioId && d.EstadoId != idAnulado && codigosFacturables.Contains(t.Codigo)
                                        select d.Total).Sum();
                     }
 
-                    if (doc.Total > ((totalOrden - totalPrevio) + 1m)) throw new Exception("Monto excede saldo pendiente de la orden.");
+                    if (doc.Total > ((totalOrden - totalPrevio) + 1m))
+                        throw new Exception("Monto excede saldo pendiente de la orden.");
 
-                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
-                    doc.EstadoId = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar").Id;
+                    // 3. Guardar Cabecera
+                    var estadoInicial = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+
+                    doc.EmpresaId = EmpresaUsuarioId;
+                    doc.UsuarioRegistroId = UsuarioActualId;
+                    doc.FechaRegistro = DateTime.Now;
+                    doc.EstadoId = estadoInicial.Id;
                     doc.Saldo = doc.Total;
                     doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc).Id;
 
                     _context.DocumentosPagar.Add(doc);
-                    _context.SaveChanges();
+                    _context.SaveChanges(); // Obtenemos el ID del documento
 
-                    var dets = JsonConvert.DeserializeObject<List<DDocumentoPagar>>(detallesJson);
-                    int i = 1;
-                    foreach (var d in dets) { d.Id = 0; d.DocumentoPagarId = doc.Id; d.Item = i++.ToString("D3"); _context.DDocumentosPagar.Add(d); }
+                    // 4. Guardar Detalles (CORREGIDO: ASIGNACIÓN DE DATOS MAESTROS)
+                    var listaDetalles = JsonConvert.DeserializeObject<List<DDocumentoPagar>>(detallesJson);
+                    int correlativoItem = 1;
+
+                    foreach (var det in listaDetalles)
+                    {
+                        det.Id = 0;
+                        det.DocumentoPagarId = doc.Id;
+                        det.Item = correlativoItem.ToString("D3");
+
+                        // --- CORRECCIÓN CRÍTICA AQUÍ ---
+                        // Recuperamos la info del origen para no perder la trazabilidad ni el ProductoId
+                        if (det.IdReferencia != null)
+                        {
+                            if (tipoOrigenOrden == "OC")
+                            {
+                                var itemOrigen = _context.DOrdenCompras.Find(det.IdReferencia);
+                                if (itemOrigen != null)
+                                {
+                                    det.ProductoId = itemOrigen.ProductoId;       // CLAVE para Almacén
+                                    det.UnidadMedida = itemOrigen.UnidadMedida;   // Mantenemos consistencia
+                                    det.TablaReferencia = "DORDENCOMPRA";         // Para saber de dónde vino
+                                }
+                            }
+                            else // OS
+                            {
+                                var itemOrigen = _context.DOrdenServicios.Find(det.IdReferencia);
+                                if (itemOrigen != null)
+                                {
+                                    det.ProductoId = itemOrigen.ProductoId;
+                                    det.UnidadMedida = itemOrigen.UnidadMedida;
+                                    det.TablaReferencia = "DORDENSERVICIO";
+                                }
+                            }
+                        }
+                        // -------------------------------
+
+                        _context.DDocumentosPagar.Add(det);
+                        correlativoItem++;
+                    }
 
                     _context.SaveChanges();
                     transaction.Commit();
-                    return Json(new { status = true, message = "Comprobante registrado." });
+
+                    return Json(new { status = true, message = "Comprobante registrado correctamente." });
                 }
-                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = ex.Message });
+                }
             }
         }
         #endregion

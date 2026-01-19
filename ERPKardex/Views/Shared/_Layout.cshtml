@@ -348,6 +348,61 @@
                             </li>
                         }
 
+                        <li class="nav-header font-weight-bold">CUENTAS POR PAGAR</li>
+
+                        @{
+                            // Lógica para mantener el menú desplegado si estás en alguna de estas pantallas
+                            bool isCxpOpen = (controllerName == "CuentasPorPagar");
+                        }
+
+                        <li class="nav-item @(isCxpOpen ? "menu-open" : "")">
+                            <a href="#" class="nav-link @(isCxpOpen ? "active" : "")">
+                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                <p>
+                                    Gestión de Deudas
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+
+                                <li class="nav-item">
+                                    <a href="/CuentasPorPagar/RegistroAnticipo" class="nav-link @(actionName == "RegistroAnticipo" ? "active" : "")">
+                                        <i class="fas fa-hand-holding-usd nav-icon text-warning"></i>
+                                        <p>Registro Anticipo</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="/CuentasPorPagar/RegistroProvision" class="nav-link @(actionName == "RegistroProvision" ? "active" : "")">
+                                        <i class="fas fa-file-contract nav-icon text-white"></i>
+                                        <p>Registro Provisión</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="/CuentasPorPagar/RegistroNotaCredito" class="nav-link @(actionName == "RegistroNotaCredito" ? "active" : "")">
+                                        <i class="fas fa-minus-circle nav-icon text-danger"></i>
+                                        <p>Nota de Crédito</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="/CuentasPorPagar/RegistroNotaDebito" class="nav-link @(actionName == "RegistroNotaDebito" ? "active" : "")">
+                                        <i class="fas fa-plus-circle nav-icon text-info"></i>
+                                        <p>Nota de Débito</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="/CuentasPorPagar/AplicacionDocumentos" class="nav-link @(actionName == "AplicacionDocumentos" ? "active" : "")">
+                                        <i class="fas fa-exchange-alt nav-icon text-success"></i>
+                                        <p>Aplicación Documentos</p>
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+
                         @if (await _permisos.TienePermiso("MOD_FINANZAS"))
                         {
                             <li class="nav-header font-weight-bold">CONTABILIDAD</li>

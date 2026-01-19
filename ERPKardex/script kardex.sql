@@ -1635,7 +1635,8 @@ INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES
 ('MOD_ALMACEN', 'Módulo Control Almacén', 'ALMACEN', NULL, 2),
 ('MOD_LOGISTICA', 'Módulo Logística Operativa', 'LOGISTICA', NULL, 3),
 ('MOD_FINANZAS', 'Módulo Gestión Financiera', 'FINANZAS', NULL, 4),
-('MOD_ACTIVOS', 'Módulo Activos Fijos', 'ACTIVOS', NULL, 5);
+('MOD_ACTIVOS', 'Módulo Activos Fijos', 'ACTIVOS', NULL, 5),
+('MOD_SEGURIDAD', 'Módulo de Seguridad', 'SEGURIDAD', NULL, 6);
 
 -- Obtenemos los IDs generados para asignar los hijos
 DECLARE @ID_MAE INT = (SELECT id FROM permiso WHERE codigo = 'MOD_MAESTROS');
