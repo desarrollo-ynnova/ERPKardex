@@ -1,25 +1,43 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPKardex.Models
 {
     [Table("ddocumento_pagar")]
     public class DDocumentoPagar
     {
+        [Key]
         public int Id { get; set; }
+
+        [Column("documento_pagar_id")]
         public int DocumentoPagarId { get; set; }
-        public int Item { get; set; }
 
-        public string? TablaOrigen { get; set; } // 'DORDENCOMPRA'
-        public int? OrigenId { get; set; }      // ID de dordencompra
+        // ==========================================================
+        // CORRECCIÓN SOLICITADA: REFERENCIA DINÁMICA
+        // ==========================================================
+        [Column("id_referencia")]
+        public int? IdReferencia { get; set; } // ID de dordencompra o dordenservicio
 
+        [Column("tabla_referencia")]
+        public string? TablaReferencia { get; set; } // "DORDENCOMPRA" o "DORDENSERVICIO"
+
+        // DATOS COPIADOS (Snapshot)
+        [Column("producto_id")]
+        public int? ProductoId { get; set; }
+
+        [Column("descripcion")]
         public string? Descripcion { get; set; }
+
+        [Column("unidad_medida")]
         public string? UnidadMedida { get; set; }
 
-        public decimal Cantidad { get; set; }
-        public decimal PrecioUnitario { get; set; }
-        public decimal Total { get; set; }
+        [Column("cantidad")]
+        public decimal? Cantidad { get; set; }
 
-        public int? CentroCostoId { get; set; }
-        public string? CuentaContable { get; set; }
+        [Column("precio_unitario")]
+        public decimal? PrecioUnitario { get; set; }
+
+        [Column("total")]
+        public decimal? Total { get; set; }
     }
 }

@@ -1,0 +1,332 @@
+﻿@{
+    ViewData["Title"] = "Provisión de Comprobantes";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-file-invoice-dollar"></i> Registrar Provisión (Factura / Boleta)</h5>
+                    <span class="badge badge-light text-primary align-self-center">CONTABILIDAD</span>
+                </div>
+
+                <div class="card-body">
+                    <div class="row mb-3 p-3 bg-light rounded border mx-1">
+                        <div class="col-12 mb-2">
+                            <label class="font-weight-bold text-primary">1. Seleccionar Orden Origen</label>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary active" onclick="limpiarSeleccion()">
+                                    <input type="radio" name="optOrigen" id="opt_OC" value="OC" checked> Orden Compra
+                                </label>
+                                <label class="btn btn-outline-primary" onclick="limpiarSeleccion()">
+                                    <input type="radio" name="optOrigen" id="opt_OS" value="OS"> Orden Servicio
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <div class="input-group">
+                                <input type="text" id="txt_OrdenSeleccionada" class="form-control font-weight-bold bg-white" readonly placeholder="Busque la orden aprobada..." style="cursor: pointer;" onclick="abrirModalBusqueda()">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" onclick="abrirModalBusqueda()">
+                                        <i class="fas fa-search"></i> BUSCAR
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted d-block">Moneda</small>
+                            <span class="badge badge-warning text-dark px-3 py-2" id="lbl_Moneda">---</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-4">
+                            <label class="font-weight-bold text-dark">2. Tipo de Comprobante</label>
+                            <select id="cbx_TipoDocumento" class="form-control font-weight-bold">
+                                <option value="FAC">FACTURA</option>
+                                <option value="BOL">BOLETA DE VENTA</option>
+                                <option value="RH">RECIBO X HONORARIOS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="font-weight-bold">Serie</label>
+                            <input type="text" id="txt_Serie" class="form-control text-uppercase" placeholder="Ej: F001" maxlength="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="font-weight-bold">Número</label>
+                            <input type="text" id="txt_Numero" class="form-control" placeholder="Ej: 0004512" maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="small text-muted">Proveedor</label>
+                            <input type="text" id="txt_Proveedor" class="form-control bg-light" readonly>
+                            <input type="hidden" id="hdn_ProveedorId">
+                            <input type="hidden" id="hdn_OrdenId">
+                            <input type="hidden" id="hdn_MonedaId">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small font-weight-bold">Fecha Emisión</label>
+                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTipoCambio()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Tipo Cambio</label>
+                            <input type="number" id="txt_TipoCambio" class="form-control bg-light text-center" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="font-weight-bold text-primary border-bottom pb-2">
+                                <i class="fas fa-list"></i> Detalle a Provisionar (Solo Lectura)
+                            </h6>
+                            <div class="table-responsive border rounded">
+                                <table class="table table-sm table-striped mb-0 text-center">
+                                    <thead class="bg-secondary text-white small">
+                                        <tr>
+                                            <th width="5%">Item</th>
+                                            <th width="45%" class="text-left">Descripción / Producto</th>
+                                            <th width="10%">U.M.</th>
+                                            <th width="10%">Cantidad</th>
+                                            <th width="15%">P. Unitario</th>
+                                            <th width="15%">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbl_DetalleVisual">
+                                        <tr><td colspan="6" class="text-muted py-4 small">Seleccione una orden para ver los ítems...</td></tr>
+                                    </tbody>
+                                    <tfoot class="bg-light font-weight-bold">
+                                        <tr>
+                                            <td colspan="4"></td>
+                                            <td class="text-right align-middle">TOTAL COMPROBANTE:</td>
+                                            <td>
+                                                <input type="text" id="txt_TotalPagar" class="form-control form-control-sm font-weight-bold text-right border-0 bg-transparent text-primary" style="font-size: 1.1em;" readonly value="0.00">
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <small class="text-muted mt-1"><i class="fas fa-info-circle"></i> Los ítems se copiarán tal cual figuran en la orden (inmutables).</small>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <label>Observación (Opcional)</label>
+                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Comentarios adicionales...">
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer text-right">
+                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <button class="btn btn-primary px-5 font-weight-bold" onclick="guardarProvision()">
+                        <i class="fas fa-save"></i> PROVISIONAR DOCUMENTO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalBusquedaOrden" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-primary">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="modalTitulo">Buscar Orden Aprobada</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Sel.</th>
+                                <th>Número</th>
+                                <th>Proveedor</th>
+                                <th>Fecha</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_BodyOrdenes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function() {
+            buscarTipoCambio();
+        });
+
+        function buscarTipoCambio() {
+            let fecha = $('#txt_FechaEmision').val();
+            if (!fecha) return;
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + fecha, function(res) {
+                if (res.status) $('#txt_TipoCambio').val(res.valor.toFixed(3));
+                else $('#txt_TipoCambio').val((res.ultimoConocido || 0).toFixed(3));
+            });
+        }
+
+        // BUSQUEDA DE ORDENES (Igual que antes)
+        function abrirModalBusqueda() {
+            let tipoOrigen = $('input[name="optOrigen"]:checked').val();
+            $('#modalTitulo').text(tipoOrigen === 'OC' ? 'Buscar Orden de Compra' : 'Buscar Orden de Servicio');
+            $('#modalBusquedaOrden').modal('show');
+            $('#tbl_BodyOrdenes').html('<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            $.get(`/CuentasPorPagar/BuscarOrdenesPendientes?tipoOrigen=${tipoOrigen}`, function(res) {
+                if (res.status && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(item => {
+                        html += `<tr>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="seleccionarOrden(${item.id}, '${item.numero}', '${item.proveedor}', ${item.proveedorId}, ${item.monedaId}, ${item.total}, '${item.monedaNombre}')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                            <td class="font-weight-bold">${item.numero}</td>
+                            <td>${item.proveedor}</td>
+                            <td>${item.fecha}</td>
+                            <td class="text-right font-weight-bold">${item.total.toFixed(2)} ${item.monedaNombre}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_BodyOrdenes').html(html);
+                } else {
+                    $('#tbl_BodyOrdenes').html('<tr><td colspan="5" class="text-center text-muted">No hay órdenes aprobadas disponibles.</td></tr>');
+                }
+            });
+        }
+
+        // NUEVO: SELECCIONAR ORDEN Y JALAR DETALLES
+        function seleccionarOrden(id, numero, proveedor, provId, monId, total, monSimbolo) {
+            // 1. Cabecera
+            $('#hdn_OrdenId').val(id);
+            $('#txt_OrdenSeleccionada').val(numero);
+            $('#hdn_ProveedorId').val(provId);
+            $('#txt_Proveedor').val(proveedor);
+            $('#hdn_MonedaId').val(monId);
+            $('#lbl_Moneda').text(monSimbolo);
+            $('#txt_TotalPagar').val(total.toFixed(2));
+
+            // 2. Jalar Detalles (La parte que faltaba visualmente)
+            let tipoOrigen = $('input[name="optOrigen"]:checked').val();
+            cargarDetallesVisuales(id, tipoOrigen);
+
+            $('#modalBusquedaOrden').modal('hide');
+            $('#txt_Serie').focus();
+            toastr.success("Orden cargada.");
+        }
+
+        function cargarDetallesVisuales(ordenId, tipoOrigen) {
+            $('#tbl_DetalleVisual').html('<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando ítems...</td></tr>');
+
+            $.get(`/CuentasPorPagar/GetDetallesOrden?ordenId=${ordenId}&tipoOrigen=${tipoOrigen}`, function(res) {
+                if (res.status && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(d => {
+                        html += `<tr>
+                            <td>${d.item || '-'}</td>
+                            <td class="text-left small">${d.producto}</td>
+                            <td>${d.unidadMedida}</td>
+                            <td>${d.cantidad}</td>
+                            <td>${d.precioUnitario.toFixed(2)}</td>
+                            <td class="font-weight-bold">${d.total.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_DetalleVisual').html(html);
+                } else {
+                    $('#tbl_DetalleVisual').html('<tr><td colspan="6" class="text-center text-danger">La orden no tiene ítems registrados.</td></tr>');
+                }
+            });
+        }
+
+        function limpiarSeleccion() {
+            $('#txt_OrdenSeleccionada, #txt_Proveedor, #hdn_OrdenId, #hdn_ProveedorId').val('');
+            $('#txt_TotalPagar').val('0.00');
+            $('#lbl_Moneda').text('---');
+            $('#tbl_DetalleVisual').html('<tr><td colspan="6" class="text-muted py-4 small">Seleccione una orden para ver los ítems...</td></tr>');
+        }
+
+        function guardarProvision() {
+            let ordenId = $('#hdn_OrdenId').val();
+            if (!ordenId) return Swal.fire("Aviso", "Debe seleccionar una Orden de origen.", "warning");
+
+            let serie = $('#txt_Serie').val();
+            let numero = $('#txt_Numero').val();
+            if(!serie || !numero) return toastr.warning("Ingrese Serie y Número del comprobante.");
+
+            let total = parseFloat($('#txt_TotalPagar').val());
+            let tipoDoc = $('#cbx_TipoDocumento').val();
+            let tipoOrigen = $('input[name="optOrigen"]:checked').val();
+
+            let documento = {
+                ProveedorId: parseInt($('#hdn_ProveedorId').val()),
+                MonedaId: parseInt($('#hdn_MonedaId').val()),
+                OrdenCompraId: (tipoOrigen === 'OC') ? parseInt(ordenId) : null,
+                OrdenServicioId: (tipoOrigen === 'OS') ? parseInt(ordenId) : null,
+
+                TipoDocumentoInternoId: 0,
+                Serie: serie.toUpperCase(),
+                Numero: numero,
+                FechaEmision: $('#txt_FechaEmision').val(),
+                TipoCambio: parseFloat($('#txt_TipoCambio').val()),
+                Total: total,
+                Observacion: $('#txt_Observacion').val()
+            };
+
+            Swal.fire({
+                title: "¿Provisionar Documento?",
+                text: `Se generará la deuda por ${total.toFixed(2)} y se copiarán los ítems en pantalla.`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Sí, Provisionar",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#efec-cargando').removeClass('d-none');
+                    $.ajax({
+                        url: '/CuentasPorPagar/GuardarProvision',
+                        type: 'POST',
+                        data: {
+                            doc: documento,
+                            codigoTipoDoc: tipoDoc,
+                            tipoOrigenOrden: tipoOrigen
+                        },
+                        success: function(res) {
+                            $('#efec-cargando').addClass('d-none');
+                            if(res.status) {
+                                Swal.fire("Éxito", res.message, "success").then(() => {
+                                    window.location.href = '/CuentasPorPagar/Index';
+                                });
+                            } else {
+                                Swal.fire("Error", res.message, "error");
+                            }
+                        },
+                        error: function() {
+                            $('#efec-cargando').addClass('d-none');
+                            toastr.error("Error al procesar la solicitud.");
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

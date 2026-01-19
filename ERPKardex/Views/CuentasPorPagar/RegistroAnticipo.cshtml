@@ -1,0 +1,310 @@
+﻿@{
+    ViewData["Title"] = "Nuevo Anticipo a Proveedor";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow mb-4 border-left-warning">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between">
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-money-bill-wave"></i> Registrar Anticipo</h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row mb-3 p-3 bg-light rounded border mx-1">
+                        <div class="col-md-12 mb-2">
+                            <label class="font-weight-bold text-primary">1. Buscar Documento Origen</label>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary active" onclick="limpiarSeleccion()">
+                                    <input type="radio" name="optOrigen" id="opt_OC" value="OC" checked> Orden Compra
+                                </label>
+                                <label class="btn btn-outline-primary" onclick="limpiarSeleccion()">
+                                    <input type="radio" name="optOrigen" id="opt_OS" value="OS"> Orden Servicio
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" id="txt_OrdenSeleccionada" class="form-control font-weight-bold bg-white" readonly placeholder="Ninguna orden seleccionada..." style="cursor: pointer;" onclick="abrirModalBusqueda()">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button" onclick="abrirModalBusqueda()">
+                                        <i class="fas fa-search"></i> BUSCAR
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 text-right">
+                            <small class="text-muted" id="lbl_EstadoOrden">Estado: ---</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="small font-weight-bold text-muted">Proveedor</label>
+                            <input type="text" id="txt_ProveedorNombre" class="form-control bg-light" readonly placeholder="---">
+                            <input type="hidden" id="hdn_ProveedorId">
+                            <input type="hidden" id="hdn_OrdenId"> <input type="hidden" id="hdn_MonedaId">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small font-weight-bold text-muted">RUC</label>
+                            <input type="text" id="txt_ProveedorRuc" class="form-control bg-light" readonly placeholder="---">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small font-weight-bold text-muted">Total Orden</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text font-weight-bold border-0 bg-secondary text-white" id="lbl_MonedaSimbolo">???</span>
+                                </div>
+                                <input type="text" id="txt_TotalOrdenRef" class="form-control bg-light text-right font-weight-bold" readonly placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="font-weight-bold text-success">2. Fecha Emisión</label>
+                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTipoCambio()">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="small font-weight-bold">Tipo de Cambio</label>
+                            <input type="number" id="txt_TipoCambio" class="form-control bg-warning text-dark font-weight-bold text-center" readonly placeholder="---">
+                            <small class="text-muted d-block mt-1" id="msgTC">Cargando...</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="font-weight-bold text-danger">3. Monto Anticipo</label>
+                            <input type="number" id="txt_MontoAnticipo" class="form-control font-weight-bold text-center border-danger" step="0.01" min="0">
+                            <small class="text-muted">Se generará como saldo a favor.</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label>Observación / Nro Operación Bancaria</label>
+                            <textarea id="txt_Observacion" class="form-control" rows="2" placeholder="Ej: Transferencia BCP Nro 12345..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer text-right">
+                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <button class="btn btn-success px-5 font-weight-bold" onclick="guardarAnticipo()">
+                        <i class="fas fa-save"></i> REGISTRAR ANTICIPO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalBusquedaOrden" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold" id="modalTitulo">Buscar Orden de Compra</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0" id="tbl_ResultadosOrden">
+                        <thead class="bg-light">
+                            <tr>
+                                <th width="10%">Acción</th>
+                                <th width="15%">Número</th>
+                                <th width="35%">Proveedor</th>
+                                <th width="15%">Fecha</th>
+                                <th width="15%" class="text-right">Total</th>
+                                <th width="10%">Moneda</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_BodyOrdenes">
+                            <tr><td colspan="6" class="text-center py-3">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function() {
+            buscarTipoCambio();
+        });
+
+        // ---------------------------------------------------------
+        // 1. TIPO DE CAMBIO
+        // ---------------------------------------------------------
+        function buscarTipoCambio() {
+            let fecha = $('#txt_FechaEmision').val();
+            if (!fecha) return;
+
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + fecha, function(res) {
+                if (res.status) {
+                    $('#txt_TipoCambio').val(res.valor.toFixed(3));
+                    $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
+                } else {
+                    let valor = res.ultimoConocido ? res.ultimoConocido : 0.000;
+                    $('#txt_TipoCambio').val(valor.toFixed(3));
+                    $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
+                }
+            });
+        }
+
+        // ---------------------------------------------------------
+        // 2. ABRIR MODAL Y LISTAR ÓRDENES
+        // ---------------------------------------------------------
+        function abrirModalBusqueda() {
+            let tipoOrigen = $('input[name="optOrigen"]:checked').val(); // 'OC' o 'OS'
+
+            // Cambiar título del modal
+            $('#modalTitulo').text(tipoOrigen === 'OC' ? 'Buscar Orden de Compra Aprobada' : 'Buscar Orden de Servicio Aprobada');
+            $('#modalBusquedaOrden').modal('show');
+            $('#tbl_BodyOrdenes').html('<tr><td colspan="6" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando órdenes pendientes...</td></tr>');
+
+            // Llamada al endpoint de Búsqueda (Necesitas agregar este método en el controller, abajo te lo doy)
+            $.get(`/CuentasPorPagar/BuscarOrdenesPendientes?tipoOrigen=${tipoOrigen}`, function(res) {
+                if (res.status && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(item => {
+                        html += `
+                        <tr>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-success font-weight-bold"
+                                    onclick="seleccionarOrden(${item.id}, '${item.numero}', '${item.proveedor}', '${item.ruc}', ${item.proveedorId}, ${item.monedaId}, ${item.total}, '${item.monedaNombre}')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                            <td class="font-weight-bold text-primary">${item.numero}</td>
+                            <td><small>${item.ruc}</small><br>${item.proveedor}</td>
+                            <td>${item.fecha}</td>
+                            <td class="text-right font-weight-bold">${item.total.toFixed(2)}</td>
+                            <td>${item.monedaNombre}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_BodyOrdenes').html(html);
+                } else {
+                    $('#tbl_BodyOrdenes').html('<tr><td colspan="6" class="text-center py-3 text-muted">No se encontraron órdenes aprobadas pendientes de pago.</td></tr>');
+                }
+            }).fail(function() {
+                $('#tbl_BodyOrdenes').html('<tr><td colspan="6" class="text-center py-3 text-danger">Error al cargar datos.</td></tr>');
+            });
+        }
+
+        // ---------------------------------------------------------
+        // 3. SELECCIONAR ORDEN (LLENA LOS INPUTS)
+        // ---------------------------------------------------------
+        function seleccionarOrden(id, numero, proveedor, ruc, provId, monId, total, monNombre) {
+            // Llenar campos visuales
+            $('#txt_OrdenSeleccionada').val(numero);
+            $('#txt_ProveedorNombre').val(proveedor);
+            $('#txt_ProveedorRuc').val(ruc);
+            $('#txt_TotalOrdenRef').val(total.toFixed(2));
+            $('#lbl_MonedaSimbolo').text(monNombre);
+            $('#lbl_EstadoOrden').html('<span class="badge badge-success">APROBADO</span>');
+
+            // Llenar campos ocultos
+            $('#hdn_OrdenId').val(id);
+            $('#hdn_ProveedorId').val(provId);
+            $('#hdn_MonedaId').val(monId);
+
+            $('#modalBusquedaOrden').modal('hide');
+            $('#txt_MontoAnticipo').focus();
+            toastr.success("Orden seleccionada correctamente.");
+        }
+
+        function limpiarSeleccion() {
+            $('#txt_OrdenSeleccionada').val('');
+            $('#txt_ProveedorNombre').val('');
+            $('#txt_ProveedorRuc').val('');
+            $('#txt_TotalOrdenRef').val('');
+            $('#lbl_MonedaSimbolo').text('???');
+            $('#hdn_OrdenId, #hdn_ProveedorId, #hdn_MonedaId').val('');
+        }
+
+        // ---------------------------------------------------------
+        // 4. GUARDAR
+        // ---------------------------------------------------------
+        function guardarAnticipo() {
+            let ordenId = $('#hdn_OrdenId').val();
+            if (!ordenId) return Swal.fire("Falta Información", "Por favor busque y seleccione una Orden.", "warning");
+
+            let monto = parseFloat($('#txt_MontoAnticipo').val());
+            if (!monto || monto <= 0) return toastr.warning("El monto del anticipo debe ser mayor a 0.");
+
+            let tipoOrigen = $('input[name="optOrigen"]:checked').val();
+
+            let documento = {
+                ProveedorId: parseInt($('#hdn_ProveedorId').val()),
+                MonedaId: parseInt($('#hdn_MonedaId').val()),
+                OrdenCompraId: (tipoOrigen === 'OC') ? parseInt(ordenId) : null,
+                OrdenServicioId: (tipoOrigen === 'OS') ? parseInt(ordenId) : null,
+
+                FechaEmision: $('#txt_FechaEmision').val(),
+                TipoCambio: parseFloat($('#txt_TipoCambio').val()),
+                Total: monto, // Saldo inicial = Total anticipo
+
+                Serie: 'ANT',
+                Numero: 'GEN-AUTO',
+                Observacion: $('#txt_Observacion').val()
+            };
+
+            Swal.fire({
+                title: "¿Registrar Anticipo?",
+                text: `Se generará un saldo a favor de ${monto.toFixed(2)}`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Sí, Registrar",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#efec-cargando').removeClass('d-none');
+                    $.ajax({
+                        url: '/CuentasPorPagar/GuardarAnticipo',
+                        type: 'POST',
+                        data: {
+                            doc: documento,
+                            tipoOrigenOrden: tipoOrigen
+                        },
+                        success: function(res) {
+                            $('#efec-cargando').addClass('d-none');
+                            if(res.status) {
+                                Swal.fire("¡Registrado!", res.message, "success").then(() => {
+                                    window.location.href = '/CuentasPorPagar/Index';
+                                });
+                            } else {
+                                Swal.fire("Error", res.message, "error");
+                            }
+                        },
+                        error: function() {
+                            $('#efec-cargando').addClass('d-none');
+                            toastr.error("Error en el servidor.");
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

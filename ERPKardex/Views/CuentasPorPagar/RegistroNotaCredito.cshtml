@@ -1,0 +1,273 @@
+﻿@{
+    ViewData["Title"] = "Nueva Nota de Crédito";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4 border-left-danger">
+                <div class="card-header bg-danger text-white d-flex justify-content-between">
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-file-invoice"></i> Registrar Nota de Crédito</h5>
+                    <span class="badge badge-light text-danger align-self-center">CORRECCIÓN</span>
+                </div>
+
+                <div class="card-body">
+                    <div class="row mb-3 p-3 bg-light rounded border mx-1">
+                        <div class="col-12 mb-2">
+                            <label class="font-weight-bold text-danger">1. Documento a Corregir (Factura/Boleta)</label>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="input-group">
+                                <input type="text" id="txt_DocReferencia" class="form-control font-weight-bold bg-white" readonly placeholder="Busque la factura a afectar..." style="cursor: pointer;" onclick="abrirModalFacturas()">
+                                <div class="input-group-append">
+                                    <button class="btn btn-danger" type="button" onclick="abrirModalFacturas()">
+                                        <i class="fas fa-search"></i> BUSCAR FACTURA
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">La Nota de Crédito debe estar amarrada obligatoriamente a un comprobante de pago.</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="small text-muted">Proveedor</label>
+                            <input type="text" id="txt_Proveedor" class="form-control bg-light" readonly>
+                            <input type="hidden" id="hdn_ProveedorId">
+                            <input type="hidden" id="hdn_DocReferenciaId"> <input type="hidden" id="hdn_MonedaId">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small font-weight-bold">Serie NC</label>
+                            <input type="text" id="txt_Serie" class="form-control text-uppercase border-danger" placeholder="Ej: FC01" maxlength="10">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small font-weight-bold">Número NC</label>
+                            <input type="text" id="txt_Numero" class="form-control border-danger" placeholder="Ej: 000012" maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="small font-weight-bold">Fecha Emisión</label>
+                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTipoCambio()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small text-muted">Tipo Cambio</label>
+                            <input type="number" id="txt_TipoCambio" class="form-control bg-light text-center" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="font-weight-bold text-danger">Monto a Anular/Descontar</label>
+                            <input type="number" id="txt_TotalNC" class="form-control font-weight-bold text-center text-danger" step="0.01" min="0">
+                            <small class="text-muted" id="lbl_SaldoFactura">Saldo Disp: 0.00</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label>Motivo / Sustento</label>
+                            <textarea id="txt_Observacion" class="form-control" rows="2" placeholder="Ej: Devolución de mercadería por falla..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer text-right">
+                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <button class="btn btn-danger px-5 font-weight-bold" onclick="guardarNotaCredito()">
+                        <i class="fas fa-save"></i> REGISTRAR NOTA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFacturas" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title font-weight-bold">Seleccionar Factura/Boleta</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-2">
+                    <div class="col-12">
+                        <select id="cbx_FiltroProveedor" class="form-control select2-basic" style="width: 100%;">
+                            <option value="">-- BUSCAR PROVEEDOR --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Sel.</th>
+                                <th>Documento</th>
+                                <th>Fecha</th>
+                                <th class="text-right">Total</th>
+                                <th class="text-right">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbl_BodyFacturas">
+                            <tr><td colspan="5" class="text-center py-3 text-muted">Seleccione un proveedor para ver sus documentos.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function() {
+            $('.select2-basic').select2({ theme: 'bootstrap4', dropdownParent: $('#modalFacturas') });
+            cargarProveedores();
+            buscarTipoCambio();
+
+            // Evento al cambiar proveedor en el modal
+            $('#cbx_FiltroProveedor').on('select2:select', function(e){
+                let provId = $(this).val();
+                listarFacturas(provId);
+            });
+        });
+
+        function buscarTipoCambio() {
+            let fecha = $('#txt_FechaEmision').val();
+            if (!fecha) return;
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + fecha, function(res) {
+                if (res.status) $('#txt_TipoCambio').val(res.valor.toFixed(3));
+                else $('#txt_TipoCambio').val((res.ultimoConocido || 0).toFixed(3));
+            });
+        }
+
+        function cargarProveedores() {
+            $.get('/OrdenCompra/GetCombosRegistro', function(res) {
+                if(res.status) {
+                    let html = '<option value="">-- BUSCAR PROVEEDOR --</option>';
+                    res.proveedores.forEach(x => html += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+                    $('#cbx_FiltroProveedor').html(html);
+                }
+            });
+        }
+
+        function abrirModalFacturas() {
+            $('#modalFacturas').modal('show');
+        }
+
+        // LLAMADA AL CONTROLLER (Necesitamos crear este método en el controller, abajo te lo doy)
+        function listarFacturas(proveedorId) {
+            $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando documentos...</td></tr>');
+
+            $.get('/CuentasPorPagar/BuscarFacturasProveedor?proveedorId=' + proveedorId, function(res) {
+                if (res.status && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(item => {
+                        // El Controller devuelve "display" concatenado, pero mejor si devolviera campos separados.
+                        // Ajustaremos el controller para que devuelva estructura limpia.
+                        html += `<tr>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-danger"
+                                    onclick="seleccionarFactura(${item.id}, '${item.serie}-${item.numero}', '${$('#cbx_FiltroProveedor option:selected').text()}', ${proveedorId}, ${item.monedaId}, ${item.saldo})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                            <td class="font-weight-bold">${item.serie}-${item.numero}</td>
+                            <td>${item.fecha}</td>
+                            <td class="text-right">${item.total.toFixed(2)}</td>
+                            <td class="text-right font-weight-bold text-danger">${item.saldo.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                    $('#tbl_BodyFacturas').html(html);
+                } else {
+                    $('#tbl_BodyFacturas').html('<tr><td colspan="5" class="text-center text-muted">Este proveedor no tiene facturas activas.</td></tr>');
+                }
+            });
+        }
+
+        function seleccionarFactura(id, documento, proveedorTexto, provId, monId, saldo) {
+            $('#hdn_DocReferenciaId').val(id);
+            $('#txt_DocReferencia').val(documento);
+
+            $('#hdn_ProveedorId').val(provId);
+            $('#txt_Proveedor').val(proveedorTexto.split('-')[1]); // Hack visual simple
+
+            $('#hdn_MonedaId').val(monId);
+            $('#lbl_SaldoFactura').text(`Saldo Disp: ${saldo.toFixed(2)}`);
+
+            // Sugerir monto máximo (aunque NC puede ser parcial)
+            // $('#txt_TotalNC').val(saldo.toFixed(2));
+
+            $('#modalFacturas').modal('hide');
+            $('#txt_Serie').focus();
+        }
+
+        function guardarNotaCredito() {
+            let docRefId = $('#hdn_DocReferenciaId').val();
+            if (!docRefId) return Swal.fire("Aviso", "Debe seleccionar una Factura para aplicar la Nota.", "warning");
+
+            let monto = parseFloat($('#txt_TotalNC').val());
+            if (!monto || monto <= 0) return toastr.warning("Ingrese el monto de la Nota de Crédito.");
+
+            let documento = {
+                ProveedorId: parseInt($('#hdn_ProveedorId').val()),
+                MonedaId: parseInt($('#hdn_MonedaId').val()),
+                DocumentoReferenciaId: parseInt(docRefId),
+
+                // NOTA: No mandamos OrdenCompraId aquí, lo heredamos en el backend si queremos,
+                // o lo dejamos null. La relación fuerte es con la FACTURA.
+
+                TipoDocumentoInternoId: 0, // Se asigna en backend
+                Serie: $('#txt_Serie').val().toUpperCase(),
+                Numero: $('#txt_Numero').val(),
+                FechaEmision: $('#txt_FechaEmision').val(),
+                TipoCambio: parseFloat($('#txt_TipoCambio').val()),
+                Total: monto,
+                Observacion: $('#txt_Observacion').val()
+            };
+
+            Swal.fire({
+                title: "¿Registrar Nota de Crédito?",
+                text: `Monto: ${monto.toFixed(2)}. Esto restará deuda al proveedor.`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Sí, Registrar",
+                confirmButtonColor: "#d33",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#efec-cargando').removeClass('d-none');
+                    $.ajax({
+                        url: '/CuentasPorPagar/GuardarNotaCreditoDebito',
+                        type: 'POST',
+                        data: {
+                            doc: documento,
+                            codigoTipoDoc: 'NC' // 'NC' o 'ND'
+                        },
+                        success: function(res) {
+                            $('#efec-cargando').addClass('d-none');
+                            if(res.status) {
+                                Swal.fire("Éxito", res.message, "success").then(() => {
+                                    window.location.href = '/CuentasPorPagar/Index';
+                                });
+                            } else {
+                                Swal.fire("Error", res.message, "error");
+                            }
+                        },
+                        error: function() {
+                            $('#efec-cargando').addClass('d-none');
+                            toastr.error("Error al procesar.");
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

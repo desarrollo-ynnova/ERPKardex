@@ -948,74 +948,65 @@ CREATE TABLE banco (
     estado BIT DEFAULT 1
 );
 
+-- ======================================================
+-- 1. TABLA ÚNICA DE DOCUMENTOS (Facturas, Anticipos, NC, ND, Letras)
+-- ======================================================
 CREATE TABLE documento_pagar (
     id INT IDENTITY(1,1) PRIMARY KEY,
     
-    -- IDENTIFICACIÓN INTERNA (NUEVO)
-    tipo_documento_interno_id INT,    -- FK a tipo_documento_interno (FAC, NC, etc.)
-    codigo_interno VARCHAR(20),       -- Ej: FAC-00000001
-
+    -- DATOS DE FILTRO
     empresa_id INT NOT NULL,
-    proveedor_id INT NOT NULL,        -- Relación Lógica (Sin FK física estricta por agilidad)
+    proveedor_id INT NOT NULL,
+    tipo_documento_interno_id INT NOT NULL, -- ID de tu tabla (FAC, ANT, NC, etc.)
     
-    -- Identificación
-    tipo_documento_id INT NOT NULL,   -- 01:Factura, 07:NC, 08:ND
+    -- VÍNCULOS LÓGICOS (Sin Constraints)
+    -- Aquí guardarás el ID, pero la BD no validará si existe. Tu código C# debe asegurarse.
+    orden_compra_id INT NULL,      
+    orden_servicio_id INT NULL,    
+    documento_referencia_id INT NULL, -- Para que la NC sepa a qué Factura pertenece
+    
+    -- DATOS DEL DOCUMENTO FÍSICO
     serie VARCHAR(20),
-    numero VARCHAR(20),
-    
-    -- Fechas
+    numero VARCHAR(50),
     fecha_emision DATE NOT NULL,
-    fecha_contable DATE NOT NULL,     -- Mes tributario
-    fecha_vencimiento DATE NOT NULL,  -- Para proyecciones de pago
+    fecha_vencimiento DATE,
     
+    -- IMPORTES
     moneda_id INT,
-    tipo_cambio DECIMAL(12,4),
+    tipo_cambio DECIMAL(12,6),
     
-    -- Importes
-    total_gravado DECIMAL(18,2) DEFAULT 0,  -- Base Imponible
-    total_inafecto DECIMAL(18,2) DEFAULT 0, -- No Gravado
-    igv DECIMAL(18,2) DEFAULT 0,
-    total DECIMAL(18,2) DEFAULT 0,
+    -- MONTOS
+    total DECIMAL(18,2) DEFAULT 0,  -- El monto total del papel
+    saldo DECIMAL(18,2) DEFAULT 0,  -- El monto que falta pagar o aplicar
     
-    -- SALDO VIVO (Vital para Tesorería)
-    saldo_pendiente DECIMAL(18,2),    
-    
-    -- Referencias Lógicas (Para saber de dónde vino, meramente informativo)
-    orden_compra_id INT NULL, 
-    orden_servicio_id INT NULL,
-    
-    -- Para Notas de Crédito que matan Facturas
-    doc_referencia_id INT NULL, 
-    
-    -- Estados (IDs directos a tabla 'estado')
-    estado_id INT,                    -- Registrado, Anulado
-    estado_pago_id INT,               -- Pendiente, Pagado
-    
-    glosa VARCHAR(500),
-    usuario_creacion_id INT,
+    -- AUDITORÍA Y ESTADO
+    estado_id INT,
+    observacion VARCHAR(500),
+    usuario_registro_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
+-- ======================================================
+-- 2. DETALLE (Solo para Facturas, copia de ítems de la Orden)
+-- ======================================================
 CREATE TABLE ddocumento_pagar (
     id INT IDENTITY(1,1) PRIMARY KEY,
+    
+    -- RELACIÓN CON CABECERA (Lógica)
     documento_pagar_id INT NOT NULL,
-    item INT,
     
-    -- TRAZABILIDAD (La clave del cruce)
-    tabla_origen VARCHAR(50), -- 'DORDENCOMPRA', 'DORDENSERVICIO' o NULL
-    origen_id INT,            -- El ID específico de la línea de la orden
+    -- TRAZABILIDAD (De qué detalle de orden vino este ítem)
+    id_referencia INT NULL, 
+    tabla_referencia VARCHAR(255),
     
-    descripcion VARCHAR(500),
-    unidad_medida VARCHAR(20),
+    -- DATOS DEL ÍTEM (Copiados textualmente de la orden para evitar cambios)
+    producto_id INT,
+    descripcion VARCHAR(MAX),
+    unidad_medida VARCHAR(50),
     
-    -- Valores de la Factura (Pueden diferir de la orden)
     cantidad DECIMAL(12,2),
-    precio_unitario DECIMAL(18,6),
-    total DECIMAL(18,2),
-    
-    -- Imputación
-    centro_costo_id INT,
-    cuenta_contable VARCHAR(20)
+    precio_unitario DECIMAL(18,6), -- Precio pactado en la orden
+    total DECIMAL(18,2)            -- Subtotal de la línea
 );
 
 GO
@@ -1039,11 +1030,12 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 -- =============================================================================
 -- Esto es vital para el 'switch' que haremos en el Controlador
 INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
-('FAC', 'PROVISIÓN FACTURA', 0),
-('BOL', 'PROVISIÓN BOLETA', 0),
-('RH',  'PROVISIÓN RECIBO HONORARIOS', 0),
-('NC',  'PROVISIÓN NOTA CRÉDITO', 0),
-('ND',  'PROVISIÓN NOTA DÉBITO', 0),
+('FAC', 'FACTURA', 0),
+('BOL', 'BOLETA', 0),
+('RH',  'RECIBO POR HONORARIOS', 0),
+('NC',  'NOTA CRÉDITO', 0),
+('ND',  'NOTA DÉBITO', 0),
+('ANT', 'ANTICIPO', 0),
 ('LET', 'LETRA POR PAGAR', 0);
 
 -- inserts de 'estado'
