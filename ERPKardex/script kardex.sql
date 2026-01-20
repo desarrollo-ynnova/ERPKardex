@@ -252,6 +252,12 @@ create table tipo_persona (
 create table pais (
     id INT IDENTITY(1,1) PRIMARY KEY,
     nombre varchar(255),
+    name varchar(255),
+    nom varchar(255),
+    iso2 varchar(255),
+    iso3 varchar(255),
+    phone_code varchar(255),
+    continente varchar(255),
     estado BIT,
 );
 
@@ -1663,6 +1669,25 @@ INSERT INTO tipo_documento_identidad (codigo, descripcion, longitud, es_alfanume
 ('RUC', 'RUC', 11, 0),
 ('DNI', 'DNI', 8, 0),
 ('TAX', 'TAX ID', 20, 1);
+
+GO
+
+INSERT INTO origen (nombre, estado) VALUES
+('NACIONAL', 1),
+('EXTRANJERO', 1);
+
+GO
+
+INSERT INTO tipo_persona (nombre, estado) VALUES
+('PERSONA NATURAL', 1),
+('PERSONA JURÍDICA', 1),
+('NO DOMICILIADO', 1);
+
+GO
+
+
+
+select * from TIPo_PERSONA
 
 GO
 

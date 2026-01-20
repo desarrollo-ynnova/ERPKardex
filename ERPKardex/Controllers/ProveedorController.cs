@@ -81,7 +81,7 @@ namespace ERPKardex.Controllers
                 var tiposPersona = await _context.TiposPersona.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
 
                 // 3. Ubicación
-                var paises = await _context.Paises.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
+                var paises = await _context.Paises.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre, x.Iso3 }).ToListAsync();
                 // Nota: Podrías cargar ciudades por demanda (evento change del país) si son muchas.
                 var ciudades = await _context.Ciudades.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre, x.PaisId }).ToListAsync();
 
