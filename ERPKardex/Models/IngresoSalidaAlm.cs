@@ -38,6 +38,10 @@ namespace ERPKardex.Models
         public string? NumeroDocumentoValorizacion { get; set; }
         [Column("moneda_id")]
         public int? MonedaId { get; set; }
+        [Column("id_referencia")]
+        public int? IdReferencia { get; set; }
+        [Column("tabla_referencia")]
+        public string? TablaReferencia { get; set; }
         [Column("estado_id")]
         public int? EstadoId { get; set; }
         [Column("usuario_id")]

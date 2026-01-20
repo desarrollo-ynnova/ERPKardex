@@ -366,7 +366,7 @@
                 $.post('/IngresoSalidaAlm/AnularMovimiento', { id: id }, function(res) {
                     if(res.status) {
                         Swal.fire("Anulado", res.message, "success");
-                        cargarOrdenes();
+                        fct_IniciarTablaMovimientos('#tbl_Movimientos');
                     } else {
                         Swal.fire("Error", res.message, "error");
                     }

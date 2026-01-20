@@ -110,6 +110,93 @@ namespace ERPKardex.Controllers
             }
         }
 
+        [HttpGet]
+        public JsonResult BuscarFacturasPendientesIngreso(int proveedorId)
+        {
+            try
+            {
+                // 1. Definir qué tipos de doc son válidos para ingreso (FAC, BOL, Liquidación, Guia)
+                // Usamos los códigos de tu BD
+                var codigosValidos = new List<string> { "FAC", "BOL", "09" }; // 09 es GRR
+
+                // 2. Buscar facturas de ese proveedor
+                var facturas = (from d in _context.DocumentosPagar
+                                join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                join est in _context.Estados on d.EstadoId equals est.Id
+                                where d.ProveedorId == proveedorId
+                                   && d.EmpresaId == EmpresaUsuarioId
+                                   && codigosValidos.Contains(t.Codigo)
+                                   && est.Nombre != "Anulado"
+                                select new
+                                {
+                                    d.Id,
+                                    Tipo = t.Codigo,
+                                    Numero = d.Serie + "-" + d.Numero,
+                                    Fecha = d.FechaEmision
+                                }).ToList();
+
+                // 3. FILTRAR: Excluir las que YA TIENEN ingreso registrado
+                // Buscamos en 'ingresosalidaalm' si existe alguna cabecera activa con id_referencia = factura.Id
+                var estadoAnuladoAlm = _context.Estados.FirstOrDefault(e => e.Nombre == "Anulado" && e.Tabla == "INGRESOSALIDAALM");
+                int idAnulAlm = estadoAnuladoAlm?.Id ?? -1;
+
+                var ingresosExistentes = _context.IngresoSalidaAlms
+                    .Where(i => i.TablaReferencia == "DOCUMENTO_PAGAR" && i.EstadoId != idAnulAlm)
+                    .Select(i => i.IdReferencia)
+                    .ToList();
+
+                var pendientes = facturas
+                    .Where(f => !ingresosExistentes.Contains(f.Id))
+                    .OrderByDescending(f => f.Fecha)
+                    .ToList();
+
+                return Json(new { status = true, data = pendientes });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public JsonResult GetDetallesFacturaParaIngreso(int facturaId)
+        {
+            try
+            {
+                // 1. OBTENER CABECERA DEL COMPROBANTE CON DESCRIPCIÓN DE TIPO DOC
+                var cabecera = (from d in _context.DocumentosPagar
+                                join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                where d.Id == facturaId
+                                select new
+                                {
+                                    Fecha = d.FechaEmision.HasValue ? d.FechaEmision.Value.ToString("yyyy-MM-dd") : DateTime.Now.ToString("yyyy-MM-dd"),
+                                    TipoDocId = d.TipoDocumentoInternoId,
+                                    TipoDocNombre = t.Descripcion, // <--- NUEVO: Para mostrar en texto
+                                    Serie = d.Serie,
+                                    Numero = d.Numero,
+                                    MonedaId = d.MonedaId
+                                }).FirstOrDefault();
+
+                if (cabecera == null) throw new Exception("No se encontró la información del comprobante.");
+
+                // 2. OBTENER DETALLES (Con precios ocultos para valorización)
+                var detalles = (from d in _context.DDocumentosPagar
+                                join p in _context.Productos on d.ProductoId equals p.Id
+                                where d.DocumentoPagarId == facturaId
+                                select new
+                                {
+                                    ProductoId = d.ProductoId,
+                                    Codigo = p.Codigo,
+                                    Descripcion = p.DescripcionProducto,
+                                    Unidad = d.UnidadMedida,
+                                    Cantidad = d.Cantidad,
+                                    Precio = d.PrecioUnitario,
+                                    IdReferenciaOrden = d.IdReferencia,
+                                    TablaReferenciaOrden = d.TablaReferencia
+                                }).ToList();
+
+                return Json(new { status = true, cabecera = cabecera, detalles = detalles });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
         [HttpPost]
         public JsonResult GuardarMovimiento(IngresoSalidaAlm cabecera, string detallesJson)
         {
@@ -117,127 +204,195 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    // 1. DETERMINAR TIPO DE DOCUMENTO
+                    // =================================================================================
+                    // 1. CONFIGURACIÓN INICIAL Y VALIDACIONES BÁSICAS
+                    // =================================================================================
+
+                    cabecera.EmpresaId = EmpresaUsuarioId;
+                    cabecera.UsuarioId = UsuarioActualId;
+                    cabecera.FechaRegistro = DateTime.Now;
+
                     string codigoDoc = (cabecera.TipoMovimiento == true) ? "IALM" : "SALM";
+
+                    // Estados necesarios
                     var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "INGRESOSALIDAALM");
+                    var estadoAnulado = _context.Estados.FirstOrDefault(e => e.Nombre == "Anulado" && e.Tabla == "INGRESOSALIDAALM"); // Para validación
 
-                    if (estadoAprobado == null) throw new Exception("Estado Aprobado no configurado.");
+                    if (estadoAprobado == null) throw new Exception("Estado 'Aprobado' no configurado para almacén.");
 
-                    var tipoDocInterno = _context.TiposDocumentoInterno
-                        .FirstOrDefault(t => t.Codigo == codigoDoc && t.Estado == true);
+                    var tipoDocInterno = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == codigoDoc && t.Estado == true);
+                    if (tipoDocInterno == null) throw new Exception($"Tipo documento interno '{codigoDoc}' no existe.");
 
-                    if (tipoDocInterno == null) throw new Exception($"No se encontró el tipo de documento interno '{codigoDoc}'.");
+                    // =================================================================================
+                    // 2. VALIDACIÓN CRÍTICA: NO DUPLICAR INGRESO POR MISMO COMPROBANTE
+                    // =================================================================================
 
-                    // 2. CALCULAR CORRELATIVO
+                    // Si es un Ingreso (Entrada) y viene amarrado a un documento (Factura)
+                    if (cabecera.TipoMovimiento == true &&
+                        cabecera.TablaReferencia == "DOCUMENTO_PAGAR" &&
+                        cabecera.IdReferencia != null)
+                    {
+                        bool existeIngresoPrevio = _context.IngresoSalidaAlms
+                            .Any(x => x.EmpresaId == EmpresaUsuarioId &&
+                                      x.TipoMovimiento == true &&
+                                      x.TablaReferencia == "DOCUMENTO_PAGAR" &&
+                                      x.IdReferencia == cabecera.IdReferencia &&
+                                      x.EstadoId != estadoAnulado.Id); // Ignoramos los anulados
+
+                        if (existeIngresoPrevio)
+                            throw new Exception("ERROR DE NEGOCIO: Este comprobante ya tiene registrado un Ingreso de Almacén. No se puede duplicar el ingreso.");
+                    }
+
+                    // =================================================================================
+                    // 3. GENERACIÓN DE CORRELATIVO
+                    // =================================================================================
+
                     var ultimoRegistro = _context.IngresoSalidaAlms
-                        .Where(x => x.EmpresaId == EmpresaUsuarioId && x.TipoDocumentoInternoId == tipoDocInterno.Id) // <--- CAMBIO AQUÍ
+                        .Where(x => x.EmpresaId == EmpresaUsuarioId && x.TipoDocumentoInternoId == tipoDocInterno.Id)
                         .OrderByDescending(x => x.Numero)
                         .Select(x => x.Numero)
                         .FirstOrDefault();
 
-                    int nuevoCorrelativo = 1;
+                    int correlativo = 1;
                     if (!string.IsNullOrEmpty(ultimoRegistro))
                     {
                         var partes = ultimoRegistro.Split('-');
-                        if (partes.Length > 1 && int.TryParse(partes[1], out int numeroActual))
-                        {
-                            nuevoCorrelativo = numeroActual + 1;
-                        }
+                        if (partes.Length > 1 && int.TryParse(partes[1], out int n)) correlativo = n + 1;
                     }
 
-                    string numeroGenerado = $"{codigoDoc}-{nuevoCorrelativo.ToString("D10")}";
-
-                    // Asignamos datos de sesión y calculados
                     cabecera.TipoDocumentoInternoId = tipoDocInterno.Id;
-                    cabecera.Numero = numeroGenerado;
-                    cabecera.FechaRegistro = DateTime.Now;
+                    cabecera.Numero = $"{codigoDoc}-{correlativo.ToString("D10")}";
                     cabecera.EstadoId = estadoAprobado.Id;
-                    cabecera.UsuarioId = UsuarioActualId; // <--- CAMBIO AQUÍ
-                    cabecera.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
 
-                    // 3. GUARDAR CABECERA
+                    // Guardamos cabecera para obtener ID
                     _context.IngresoSalidaAlms.Add(cabecera);
                     _context.SaveChanges();
 
-                    var tcDia = _context.TipoCambios
-                      .Where(x => x.Fecha.Date == cabecera.FechaRegistro.GetValueOrDefault().Date)
-                      .Select(x => x.TcVenta)
-                      .FirstOrDefault();
+                    // =================================================================================
+                    // 4. PROCESAMIENTO DE DETALLES Y STOCK
+                    // =================================================================================
 
-                    if (tcDia <= 0) return Json(new { status = false, message = $"No existe Tipo de Cambio registrado para la fecha de pago {cabecera.FechaDocumento.GetValueOrDefault().Date:dd/MM/yyyy}." });
+                    var listaDetalles = JsonConvert.DeserializeObject<List<DIngresoSalidaAlm>>(detallesJson);
 
-                    // 4. PROCESAR DETALLES Y STOCK
-                    if (!string.IsNullOrEmpty(detallesJson))
+                    // Estados para ÍTEMS (DORDEN)
+                    var estItemParcial = _context.Estados.FirstOrDefault(x => x.Tabla == "DORDEN" && x.Nombre == "Atendido Parcial");
+                    var estItemTotal = _context.Estados.FirstOrDefault(x => x.Tabla == "DORDEN" && x.Nombre == "Atendido Total");
+
+                    // Variable para identificar la Orden de Compra Padre (si aplica)
+                    int? idOrdenCompraPadre = null;
+
+                    foreach (var det in listaDetalles)
                     {
-                        var listaDetalles = JsonConvert.DeserializeObject<List<DIngresoSalidaAlm>>(detallesJson);
+                        // A. Guardar Detalle Almacén
+                        det.Id = 0;
+                        det.IngresoSalidaAlmId = cabecera.Id;
+                        det.FechaRegistro = DateTime.Now;
+                        det.EmpresaId = EmpresaUsuarioId;
 
-                        foreach (var detalle in listaDetalles)
+                        // Si es ingreso, calculamos los totales basados en la Cantidad Real * Precio Factura
+                        if (cabecera.TipoMovimiento == true)
                         {
-                            var registroStock = _context.StockAlmacenes
-                                .FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == detalle.ProductoId && s.EmpresaId == EmpresaUsuarioId); // <--- CAMBIO AQUÍ
+                            decimal cant = det.Cantidad ?? 0;
+                            decimal precio = det.Precio ?? 0; // Viene oculto desde el front
 
-                            if (registroStock == null)
+                            det.Subtotal = cant * precio;
+                            det.Igv = det.Subtotal * 0.18m; // IGV Perú (Ajustable)
+                            det.Total = det.Subtotal + det.Igv;
+                        }
+
+                        // Completar datos maestros si faltan
+                        var prod = _context.Productos.Find(det.ProductoId);
+                        if (prod != null)
+                        {
+                            det.CodProducto = prod.Codigo;
+                            det.DescripcionProducto = prod.DescripcionProducto;
+                            det.CodUnidadMedida = prod.CodUnidadMedida;
+                        }
+
+                        // Referencia Logística al ítem de orden
+                        if (det.IdReferencia != null && string.IsNullOrEmpty(det.TablaReferencia))
+                            det.TablaReferencia = (cabecera.TipoMovimiento == true) ? "DORDENCOMPRA" : null;
+
+                        _context.DIngresoSalidaAlms.Add(det);
+
+                        // B. Actualizar Kardex/Stock (Lógica Estándar)
+                        var stock = _context.StockAlmacenes.FirstOrDefault(s => s.AlmacenId == cabecera.AlmacenId && s.ProductoId == det.ProductoId && s.EmpresaId == EmpresaUsuarioId);
+
+                        if (stock == null)
+                        {
+                            if (cabecera.TipoMovimiento == false) throw new Exception($"Sin stock para producto {det.CodProducto}.");
+                            stock = new StockAlmacen { AlmacenId = cabecera.AlmacenId ?? 0, ProductoId = det.ProductoId ?? 0, StockActual = 0, EmpresaId = EmpresaUsuarioId };
+                            _context.StockAlmacenes.Add(stock);
+                        }
+
+                        if (cabecera.TipoMovimiento == true) stock.StockActual += det.Cantidad ?? 0;
+                        else stock.StockActual -= det.Cantidad ?? 0;
+
+                        stock.UltimaActualizacion = DateTime.Now;
+
+                        // C. Actualizar ÍTEM de la Orden (DORDEN)
+                        if (cabecera.TipoMovimiento == true && det.IdReferencia != null && det.TablaReferencia == "DORDENCOMPRA")
+                        {
+                            var dOrden = _context.DOrdenCompras.Find(det.IdReferencia);
+                            if (dOrden != null)
                             {
-                                if (cabecera.TipoMovimiento == false)
-                                    throw new Exception($"No existe registro de stock para el producto ID {detalle.ProductoId}.");
+                                // Guardamos el ID de la cabecera para actualizarla al final
+                                if (idOrdenCompraPadre == null) idOrdenCompraPadre = dOrden.OrdenCompraId;
 
-                                registroStock = new StockAlmacen
-                                {
-                                    AlmacenId = cabecera.AlmacenId ?? 0,
-                                    ProductoId = detalle.ProductoId ?? 0,
-                                    StockActual = 0,
-                                    UltimaActualizacion = DateTime.Now,
-                                    EmpresaId = EmpresaUsuarioId, // <--- CAMBIO AQUÍ
-                                };
-                                _context.StockAlmacenes.Add(registroStock);
+                                // Actualizar atendido
+                                dOrden.CantidadAtendida = (dOrden.CantidadAtendida ?? 0) + (det.Cantidad ?? 0);
+
+                                // Actualizar estado del ítem (Tabla: DORDEN)
+                                if (dOrden.CantidadAtendida >= dOrden.Cantidad) dOrden.EstadoId = estItemTotal.Id;
+                                else dOrden.EstadoId = estItemParcial.Id;
                             }
+                        }
+                    }
 
-                            // ACTUALIZAR STOCK
-                            if (cabecera.TipoMovimiento == true)
+                    _context.SaveChanges();
+
+                    // =================================================================================
+                    // 5. ACTUALIZACIÓN CABECERA DE ORDEN (TABLA: ORDEN)
+                    // =================================================================================
+
+                    if (idOrdenCompraPadre != null)
+                    {
+                        var ordenCompra = _context.OrdenCompras.Find(idOrdenCompraPadre);
+                        if (ordenCompra != null)
+                        {
+                            // Estados para CABECERA (ORDEN)
+                            var estOrdenParcial = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Parcial");
+                            var estOrdenTotal = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Total");
+
+                            if (estOrdenParcial != null && estOrdenTotal != null)
                             {
-                                registroStock.StockActual += detalle.Cantidad ?? 0;
-                            }
-                            else
-                            {
-                                if ((registroStock.StockActual - (detalle.Cantidad ?? 0)) < 0)
+                                // Verificar TODOS los ítems de esa orden
+                                var itemsOrden = _context.DOrdenCompras.Where(x => x.OrdenCompraId == idOrdenCompraPadre).ToList();
+
+                                bool todoAtendido = itemsOrden.All(x => (x.CantidadAtendida ?? 0) >= x.Cantidad);
+                                bool algoAtendido = itemsOrden.Any(x => (x.CantidadAtendida ?? 0) > 0);
+
+                                if (todoAtendido)
                                 {
-                                    var codProd = _context.Productos.Where(p => p.Id == detalle.ProductoId).Select(p => p.Codigo).FirstOrDefault();
-                                    throw new Exception($"Stock insuficiente para el producto {codProd}. Stock actual: {registroStock.StockActual}, Intento de salida: {detalle.Cantidad}");
+                                    ordenCompra.EstadoId = estOrdenTotal.Id; // Cierre Total
                                 }
-                                registroStock.StockActual -= detalle.Cantidad ?? 0;
+                                else if (algoAtendido)
+                                {
+                                    ordenCompra.EstadoId = estOrdenParcial.Id; // Cierre Parcial
+                                }
+                                // Si nada atendido, se queda en Aprobado (no tocamos)
                             }
-                            registroStock.UltimaActualizacion = DateTime.Now;
-
-                            // GUARDAR DETALLE
-                            detalle.Id = 0;
-                            detalle.IngresoSalidaAlmId = cabecera.Id;
-                            detalle.FechaRegistro = DateTime.Now;
-                            detalle.EmpresaId = EmpresaUsuarioId; // <--- CAMBIO AQUÍ
-                            if (cabecera.TipoMovimiento == true) detalle.TipoCambio = tcDia;
-
-                            var prodData = _context.Productos
-                                .Where(p => p.Id == detalle.ProductoId)
-                                .Select(p => new { p.Codigo, p.DescripcionProducto, p.CodUnidadMedida })
-                                .FirstOrDefault();
-
-                            if (prodData != null)
-                            {
-                                detalle.CodProducto = prodData.Codigo;
-                                detalle.DescripcionProducto = prodData.DescripcionProducto;
-                                detalle.CodUnidadMedida = prodData.CodUnidadMedida;
-                            }
-                            _context.DIngresoSalidaAlms.Add(detalle);
                         }
                         _context.SaveChanges();
                     }
 
                     transaction.Commit();
-                    return Json(new { status = true, message = "Movimiento " + cabecera.Numero + " registrado correctamente." });
+                    return Json(new { status = true, message = "Movimiento registrado correctamente. Stock y Orden actualizados." });
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return Json(new { status = false, message = "Error: " + (ex.InnerException?.Message ?? ex.Message) });
+                    return Json(new { status = false, message = "Error: " + ex.Message });
                 }
             }
         }

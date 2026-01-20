@@ -4,14 +4,17 @@
     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
     int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 }
+
 <div class="card d-none" id="efec-cargando">
-    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
         <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
     </div>
 </div>
+
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-11">
+
             <div class="card shadow mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-box-seam"></i> Datos del Movimiento</h5>
@@ -19,8 +22,8 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label>Tipo de movimiento</label>
-                            <select id="cbx_TipoMovimiento" class="form-control">
+                            <label class="font-weight-bold">Tipo de movimiento</label>
+                            <select id="cbx_TipoMovimiento" class="form-control font-weight-bold">
                                 <option value="">-- SELECCIONAR --</option>
                                 <option value="1">ENTRADA (Compra/Ingreso)</option>
                                 <option value="0">SALIDA (Consumo/Gasto)</option>
@@ -35,113 +38,117 @@
                     </div>
                 </div>
             </div>
-            <div class="card shadow mb-4 border-left-info" id="div_DocRef">
-                <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label>Proveedor (Ref.)</label>
-                            <div class="input-group">
-                                <select id="cbx_ProveedorRef" class="form-control select2-busqueda"></select>
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-info" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
+
+            <div id="div_ContenedorDocumentos">
+                <div class="card shadow mb-4 border-left-info" id="div_DocRef">
+                    <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia (Guía Remisión)</h5></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3"><label>Fecha Doc.</label><input type="date" id="dtp_FechaDoc" class="form-control"></div>
+                            <div class="col-md-9 mb-3"><label>Tipo Documento</label><select id="cbx_TipoDoc" class="form-control select2-busqueda"></select></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><label>Serie</label><input type="text" id="txt_SerieDoc" class="form-control"></div>
+                            <div class="col-md-6 mb-3"><label>Número</label><input type="text" id="txt_NumeroDoc" class="form-control"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow mb-4 border-left-danger" id="div_DocVal">
+                    <div class="card-header bg-danger text-white"><h5 class="mb-0">Documento de Valorización (Comprobante)</h5></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="font-weight-bold">Proveedor</label>
+                                <div class="input-group">
+                                    <select id="cbx_ProveedorVal" class="form-control select2-busqueda"></select>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-danger" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-3"><label>Fecha Doc.</label><input type="date" id="dtp_FechaDoc" class="form-control"></div>
-                        <div class="col-md-9 mb-3"><label>Tipo Documento</label><select id="cbx_TipoDoc" class="form-control select2-busqueda"></select></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3"><label>Serie</label><input type="text" id="txt_SerieDoc" class="form-control"></div>
-                        <div class="col-md-6 mb-3"><label>Número</label><input type="text" id="txt_NumeroDoc" class="form-control"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="card shadow mb-4 border-left-danger" id="div_DocVal">
-                <div class="card-header bg-danger text-white"><h5 class="mb-0">Documento de Valorización</h5></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label>Proveedor (Valoriz.)</label>
-                            <div class="input-group">
-                                <select id="cbx_ProveedorVal" class="form-control select2-busqueda"></select>
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-danger" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="small font-weight-bold text-danger">Fecha Valoriz.</label>
+                                <input type="date" id="dtp_FechaDocVal" class="form-control bg-light" readonly>
+                            </div>
+                            <div class="col-md-9 mb-3">
+                                <label class="small font-weight-bold text-danger">Tipo Doc.</label>
+                                <input type="text" id="txt_TipoDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto (Ej: FACTURA)">
+                                <input type="hidden" id="hdn_TipoDocValId">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold text-danger">Serie</label>
+                                <input type="text" id="txt_SerieDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold text-danger">Número</label>
+                                <input type="text" id="txt_NumeroDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="small font-weight-bold text-danger">Moneda</label>
+                                <select id="cbx_MonedaCab" class="form-control select2-busqueda" disabled></select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <small class="text-danger font-italic">* Use el botón "JALAR COMPROBANTE" para llenar estos datos.</small>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-3"><label>Fecha Valoriz.</label><input type="date" id="dtp_FechaDocVal" class="form-control"></div>
-                        <div class="col-md-9 mb-3"><label>Tipo Doc. Valoriz.</label><select id="cbx_TipoDocVal" class="form-control select2-busqueda"></select></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3"><label>Serie</label><input type="text" id="txt_SerieDocVal" class="form-control"></div>
-                        <div class="col-md-4 mb-3"><label>Número</label><input type="text" id="txt_NumeroDocVal" class="form-control"></div>
-                        <div class="col-md-4 mb-3"><label>Moneda</label><select id="cbx_MonedaCab" class="form-control select2-busqueda"></select></div>
-                    </div>
                 </div>
             </div>
+
             <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white"><h5 class="mb-0">Búsqueda y Detalle de Productos</h5></div>
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Detalle de Productos</h5>
+
+                    <button id="btn_BuscarFactura" class="btn btn-light text-success font-weight-bold d-none shadow-sm" onclick="abrirModalFacturas()">
+                        <i class="fas fa-file-download"></i> JALAR COMPROBANTE
+                    </button>
+                </div>
+
                 <div class="card-body bg-light">
-                    <div class="row">
-                        <div class="col-md-4 mb-3"><label>Producto Final</label><select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select></div>
-                        <div class="col-md-3 mb-3"><label>Stock Actual</label><input type="number" id="txt_StockActual" class="form-control" step="0.01" value="0.00" readonly></div>
-                        <div class="col-md-2 mb-3"><label>U.M.</label><input type="text" id="txt_DetUnidad" class="form-control" readonly></div>
-                        <div class="col-md-3 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control" step="0.01" value="0.00"></div>
-                    </div>
-
-                    <div class="row align-items-end">
-                        <div class="col-md-4 mb-3" id="div_InputPrecio">
-                            <label>Precio Unit. (Base)</label>
-                            <input type="number" id="txt_DetPrecio" class="form-control" step="0.000001" value="0.000000">
+                    <div id="div_IngresoManual" class="border p-3 rounded bg-white mb-3 shadow-sm">
+                        <div class="row">
+                            <div class="col-md-12 mb-2"><h6 class="text-muted font-weight-bold border-bottom pb-2">Agregar Item Manualmente</h6></div>
+                            <div class="col-md-5 mb-3"><label>Producto</label><select id="cbx_ProductoBusqueda" class="form-control select2-busqueda"></select></div>
+                            <div class="col-md-2 mb-3"><label>Stock</label><input type="number" id="txt_StockActual" class="form-control bg-light" readonly></div>
+                            <div class="col-md-2 mb-3"><label>U.M.</label><input type="text" id="txt_DetUnidad" class="form-control bg-light" readonly></div>
+                            <div class="col-md-3 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" value="0.00"></div>
                         </div>
-                        <div class="col-md-4 mb-3" id="div_TipoCambio">
-                            <label class="small font-weight-bold">Tipo de Cambio (Ref)</label>
-                            <input type="text" id="txtTCRef" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="---">
-                            <small class="text-muted d-block mt-1" id="msgTC">Del día seleccionado</small>
-                        </div>
-                        <div class="col-md-4 mb-3 d-none" id="div_InputSalida_CC">
-                            <label>Centro de Costo</label>
-                            <select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
-                        </div>
-                        <div class="col-md-4 mb-3 d-none" id="div_InputSalida_Act">
-                            <label>Actividad</label>
-                            <select id="cbx_Actividad" class="form-control select2-busqueda"></select>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <button id="btn_AgregarDetalle" type="button" class="btn btn-primary btn-block">
-                                <i class="bi bi-plus-circle"></i> Añadir a Tabla
-                            </button>
+                        <div class="row align-items-end">
+                            <div class="col-md-4 mb-3" id="div_InputSalida_CC">
+                                <label>Centro de Costo</label><select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
+                            </div>
+                            <div class="col-md-4 mb-3" id="div_InputSalida_Act">
+                                <label>Actividad</label><select id="cbx_Actividad" class="form-control select2-busqueda"></select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <button id="btn_AgregarDetalle" type="button" class="btn btn-primary btn-block font-weight-bold">
+                                    <i class="bi bi-plus-circle"></i> AÑADIR ITEM
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="table-responsive mt-4">
-                        <table id="tbl_DetalleMovimiento" class="table table-bordered table-striped text-center">
+                    <div class="table-responsive">
+                        <table id="tbl_DetalleMovimiento" class="table table-bordered table-striped text-center table-hover bg-white">
                             <thead class="thead-dark">
                                 <tr>
                                     <th>Item</th>
                                     <th>Código</th>
                                     <th>Producto</th>
-                                    <th>Cant.</th>
+                                    <th width="15%" class="bg-warning text-dark">Cantidad Real</th>
                                     <th>U.M.</th>
-
-                                    <th id="th_Precio">Precio</th>
-                                    <th id="th_Subtotal">Subtotal</th>
-                                    <th id="th_IGV" class="d-none">IGV</th>
-                                    <th id="th_Total" class="d-none">Total</th>
-
-                                    <th id="th_CC" class="d-none">Centro Costo</th>
-                                    <th id="th_Actividad" class="d-none">Actividad</th>
-
+                                    <th class="col-salida">Centro Costo</th>
+                                    <th class="col-salida">Actividad</th>
                                     <th>Acción</th>
                                 </tr>
                             </thead>
@@ -152,8 +159,31 @@
             </div>
 
             <div class="text-right mb-5">
-                <button id="btn_Cancelar" class="btn btn-danger btn-lg">Cancelar</button>
-                <button id="btn_GuardarTodo" class="btn btn-success btn-lg">Guardar Movimiento</button>
+                <button id="btn_Cancelar" class="btn btn-secondary btn-lg mr-2">Cancelar</button>
+                <button id="btn_GuardarTodo" class="btn btn-success btn-lg font-weight-bold"><i class="fas fa-save"></i> GUARDAR MOVIMIENTO</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFacturasIngreso" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-success">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-file-invoice"></i> Seleccionar Comprobante Pendiente</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr><th>Acción</th><th>Tipo Doc.</th><th>Número</th><th>Fecha Emisión</th></tr>
+                        </thead>
+                        <tbody id="tbl_FacturasPendientes">
+                            <tr><td colspan="4" class="text-center py-4">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -163,67 +193,44 @@
     var LISTA_DETALLE = [];
     var PRODUCTOS_TEMP = [];
     var MOTIVOS_FULL = [];
-    var CENTROS_COSTO_FULL = [];
-    var ACTIVIDADES_FULL = [];
-    const TASA_IGV = 0.18; // Constante para Perú
+    var g_IdFacturaSeleccionada = null;
 
     $(document).ready(function () {
         $('.select2-busqueda').select2({ theme: 'bootstrap4', allowClear: true });
         fct_InitCombos();
-        
-        $('#cbx_ProveedorRef').on('change', function() {
-            $('#cbx_ProveedorVal').val($(this).val()).trigger('change.select2');
-        });
 
-        $('#cbx_ProveedorVal').on('change', function() {
-            $('#cbx_ProveedorRef').val($(this).val()).trigger('change.select2');
-        });
+        $('#btn_Cancelar').click(function() { window.location.href = '/IngresoSalidaAlm/Index'; });
 
-        // --- LÓGICA DE TIPO MOVIMIENTO ---
         $('#cbx_TipoMovimiento').on('change', function () {
-            let tipo = $(this).val(); // "1": Entrada, "0": Salida
-
+            let tipo = $(this).val();
             if(LISTA_DETALLE.length > 0){
-                Swal.fire("Atención", "Al cambiar el tipo de movimiento se limpiará la lista de productos.", "warning");
-                LISTA_DETALLE = [];
-                fct_RenderDetalle();
+                Swal.fire("Atención", "Al cambiar el tipo de movimiento se limpiará la lista actual.", "warning");
+                LISTA_DETALLE = []; g_IdFacturaSeleccionada = null; fct_RenderDetalle();
+                fct_LimpiarCabeceraValorizacion();
             }
 
-            // Filtrar Motivos
             let h = '<option value="">-- MOTIVO --</option>';
             if (tipo !== "") {
                 let esIngreso = (tipo === "1");
                 let filtrados = MOTIVOS_FULL.filter(x => x.tipoMovimiento === esIngreso);
-                filtrados.forEach(m => {
-                    h += `<option data-tipo-movimiento="${m.tipoMovimiento}" value="${m.id}">${m.codigo} - ${m.descripcion}</option>`;
-                });
+                filtrados.forEach(m => { h += `<option value="${m.id}">${m.codigo} - ${m.descripcion}</option>`; });
             }
             $('#cbx_Motivo').html(h).trigger('change');
 
-            // Alternar Visibilidad
-            if (tipo === "0") {
-                // --- MODO SALIDA ---
-                // Ocultamos valorización y referencia
-                $('#div_InputPrecio, #div_DocRef, #div_DocVal, #div_TipoCambio').addClass('d-none');
-                $('#div_InputSalida_CC, #div_InputSalida_Act').removeClass('d-none');
-
-                // Tabla
-                $('#th_Precio, #th_Subtotal, #th_IGV, #th_Total').addClass('d-none');
-                $('#th_CC, #th_Actividad').removeClass('d-none');
-
-            } else {
-                // --- MODO ENTRADA ---
-                // Mostramos valorización y referencia
-                $('#div_InputPrecio, #div_DocRef, #div_DocVal, #div_TipoCambio').removeClass('d-none');
-                $('#div_InputSalida_CC, #div_InputSalida_Act').addClass('d-none');
-
-                // Tabla
-                $('#th_Precio, #th_Subtotal, #th_IGV, #th_Total').removeClass('d-none');
-                $('#th_CC, #th_Actividad').addClass('d-none');
+            if (tipo === "1") { // ENTRADA
+                $('#div_DocRef, #div_DocVal').removeClass('d-none');
+                $('#div_IngresoManual').addClass('d-none');
+                $('#btn_BuscarFactura').removeClass('d-none');
+                $('.col-salida').addClass('d-none');
+            } else { // SALIDA
+                $('#div_DocRef, #div_DocVal').addClass('d-none');
+                $('#div_IngresoManual').removeClass('d-none');
+                $('#btn_BuscarFactura').addClass('d-none');
+                $('.col-salida').removeClass('d-none');
             }
         });
 
-        // --- CASCADAS ---
+        // Cascadas
         let empresaId = @empresaId;
         if (empresaId) fct_FillCombo('/IngresoSalidaAlm/GetSucursalesByEmpresa?empresaId=' + empresaId, '#cbx_Sucursal', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
 
@@ -234,241 +241,169 @@
         });
 
         $.getJSON('/IngresoSalidaAlm/GetProductos', function(res){
-            if(res.status){ PRODUCTOS_TEMP = res.data; let h = '<option value="">-- SELECCIONAR PRODUCTO --</option>'; res.data.forEach(p => h += `<option value="${p.id}">${p.codigo} - ${p.descripcionComercial}</option>`); $('#cbx_ProductoBusqueda').html(h).trigger('change'); }
+            if(res.status){ PRODUCTOS_TEMP = res.data; let h = '<option value="">-- PRODUCTO --</option>'; res.data.forEach(p => h += `<option value="${p.id}">${p.codigo} - ${p.descripcionComercial}</option>`); $('#cbx_ProductoBusqueda').html(h); }
         });
 
         $('#cbx_ProductoBusqueda').on('change', function () {
             let p = PRODUCTOS_TEMP.find(x => x.id == $(this).val());
             $("#txt_DetUnidad").val(p ? p.codUnidadMedida : "");
-
-            ShowSpinner();
-            $.getJSON('/IngresoSalidaAlm/GetStockProductoAlmacen', { almacenId: $('#cbx_Almacen').val(), productoId: $('#cbx_ProductoBusqueda').val() }, function (response) {
-                if (response.status) {
-                    $('#txt_StockActual').val(response.data);
-                }
-                HideSpinner();
-            });
+            if($('#cbx_Almacen').val() && $(this).val()){
+                $.getJSON('/IngresoSalidaAlm/GetStockProductoAlmacen', { almacenId: $('#cbx_Almacen').val(), productoId: $(this).val() }, function (r) { if (r.status) $('#txt_StockActual').val(r.data); });
+            }
         });
 
-        // --- AGREGAR DETALLE (Con cálculo de IGV) ---
         $("#btn_AgregarDetalle").click(function () {
-            let tipoMov = $('#cbx_TipoMovimiento').val();
-            if(!tipoMov) return toastr.warning("Seleccione primero el Tipo de Movimiento");
-
             let id = $("#cbx_ProductoBusqueda").val();
-            let nom = $("#cbx_ProductoBusqueda option:selected").text();
             let can = parseFloat($("#txt_DetCantidad").val());
-
             if (!id || can <= 0) return toastr.warning("Producto y cantidad obligatorios");
 
-            let pre = 0, ccId = null, ccNom = "", actId = null, actNom = "";
-            let subtotal = 0, igv = 0, total = 0;
-
-            // Limpieza visual del nombre producto
-            let codProd = "";
-            let nomProd = nom;
-            if(nom.includes('-')){
-                let parts = nom.split('-');
-                codProd = parts[0].trim();
-                nomProd = parts.slice(1).join('-').trim();
-            }
-
-            if (tipoMov === "1") {
-                // ENTRADA: Calculamos Precios
-                pre = parseFloat($("#txt_DetPrecio").val());
-                if(pre < 0) return toastr.warning("El precio no puede ser negativo");
-
-                subtotal = can * pre;
-                igv = subtotal * TASA_IGV; // 0.18
-                total = subtotal + igv;
-            } else {
-                // SALIDA: Validamos CC y Actividad
-                ccId = $("#cbx_CentroCosto").val();
-                ccNom = $("#cbx_CentroCosto option:selected").text();
-                actId = $("#cbx_Actividad").val();
-                actNom = $("#cbx_Actividad option:selected").text();
-
-                if(!ccId || !actId) return toastr.warning("Seleccione Centro de Costo y Actividad");
-            }
+            let prod = PRODUCTOS_TEMP.find(x => x.id == id);
+            let ccId = $("#cbx_CentroCosto").val();
+            let actId = $("#cbx_Actividad").val();
+            if(!ccId || !actId) return toastr.warning("CC y Actividad obligatorios para salida");
 
             LISTA_DETALLE.push({
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
-                ProductoId: id, DescripcionProducto: nomProd, CodUnidadMedida: $("#txt_DetUnidad").val(),
-                CodProducto: codProd,
-                Cantidad: can,
-                Precio: pre,
-                Subtotal: subtotal, // Guardamos para mostrar
-                Igv: igv,           // Guardamos para mostrar
-                Total: total,       // Guardamos para mostrar
-                CentroCostoId: ccId, NombreCentroCosto: ccNom,
-                ActividadId: actId, NombreActividad: actNom,
-
-                TipoCambio: 1.0, TipoDocumentoId: $("#cbx_TipoDoc").val(),
-                SerieDocumento: $("#txt_SerieDoc").val(), NumeroDocumento: $("#txt_NumeroDoc").val(),
-                MonedaId: $("#cbx_MonedaCab").val(), FechaDocumento: $("#dtp_FechaDoc").val()
+                ProductoId: id, CodProducto: prod.codigo, DescripcionProducto: prod.descripcionComercial, CodUnidadMedida: $("#txt_DetUnidad").val(),
+                Cantidad: can, CentroCostoId: ccId, NombreCentroCosto: $("#cbx_CentroCosto option:selected").text(),
+                ActividadId: actId, NombreActividad: $("#cbx_Actividad option:selected").text(),
+                IdReferencia: null, TablaReferencia: null
             });
-            fct_RenderDetalle();
-            fct_LimpiarInputsDetalle();
+            fct_RenderDetalle(); $("#txt_DetCantidad").val("0.00");
         });
 
-        // --- GUARDAR TODO (Con tu SweetAlert personalizado) ---
         $("#btn_GuardarTodo").click(function () {
             if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío");
-            
+            let tipoMov = $('#cbx_TipoMovimiento').val();
+
             let cab = {
-                ProveedorId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
                 Fecha: $("#dtp_FechaMov").val(),
-                TipoMovimiento: MOTIVOS_FULL.find(x => x.id == $("#cbx_Motivo").val())?.tipoMovimiento,
+                TipoMovimiento: (tipoMov === "1"),
                 SucursalId: parseInt($("#cbx_Sucursal").val()),
                 AlmacenId: parseInt($("#cbx_Almacen").val()),
                 MotivoId: $("#cbx_Motivo").val(),
-
-                // Documento de Referencia (Guía)
+                ProveedorId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
                 FechaDocumento: $("#dtp_FechaDoc").val(),
                 TipoDocumentoId: $("#cbx_TipoDoc").val(),
                 SerieDocumento: $("#txt_SerieDoc").val(),
                 NumeroDocumento: $("#txt_NumeroDoc").val(),
 
-                // Documento de Valorización (Factura) - Nuevas Columnas
+                // DATOS VALORIZACIÓN AUTOMÁTICOS
                 FechaDocumentoValorizacion: $("#dtp_FechaDocVal").val(),
-                TipoDocumentoValorizacionId: $("#cbx_TipoDocVal").val() ? parseInt($("#cbx_TipoDocVal").val()) : null,
+
+                // ENVIAMOS EL ID OCULTO
+                TipoDocumentoValorizacionId: parseInt($("#hdn_TipoDocValId").val()),
+
                 SerieDocumentoValorizacion: $("#txt_SerieDocVal").val(),
                 NumeroDocumentoValorizacion: $("#txt_NumeroDocVal").val(),
-
-                // La moneda ahora pertenece a la valorización
                 MonedaId: parseInt($("#cbx_MonedaCab").val()),
-                EmpresaId: empresaId
+                IdReferencia: (tipoMov === "1") ? g_IdFacturaSeleccionada : null,
+                TablaReferencia: (tipoMov === "1") ? "DOCUMENTO_PAGAR" : null
             };
 
-            Swal.fire({
-                title: "¿Confirmar Registro?",
-                text: "Se guardará el movimiento y su detalle.",
-                icon: "info",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                reverseButtons: true,
-                confirmButtonText: "Sí, guardar todo",
-                cancelButtonText: "Revisar"
-            }).then((result) => {
+            Swal.fire({ title: "¿Guardar Movimiento?", text: "Se actualizará el stock.", icon: "question", showCancelButton: true, confirmButtonText: "Sí, Guardar" })
+            .then((result) => {
                 if (result.isConfirmed) {
+                    $('#efec-cargando').removeClass('d-none');
                     $.ajax({
-                        url: "/IngresoSalidaAlm/GuardarMovimiento",
-                        type: "POST",
-                        data: {
-                            cabecera: cab,
-                            detallesJson: JSON.stringify(LISTA_DETALLE)
+                        url: "/IngresoSalidaAlm/GuardarMovimiento", type: "POST",
+                        data: { cabecera: cab, detallesJson: JSON.stringify(LISTA_DETALLE) },
+                        success: function (res) {
+                            $('#efec-cargando').addClass('d-none');
+                            if (res.status) { Swal.fire("Éxito", res.message, "success").then(() => location.reload()); }
+                            else { Swal.fire("Error", res.message, "error"); }
                         },
-                        success: function (response) {
-                            if (response.status) {
-                                toastr.success(response.message, "ÉXITO");
-                                setTimeout(() => { location.reload(); }, 1500);
-                            } else {
-                                toastr.error(response.message, "ERROR");
-                            }
-                        },
-                        error: function () {
-                            toastr.error("Error crítico en el servidor");
-                        }
+                        error: function () { $('#efec-cargando').addClass('d-none'); toastr.error("Error de servidor"); }
                     });
                 }
             });
         });
-
-        // 1. Consultar TC
-        $.get('/TipoCambio/GetTcPorFecha?fecha=' + '@DateTime.Now.ToString("yyyy-MM-dd")', function(res) {
-            if (res.status) {
-                $('#txtTCRef').val(res.valor.toFixed(3));
-                $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
-            } else {
-                $('#txtTCRef').val('0.000');
-                $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
-            }
-        });
-
-        $('#btn_Cancelar').on('click', function() {
-            window.location.href = '/IngresoSalidaAlm/Index';
-        });
     });
+
+    function abrirModalFacturas() {
+        let provId = $('#cbx_ProveedorVal').val();
+        if(!provId) return toastr.warning("Seleccione primero un Proveedor.");
+        $('#modalFacturasIngreso').modal('show');
+        $('#tbl_FacturasPendientes').html('<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+        $.get('/IngresoSalidaAlm/BuscarFacturasPendientesIngreso?proveedorId=' + provId, function(res) {
+            let html = '';
+            if(res.status && res.data.length > 0) {
+                res.data.forEach(f => {
+                    let fechaStr = f.fecha ? new Date(f.fecha).toLocaleDateString() : '--';
+                    html += `<tr><td class="text-center"><button class="btn btn-success btn-sm font-weight-bold" onclick="jalarFactura(${f.id}, '${f.numero}', '${f.tipo}')"><i class="fas fa-check"></i></button></td><td>${f.tipo}</td><td class="font-weight-bold">${f.numero}</td><td>${fechaStr}</td></tr>`;
+                });
+            } else { html = '<tr><td colspan="4" class="text-center text-muted">Sin comprobantes pendientes.</td></tr>'; }
+            $('#tbl_FacturasPendientes').html(html);
+        });
+    }
+
+    function jalarFactura(id, numero, tipo) {
+        g_IdFacturaSeleccionada = id;
+        $('#efec-cargando').removeClass('d-none');
+
+        $.get('/IngresoSalidaAlm/GetDetallesFacturaParaIngreso?facturaId=' + id, function(res) {
+            $('#efec-cargando').addClass('d-none');
+            if(res.status) {
+                // 1. LLENAR CABECERA (Campos Bloqueados)
+                if(res.cabecera) {
+                    $('#dtp_FechaDocVal').val(res.cabecera.fecha);
+
+                    // Llenar Texto y ID Oculto
+                    $('#txt_TipoDocVal').val(res.cabecera.tipoDocNombre);
+                    $('#hdn_TipoDocValId').val(res.cabecera.tipoDocId);
+
+                    $('#txt_SerieDocVal').val(res.cabecera.serie);
+                    $('#txt_NumeroDocVal').val(res.cabecera.numero);
+                    $('#cbx_MonedaCab').val(res.cabecera.monedaId).trigger('change');
+                }
+
+                // 2. DETALLES
+                LISTA_DETALLE = [];
+                res.detalles.forEach((d, i) => {
+                    LISTA_DETALLE.push({
+                        Item: (i+1).toString().padStart(3,'0'),
+                        ProductoId: d.productoId, CodProducto: d.codigo, DescripcionProducto: d.descripcion, CodUnidadMedida: d.unidad,
+                        Cantidad: d.cantidad, Precio: d.precio,
+                        IdReferencia: d.idReferenciaOrden, TablaReferencia: d.tablaReferenciaOrden,
+                        CentroCostoId: null, ActividadId: null
+                    });
+                });
+                fct_RenderDetalle();
+                $('#modalFacturasIngreso').modal('hide');
+                toastr.success(`Datos cargados del comprobante ${numero}`);
+            } else { toastr.error("Error al cargar datos."); }
+        });
+    }
+
+    function fct_LimpiarCabeceraValorizacion() {
+        $('#dtp_FechaDocVal, #txt_SerieDocVal, #txt_NumeroDocVal, #txt_TipoDocVal, #hdn_TipoDocValId').val('');
+        $('#cbx_MonedaCab').val('').trigger('change');
+    }
+
+    function fct_RenderDetalle() {
+        let h = "";
+        let esEntrada = ($('#cbx_TipoMovimiento').val() === "1");
+        LISTA_DETALLE.forEach((d, i) => {
+            h += `<tr><td class="align-middle">${d.Item}</td><td class="align-middle">${d.CodProducto}</td><td class="align-middle text-left">${d.DescripcionProducto}</td>
+                <td class="align-middle"><input type="number" class="form-control form-control-sm text-center font-weight-bold ${esEntrada ? 'border-success' : ''}" value="${d.Cantidad}" min="0" step="0.01" onchange="actualizarCantidad(${i}, this.value)"></td>
+                <td class="align-middle">${d.CodUnidadMedida}</td>`;
+            if (!esEntrada) { h += `<td class="align-middle">${d.NombreCentroCosto}</td><td class="align-middle">${d.NombreActividad}</td>`; } else { h += `<td class="d-none"></td><td class="d-none"></td>`; }
+            h += `<td class="align-middle"><button class="btn btn-outline-danger btn-sm" onclick="fct_QuitarDetalle(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
+        $("#tbl_DetalleMovimiento tbody").html(h);
+    }
+
+    function actualizarCantidad(index, valor) { let val = parseFloat(valor); if(val >= 0) LISTA_DETALLE[index].Cantidad = val; else { toastr.warning("Cantidad inválida"); fct_RenderDetalle(); } }
+    function fct_QuitarDetalle(i) { LISTA_DETALLE.splice(i, 1); LISTA_DETALLE.forEach((d, x) => d.Item = (x + 1).toString().padStart(3, '0')); fct_RenderDetalle(); }
 
     function fct_InitCombos() {
         fct_FillCombo('/IngresoSalidaAlm/GetMonedaData', '#cbx_MonedaCab', 'id', 'nombre', '-- MONEDA --', 'id');
         fct_FillCombo('/IngresoSalidaAlm/GetTipoDocumentoData', '#cbx_TipoDoc', 'id', 'descripcion', '-- TIPO DOC --', 'codigo');
-        fct_FillCombo('/IngresoSalidaAlm/GetTipoDocumentoData', '#cbx_TipoDocVal', 'id', 'descripcion', '-- TIPO DOC --', 'codigo');
         $.getJSON('/IngresoSalidaAlm/GetMotivosData', function(res){ if(res.status){ MOTIVOS_FULL = res.data; } });
         fct_FillCombo('/IngresoSalidaAlm/GetCentrosCosto', '#cbx_CentroCosto', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         fct_FillCombo('/IngresoSalidaAlm/GetActividades', '#cbx_Actividad', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         cargarComboEntidades();
     }
-    
-    function cargarComboEntidades(callback) {
-        $.get('/IngresoSalidaAlm/GetEntidades', function (response) {
-            let options = '<option value="">-- Seleccione --</option>';
-            let data = response.data;
-
-            data.forEach(item => {
-                options += `<option value="${item.id}">${item.ruc} - ${item.razonSocial}</option>`;
-            });
-
-            // Actualiza ambos combos redundantes
-            $('#cbx_ProveedorRef, #cbx_ProveedorVal').html(options);
-            
-            if (callback) callback();
-        });
-    }
-
-    function fct_FillCombo(url, id, valProp, txtProp, ph, extra) {
-        $.getJSON(url, function (res) {
-            let h = `<option value="">${ph}</option>`;
-            if (res.status) res.data.forEach(i => h += `<option value="${i[valProp]}">${extra ? i[extra] + ' - ' : ''}${i[txtProp]}</option>`);
-            $(id).html(h).trigger('change');
-        });
-    }
-
-    function fct_RenderDetalle() {
-        let h = "";
-        let tipoMov = $('#cbx_TipoMovimiento').val(); // "1" Entrada, "0" Salida
-
-        LISTA_DETALLE.forEach((d, i) => {
-            h += `<tr>
-                <td>${d.Item}</td>
-                <td>${d.CodProducto}</td>
-                <td>${d.DescripcionProducto}</td>
-                <td>${d.Cantidad}</td>
-                <td>${d.CodUnidadMedida}</td>`;
-
-            if (tipoMov === "1") {
-                // Entrada: Mostramos Precio, Subtotal, IGV y Total
-                h += `<td>${d.Precio.toFixed(6)}</td>
-                      <td>${d.Subtotal.toFixed(6)}</td>
-                      <td>${d.Igv.toFixed(6)}</td>
-                      <td>${d.Total.toFixed(6)}</td>
-                      <td class="d-none"></td><td class="d-none"></td>`;
-            } else {
-                // Salida: Mostramos CC y Actividad
-                h += `<td class="d-none"></td><td class="d-none"></td><td class="d-none"></td><td class="d-none"></td>
-                      <td>${d.NombreCentroCosto}</td>
-                      <td>${d.NombreActividad}</td>`;
-            }
-
-            h += `<td><button class="btn btn-danger btn-sm" onclick="fct_QuitarDetalle(${i})">X</button></td></tr>`;
-        });
-        $("#tbl_DetalleMovimiento tbody").html(h);
-    }
-
-    function fct_QuitarDetalle(i) { LISTA_DETALLE.splice(i, 1); LISTA_DETALLE.forEach((d, x) => d.Item = (x + 1).toString().padStart(3, '0')); fct_RenderDetalle(); }
-
-    function fct_LimpiarInputsDetalle() {
-        $("#txt_DetCantidad").val("0.00");
-        $("#txt_DetPrecio").val("0.000000");
-        $("#cbx_CentroCosto, #cbx_Actividad").val("").trigger('change');
-    }
-
-    function ShowSpinner() {
-        $('#efec-cargando').removeClass('d-none');
-    }
-
-    function HideSpinner() {
-        $('#efec-cargando').addClass('d-none');
-    }
+    function cargarComboEntidades() { $.get('/IngresoSalidaAlm/GetEntidades', function (res) { let ops = '<option value="">-- Seleccione --</option>'; if(res.status) res.data.forEach(i => ops += `<option value="${i.id}">${i.ruc} - ${i.razonSocial}</option>`); $('#cbx_ProveedorVal').html(ops); }); }
+    function fct_FillCombo(url, id, val, txt, ph, extra) { $.getJSON(url, function (res) { let h = `<option value="">${ph}</option>`; if (res.status) res.data.forEach(i => h += `<option value="${i[val]}">${extra ? i[extra] + ' - ' : ''}${i[txt]}</option>`); $(id).html(h); }); }
 </script>

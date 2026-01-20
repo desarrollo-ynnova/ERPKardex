@@ -11,6 +11,10 @@ namespace ERPKardex.Models
         public int Id { get; set; }
         [Column("ingresosalidaalm_id")]
         public int? IngresoSalidaAlmId { get; set; }
+        [Column("id_referencia")]
+        public int? IdReferencia { get; set; }
+        [Column("tabla_referencia")]
+        public string? TablaReferencia { get; set; }
         public string? Item { get; set; }
         [Column("producto_id")]
         public int? ProductoId { get; set; }
