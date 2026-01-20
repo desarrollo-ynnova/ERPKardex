@@ -15,7 +15,9 @@ namespace ERPKardex.Controllers
         }
 
         #region VISTAS
-        public IActionResult Index() => View();
+        public IActionResult IndexProvisiones() => View();
+        public IActionResult IndexAnticipos() => View();
+        public IActionResult IndexNotas() => View();
         public IActionResult RegistroAnticipo() => View();
         public IActionResult RegistroProvision() => View();
         public IActionResult RegistroNotaCredito() => View();
@@ -23,6 +25,135 @@ namespace ERPKardex.Controllers
         public IActionResult AplicacionDocumentos() => View();
         #endregion
 
+        #region APIs DE LISTADO (DATA)
+
+        [HttpGet]
+        public JsonResult GetProvisionesData(DateTime fechaInicio, DateTime fechaFin, int? proveedorId)
+        {
+            try
+            {
+                var codigos = new List<string> { "FAC", "BOL", "RH" }; // Solo Provisiones
+
+                var data = (from d in _context.DocumentosPagar
+                            join p in _context.Proveedores on d.ProveedorId equals p.Id
+                            join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                            join e in _context.Estados on d.EstadoId equals e.Id
+                            join m in _context.Monedas on d.MonedaId equals m.Id
+                            // Left Joins para Referencia de Orden
+                            join oc in _context.OrdenCompras on d.OrdenCompraId equals oc.Id into ocG
+                            from oc in ocG.DefaultIfEmpty()
+                            join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
+                            from os in osG.DefaultIfEmpty()
+
+                            where d.EmpresaId == EmpresaUsuarioId
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && codigos.Contains(t.Codigo)
+                               && (proveedorId == null || d.ProveedorId == proveedorId)
+                            orderby d.FechaEmision descending
+                            select new
+                            {
+                                d.Id,
+                                TipoDoc = t.Codigo,
+                                Documento = d.Serie + "-" + d.Numero,
+                                Proveedor = p.RazonSocial,
+                                Ruc = p.Ruc,
+                                Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
+                                Moneda = m.Simbolo,
+                                Total = d.Total,
+                                Saldo = d.Saldo, // VITAL: Para saber cuánto falta pagar
+                                Estado = e.Nombre,
+                                ColorEstado = e.Nombre == "Cancelado" ? "badge-success" : (e.Nombre == "Anulado" ? "badge-danger" : "badge-warning"),
+                                // Referencia a la Orden
+                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-")
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public JsonResult GetAnticiposData(DateTime fechaInicio, DateTime fechaFin, int? proveedorId)
+        {
+            try
+            {
+                var data = (from d in _context.DocumentosPagar
+                            join p in _context.Proveedores on d.ProveedorId equals p.Id
+                            join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                            join e in _context.Estados on d.EstadoId equals e.Id
+                            join m in _context.Monedas on d.MonedaId equals m.Id
+                            // Anticipos SIEMPRE tienen orden (según tu regla de negocio)
+                            join oc in _context.OrdenCompras on d.OrdenCompraId equals oc.Id into ocG
+                            from oc in ocG.DefaultIfEmpty()
+                            join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
+                            from os in osG.DefaultIfEmpty()
+
+                            where d.EmpresaId == EmpresaUsuarioId
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && t.Codigo == "ANT" // Solo Anticipos
+                               && (proveedorId == null || d.ProveedorId == proveedorId)
+                            orderby d.FechaEmision descending
+                            select new
+                            {
+                                d.Id,
+                                Documento = d.Serie + "-" + d.Numero,
+                                Proveedor = p.RazonSocial,
+                                Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
+                                Moneda = m.Simbolo,
+                                Total = d.Total,
+                                Saldo = d.Saldo, // Cuánto anticipo queda por aplicar
+                                Estado = e.Nombre,
+                                ColorEstado = d.Saldo == 0 ? "badge-secondary" : "badge-success", // Verde si hay saldo disponible
+                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-")
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        [HttpGet]
+        public JsonResult GetNotasData(DateTime fechaInicio, DateTime fechaFin, int? proveedorId)
+        {
+            try
+            {
+                var codigos = new List<string> { "NC", "ND" };
+
+                var data = (from d in _context.DocumentosPagar
+                            join p in _context.Proveedores on d.ProveedorId equals p.Id
+                            join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                            join e in _context.Estados on d.EstadoId equals e.Id
+                            join m in _context.Monedas on d.MonedaId equals m.Id
+                            // JOIN CON EL DOCUMENTO PADRE (FACTURA)
+                            join docRef in _context.DocumentosPagar on d.DocumentoReferenciaId equals docRef.Id into docRefG
+                            from padre in docRefG.DefaultIfEmpty()
+                            join tPadre in _context.TiposDocumentoInterno on padre.TipoDocumentoInternoId equals tPadre.Id into tPadreG
+                            from tipoPadre in tPadreG.DefaultIfEmpty()
+
+                            where d.EmpresaId == EmpresaUsuarioId
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && codigos.Contains(t.Codigo)
+                               && (proveedorId == null || d.ProveedorId == proveedorId)
+                            orderby d.FechaEmision descending
+                            select new
+                            {
+                                d.Id,
+                                Tipo = t.Codigo,
+                                Documento = d.Serie + "-" + d.Numero,
+                                Proveedor = p.RazonSocial,
+                                Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
+                                Moneda = m.Simbolo,
+                                Total = d.Total,
+                                Estado = e.Nombre,
+                                // Referencia Visual: A qué factura afecta
+                                DocAfectado = padre != null ? (tipoPadre.Codigo + " " + padre.Serie + "-" + padre.Numero) : "---"
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+        #endregion
         #region 1. UTILITARIOS Y BÚSQUEDAS (Sin cambios)
         // ... (Se mantienen igual BuscarOrdenesPendientes, GetDetallesOrden, BuscarFacturasProveedor) ...
         [HttpGet]
@@ -52,7 +183,7 @@ namespace ERPKardex.Controllers
                                     o.ProveedorId,
                                     o.MonedaId,
                                     MonedaNombre = m.Simbolo,
-                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                     SubTotal = o.TotalAfecto,
                                     Igv = o.IgvTotal,
                                     TotalOrden = o.Total
@@ -92,7 +223,7 @@ namespace ERPKardex.Controllers
                                     o.ProveedorId,
                                     o.MonedaId,
                                     MonedaNombre = m.Simbolo,
-                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                    Fecha = o.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                     SubTotal = o.TotalAfecto,
                                     Igv = o.IgvTotal,
                                     TotalOrden = o.Total
@@ -146,7 +277,7 @@ namespace ERPKardex.Controllers
                 var est = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
                 var tipos = _context.TiposDocumentoInterno.Where(t => t.Codigo == "FAC" || t.Codigo == "BOL" || t.Codigo == "RH").Select(t => t.Id).ToList();
                 var data = _context.DocumentosPagar.Where(x => x.ProveedorId == proveedorId && tipos.Contains(x.TipoDocumentoInternoId) && x.EstadoId == est.Id && x.Saldo > 0)
-                    .OrderByDescending(x => x.FechaEmision).Select(x => new { x.Id, x.Serie, x.Numero, Fecha = x.FechaEmision.Value.ToString("dd/MM/yyyy"), x.Total, x.Saldo, x.MonedaId }).ToList();
+                    .OrderByDescending(x => x.FechaEmision).Select(x => new { x.Id, x.Serie, x.Numero, Fecha = x.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"), x.Total, x.Saldo, x.MonedaId }).ToList();
                 return Json(new { status = true, data = data });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
@@ -164,7 +295,10 @@ namespace ERPKardex.Controllers
                     if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Anticipo requiere Orden.");
                     var est = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
 
-                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
+                    doc.EmpresaId = EmpresaUsuarioId;
+                    doc.UsuarioRegistroId = UsuarioActualId;
+                    doc.FechaRegistro = DateTime.Now;
+                    doc.FechaEmision = DateTime.Now;
                     doc.EstadoId = est.Id; doc.Saldo = doc.Total;
                     doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == "ANT").Id;
 
@@ -224,6 +358,7 @@ namespace ERPKardex.Controllers
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     doc.FechaRegistro = DateTime.Now;
+                    doc.FechaEmision = DateTime.Now;
                     doc.EstadoId = estadoInicial.Id;
                     doc.Saldo = doc.Total;
                     doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc).Id;
@@ -314,7 +449,7 @@ namespace ERPKardex.Controllers
                                       d.Id,
                                       Documento = d.Serie + "-" + d.Numero,
                                       Tipo = t.Codigo,
-                                      Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                      Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                       TotalOriginal = d.Total,
                                       SaldoActual = d.Saldo,
                                       OrdenNumero = oc != null ? oc.Numero : (os != null ? os.Numero : "--"),
@@ -338,7 +473,7 @@ namespace ERPKardex.Controllers
                                        d.Id,
                                        Documento = d.Serie + "-" + d.Numero,
                                        Tipo = t.Codigo,
-                                       Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                       Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                        d.Total,
                                        d.Saldo,
                                        OrdenNumero = oc != null ? oc.Numero : (os != null ? os.Numero : "--"),

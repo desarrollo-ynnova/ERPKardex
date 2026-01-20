@@ -78,7 +78,7 @@
 
                 </div>
                 <div class="card-footer text-right">
-                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <a href="/CuentasPorPagar/IndexNotas" class="btn btn-secondary mr-2">Cancelar</a>
                     <button class="btn btn-danger px-5 font-weight-bold" onclick="guardarNotaCredito()">
                         <i class="fas fa-save"></i> REGISTRAR NOTA
                     </button>
@@ -246,7 +246,7 @@
                             $('#efec-cargando').addClass('d-none');
                             if(res.status) {
                                 Swal.fire("Éxito", res.message, "success").then(() => {
-                                    window.location.href = '/CuentasPorPagar/Index';
+                                    window.location.href = '/CuentasPorPagar/IndexNotas';
                                 });
                             } else {
                                 Swal.fire("Error", res.message, "error");

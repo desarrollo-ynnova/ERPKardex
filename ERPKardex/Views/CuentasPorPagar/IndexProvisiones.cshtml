@@ -1,0 +1,112 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Provisiones (Facturas)";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filtros de Búsqueda</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-3 mb-3">
+                    <label>Desde</label>
+                    <input type="date" id="txtFechaIni" class="form-control" value="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Hasta</label>
+                    <input type="date" id="txtFechaFin" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label>Proveedor</label>
+                    <select id="cbx_ProveedorFiltro" class="form-control w-100"></select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button class="btn btn-primary btn-block" onclick="listarDocumentos()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Listado de Documentos por Pagar</h6>
+            <a href="/CuentasPorPagar/RegistroProvision" class="btn btn-success btn-sm font-weight-bold">
+                <i class="fas fa-plus"></i> Nueva Provisión
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="tbl_Provisiones" width="100%" cellspacing="0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Documento</th>
+                            <th>Proveedor</th>
+                            <th>Ref. Orden</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-right text-danger">Saldo</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            cargarComboProveedores();
+            listarDocumentos();
+        });
+
+        function cargarComboProveedores() {
+            $('#cbx_ProveedorFiltro').select2({
+                theme: 'bootstrap4', placeholder: "Todos los proveedores", allowClear: true,
+                ajax: {
+                    url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250,
+                    processResults: function (data) {
+                        return { results: data.proveedores.map(x => ({ id: x.id, text: x.ruc + ' - ' + x.razonSocial })) };
+                    }
+                }
+            });
+        }
+
+        function listarDocumentos() {
+            let ini = $('#txtFechaIni').val();
+            let fin = $('#txtFechaFin').val();
+            let prov = $('#cbx_ProveedorFiltro').val();
+
+            $('#tbl_Provisiones tbody').html('<tr><td colspan="9" class="text-center">Cargando...</td></tr>');
+
+            $.get(`/CuentasPorPagar/GetProvisionesData?fechaInicio=${ini}&fechaFin=${fin}&proveedorId=${prov}`, function(res) {
+                let html = '';
+                if(res.status && res.data.length > 0) {
+                    res.data.forEach(x => {
+                        html += `<tr>
+                            <td>${x.fecha}</td>
+                            <td><span class="badge badge-light border">${x.tipoDoc}</span></td>
+                            <td class="font-weight-bold">${x.documento}</td>
+                            <td><small>${x.ruc}</small><br>${x.proveedor}</td>
+                            <td><small class="text-muted">${x.referencia}</small></td>
+                            <td class="text-right">${x.moneda} ${x.total.toFixed(2)}</td>
+                            <td class="text-right font-weight-bold text-danger">${x.moneda} ${x.saldo.toFixed(2)}</td>
+                            <td class="text-center"><span class="badge ${x.colorEstado}">${x.estado}</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-info" title="Ver Detalle"><i class="fas fa-eye"></i></button>
+                            </td>
+                        </tr>`;
+                    });
+                } else { html = '<tr><td colspan="9" class="text-center">No se encontraron registros.</td></tr>'; }
+                $('#tbl_Provisiones tbody').html(html);
+            });
+        }
+    </script>
+}

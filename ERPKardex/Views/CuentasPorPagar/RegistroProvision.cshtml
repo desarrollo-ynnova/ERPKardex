@@ -14,7 +14,6 @@
             <div class="card shadow mb-4 border-left-dark">
                 <div class="card-header bg-dark text-white d-flex justify-content-between">
                     <h5 class="m-0 font-weight-bold"><i class="fas fa-file-invoice-dollar"></i> Registro de Comprobante de Pago</h5>
-                    <span class="badge badge-light text-dark align-self-center px-3 font-weight-bold">REQ. ORDEN COMPRA/SERVICIO</span>
                 </div>
 
                 <div class="card-body">
@@ -129,7 +128,7 @@
                 </div>
 
                 <div class="card-footer text-right">
-                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <a href="/CuentasPorPagar/IndexProvisiones" class="btn btn-secondary mr-2">Cancelar</a>
                     <button class="btn btn-dark px-5 font-weight-bold" onclick="guardarProvision()">
                         <i class="fas fa-save"></i> GUARDAR COMPROBANTE
                     </button>
@@ -316,7 +315,7 @@
                         },
                         success: function(res) {
                             $('#efec-cargando').addClass('d-none');
-                            if(res.status) Swal.fire("Registrado", res.message, "success").then(() => location.href = '/CuentasPorPagar/Index');
+                            if(res.status) Swal.fire("Registrado", res.message, "success").then(() => location.href = '/CuentasPorPagar/IndexProvisiones');
                             else Swal.fire("Error", res.message, "error");
                         },
                         error: function() { $('#efec-cargando').addClass('d-none'); toastr.error("Error servidor."); }

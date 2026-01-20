@@ -978,7 +978,7 @@ CREATE TABLE documento_pagar (
     -- DATOS DEL PAPEL FÍSICO
     serie VARCHAR(20),
     numero VARCHAR(50),
-    fecha_emision DATE NOT NULL,
+    fecha_emision DATETIME NOT NULL,
     fecha_vencimiento DATE,
     moneda_id INT,
     tipo_cambio DECIMAL(12,6),

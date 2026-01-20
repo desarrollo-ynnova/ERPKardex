@@ -14,7 +14,6 @@
             <div class="card shadow mb-4 border-left-warning">
                 <div class="card-header bg-warning text-dark d-flex justify-content-between">
                     <h5 class="m-0 font-weight-bold"><i class="fas fa-hand-holding-usd"></i> Registrar Anticipo a Proveedor</h5>
-                    <span class="badge badge-dark align-self-center px-3">REQ. ORDEN DE COMPRA</span>
                 </div>
 
                 <div class="card-body">
@@ -96,7 +95,7 @@
                 </div>
 
                 <div class="card-footer text-right">
-                    <a href="/CuentasPorPagar/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                    <a href="/CuentasPorPagar/IndexAnticipos" class="btn btn-secondary mr-2">Cancelar</a>
                     <button class="btn btn-warning px-5 font-weight-bold text-dark" onclick="guardar()">
                         <i class="fas fa-save"></i> REGISTRAR ANTICIPO
                     </button>
@@ -248,7 +247,7 @@
                     }, function(res) {
                         $('#efec-cargando').addClass('d-none');
                         if(res.status) {
-                            Swal.fire("Éxito", res.message, "success").then(() => location.href = '/CuentasPorPagar/Index');
+                            Swal.fire("Éxito", res.message, "success").then(() => location.href = '/CuentasPorPagar/IndexAnticipos');
                         } else {
                             Swal.fire("Error", res.message, "error");
                         }

@@ -1,0 +1,79 @@
+﻿@{
+    ViewData["Title"] = "Notas de Crédito y Débito";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-3 mb-3"><label>Desde</label><input type="date" id="txtFechaIni" class="form-control" value="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")"></div>
+                <div class="col-md-3 mb-3"><label>Hasta</label><input type="date" id="txtFechaFin" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")"></div>
+                <div class="col-md-4 mb-3"><label>Proveedor</label><select id="cbx_ProveedorFiltro" class="form-control w-100"></select></div>
+                <div class="col-md-2 mb-3"><button class="btn btn-primary btn-block" onclick="listarNotas()"><i class="fas fa-search"></i> Buscar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-secondary">Historial de Notas (NC/ND)</h6>
+            <div>
+                <a href="/CuentasPorPagar/RegistroNotaCredito" class="btn btn-danger btn-sm mr-1"><i class="fas fa-minus-circle"></i> Nota Crédito</a>
+                <a href="/CuentasPorPagar/RegistroNotaDebito" class="btn btn-info btn-sm"><i class="fas fa-plus-circle"></i> Nota Débito</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="tbl_Notas">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th class="text-center">Tipo</th>
+                            <th>Nota Nº</th>
+                            <th>Proveedor</th>
+                            <th>Doc. Afectado (Ref)</th>
+                            <th class="text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // ... (Mismo Select2) ...
+            $('#cbx_ProveedorFiltro').select2({ theme: 'bootstrap4', placeholder: "Todos", allowClear:true, ajax: { url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250, processResults: function (d) { return { results: d.proveedores.map(x => ({ id: x.id, text: x.ruc + ' - ' + x.razonSocial })) }; } } });
+            listarNotas();
+        });
+
+        function listarNotas() {
+            let ini = $('#txtFechaIni').val(); let fin = $('#txtFechaFin').val(); let prov = $('#cbx_ProveedorFiltro').val();
+            $('#tbl_Notas tbody').html('<tr><td colspan="6" class="text-center">Cargando...</td></tr>');
+
+            $.get(`/CuentasPorPagar/GetNotasData?fechaInicio=${ini}&fechaFin=${fin}&proveedorId=${prov}`, function(res) {
+                let html = '';
+                if(res.status && res.data.length > 0) {
+                    res.data.forEach(x => {
+                        let colorBadge = x.tipo === 'NC' ? 'badge-danger' : 'badge-info';
+                        let signo = x.tipo === 'NC' ? '-' : '+';
+                        let colorTexto = x.tipo === 'NC' ? 'text-danger' : 'text-info';
+
+                        html += `<tr>
+                            <td>${x.fecha}</td>
+                            <td class="text-center"><span class="badge ${colorBadge}">${x.tipo}</span></td>
+                            <td class="font-weight-bold">${x.documento}</td>
+                            <td>${x.proveedor}</td>
+                            <td>${x.docAfectado}</td>
+                            <td class="text-right font-weight-bold ${colorTexto}">${signo} ${x.moneda} ${x.total.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                } else { html = '<tr><td colspan="6" class="text-center">Sin registros.</td></tr>'; }
+                $('#tbl_Notas tbody').html(html);
+            });
+        }
+    </script>
+}
