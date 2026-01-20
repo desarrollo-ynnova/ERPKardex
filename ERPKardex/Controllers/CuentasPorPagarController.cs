@@ -36,6 +36,7 @@ namespace ERPKardex.Controllers
 
                 var data = (from d in _context.DocumentosPagar
                             join p in _context.Proveedores on d.ProveedorId equals p.Id
+                            join tdi in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals tdi.Id
                             join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
                             join e in _context.Estados on d.EstadoId equals e.Id
                             join m in _context.Monedas on d.MonedaId equals m.Id
@@ -56,8 +57,9 @@ namespace ERPKardex.Controllers
                                 TipoDoc = t.Codigo,
                                 Documento = d.Serie + "-" + d.Numero,
                                 Proveedor = p.RazonSocial,
-                                Ruc = p.Ruc,
-                                Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
+                                TipoDocumentoIdentidad = tdi.Descripcion,
+                                NumeroDocumento = p.NumeroDocumento,
+                                Fecha = d.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 Moneda = m.Simbolo,
                                 Total = d.Total,
                                 Saldo = d.Saldo, // VITAL: Para saber cuánto falta pagar
@@ -170,6 +172,7 @@ namespace ERPKardex.Controllers
                 {
                     var query = from o in _context.OrdenCompras
                                 join p in _context.Proveedores on o.ProveedorId equals p.Id
+                                join tdi in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals tdi.Id
                                 join e in _context.Estados on o.EstadoId equals e.Id
                                 join m in _context.Monedas on o.MonedaId equals m.Id
                                 where estadosOrdenValidos.Contains(e.Nombre)
@@ -179,7 +182,8 @@ namespace ERPKardex.Controllers
                                     o.Id,
                                     o.Numero,
                                     Proveedor = p.RazonSocial,
-                                    p.Ruc,
+                                    TipoDocumentoIdentidad = tdi.Descripcion,
+                                    p.NumeroDocumento,
                                     o.ProveedorId,
                                     o.MonedaId,
                                     MonedaNombre = m.Simbolo,
@@ -210,6 +214,7 @@ namespace ERPKardex.Controllers
                 {
                     var query = from o in _context.OrdenServicios
                                 join p in _context.Proveedores on o.ProveedorId equals p.Id
+                                join tdi in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals tdi.Id
                                 join e in _context.Estados on o.EstadoId equals e.Id
                                 join m in _context.Monedas on o.MonedaId equals m.Id
                                 where estadosOrdenValidos.Contains(e.Nombre)
@@ -219,7 +224,8 @@ namespace ERPKardex.Controllers
                                     o.Id,
                                     o.Numero,
                                     Proveedor = p.RazonSocial,
-                                    p.Ruc,
+                                    TipoDocumentoIdentidad = tdi.Descripcion,
+                                    p.NumeroDocumento,
                                     o.ProveedorId,
                                     o.MonedaId,
                                     MonedaNombre = m.Simbolo,
@@ -255,16 +261,36 @@ namespace ERPKardex.Controllers
         {
             try
             {
+                object cabeceraOrden = null;
+                object detalles = null;
+
                 if (tipoOrigen == "OC")
                 {
-                    var data = _context.DOrdenCompras.Where(x => x.OrdenCompraId == ordenId).Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
-                    return Json(new { status = true, data = data });
+                    // Obtenemos cabecera para sacar la Condición de Pago
+                    var ord = _context.OrdenCompras.Find(ordenId);
+                    cabeceraOrden = new
+                    {
+                        CondicionPago = ord.CondicionPago ?? "CONTADO",
+                        MonedaId = ord.MonedaId
+                    };
+
+                    detalles = _context.DOrdenCompras.Where(x => x.OrdenCompraId == ordenId)
+                        .Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
                 }
                 else
                 {
-                    var data = _context.DOrdenServicios.Where(x => x.OrdenServicioId == ordenId).Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
-                    return Json(new { status = true, data = data });
+                    var ord = _context.OrdenServicios.Find(ordenId);
+                    cabeceraOrden = new
+                    {
+                        CondicionPago = ord.CondicionPago ?? "CONTADO",
+                        MonedaId = ord.MonedaId
+                    };
+
+                    detalles = _context.DOrdenServicios.Where(x => x.OrdenServicioId == ordenId)
+                        .Select(x => new { x.Id, x.Item, Producto = x.Descripcion, x.UnidadMedida, Saldo = x.Cantidad, x.PrecioUnitario, x.Total }).ToList();
                 }
+
+                return Json(new { status = true, cabecera = cabeceraOrden, data = detalles });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }

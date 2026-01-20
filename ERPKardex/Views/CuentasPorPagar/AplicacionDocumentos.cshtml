@@ -161,7 +161,7 @@
                 ajax: {
                     url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250,
                     processResults: function (data) {
-                        return { results: data.proveedores.map(function(item) { return { id: item.id, text: item.ruc + ' - ' + item.razonSocial }; }) };
+                        return { results: data.proveedores.map(function(item) { return { id: item.id, text: item.tipoDocumentoIdentidad + ': ' + item.numeroDocumento + ' - ' + item.razonSocial }; }) };
                     }
                 }
             });

@@ -192,7 +192,7 @@
                 {
                     data: 'proveedor',
                     render: function(data, type, row) {
-                        return `<div style="line-height:1.2"><small class="text-muted">${row.ruc}</small><br>${data}</div>`;
+                        return `<div style="line-height:1.2"><small class="text-muted">${row.tipoDocumentoIdentidad}: ${row.numeroDocumento}</small><br>${data}</div>`;
                     }
                 },
                 { data: 'moneda' },

@@ -33,6 +33,7 @@ namespace ERPKardex.Controllers
 
                 var query = from o in _context.OrdenCompras
                             join ent in _context.Proveedores on o.ProveedorId equals ent.Id
+                            join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
                             join est2 in _context.Estados on o.EstadoPagoId equals est2.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
@@ -44,7 +45,8 @@ namespace ERPKardex.Controllers
                                 o.Numero,
                                 Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 Proveedor = ent.RazonSocial,
-                                Ruc = ent.Ruc,
+                                TipoDocumentoIdentidad = tdi.Descripcion,
+                                ent.NumeroDocumento,
                                 Moneda = mon.Nombre,
                                 Total = o.Total,
                                 Estado = est.Nombre,
@@ -103,9 +105,17 @@ namespace ERPKardex.Controllers
                 var miEmpresaId = EmpresaUsuarioId;
                 var esGlobal = EsAdminGlobal;
 
-                var proveedores = _context.Proveedores
-                    .Where(x => x.Estado == true && (esGlobal || x.EmpresaId == miEmpresaId))
-                    .Select(x => new { x.Id, x.Ruc, x.RazonSocial }).ToList();
+                // Hacemos JOIN para obtener el Tipo de Documento
+                var proveedores = (from p in _context.Proveedores
+                                   join td in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals td.Id
+                                   where p.Estado == true && (esGlobal || p.EmpresaId == miEmpresaId)
+                                   select new
+                                   {
+                                       p.Id,
+                                       TipoDocumentoIdentidad = td.Descripcion,
+                                       p.NumeroDocumento,
+                                       p.RazonSocial,
+                                   }).ToList();
 
                 var monedas = _context.Monedas.Where(x => x.Estado == true).ToList();
 

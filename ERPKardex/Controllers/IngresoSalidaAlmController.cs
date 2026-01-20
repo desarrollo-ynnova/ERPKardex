@@ -777,10 +777,10 @@ namespace ERPKardex.Controllers
             {
                 // 2. Validar si ya existe en esta empresa
                 var existe = await _context.Proveedores
-                    .AnyAsync(x => x.Ruc == modelo.Ruc && x.EmpresaId == EmpresaUsuarioId);
+                    .AnyAsync(x => x.NumeroDocumento == modelo.NumeroDocumento && x.EmpresaId == EmpresaUsuarioId);
 
                 if (existe)
-                    return Json(new { status = false, message = "El RUC ya está registrado en su empresa." });
+                    return Json(new { status = false, message = "El número de documento ya está registrado en su empresa." });
 
                 // 3. Asignar valores por defecto
                 modelo.EmpresaId = EmpresaUsuarioId;

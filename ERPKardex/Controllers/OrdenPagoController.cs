@@ -19,169 +19,118 @@ namespace ERPKardex.Controllers
 
         public IActionResult Index() => View();
 
-        #region 1. LISTADO DE ÓRDENES POR PAGAR
-        // Este método cambia ligeramente: Ahora debe listar las APROBADAS que NO estén "Pagado Total"
-        // Es decir, incluye las "Pendientes" y las "Pagado Parcial".
-
+        #region 1. LISTADO DE DEUDAS PENDIENTES (SEMÁFORO DE VENCIMIENTO)
         [HttpGet]
-        public async Task<JsonResult> GetOrdenesPorPagar()
+        public async Task<JsonResult> GetDeudasPendientes()
         {
             try
             {
                 var miEmpresaId = EmpresaUsuarioId;
-                var esGlobal = EsAdminGlobal;
 
-                // 1. Obtener IDs clave
-                var estAprobado = await _context.Estados.FirstOrDefaultAsync(e => e.Nombre == "Aprobado" && e.Tabla == "ORDEN");
-                var estPagadoTotal = await _context.Estados.FirstOrDefaultAsync(e => e.Nombre == "Pagado Total" && e.Tabla == "FINANZAS");
+                // Buscamos documentos con SALDO > 0 y estado activo (No anulados)
+                // Incluimos Facturas, Boletas, RH y Anticipos
+                var data = await (from d in _context.DocumentosPagar
+                                  join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                  join prov in _context.Proveedores on d.ProveedorId equals prov.Id
+                                  join mon in _context.Monedas on d.MonedaId equals mon.Id
+                                  join est in _context.Estados on d.EstadoId equals est.Id
+                                  where d.EmpresaId == miEmpresaId
+                                     && d.Saldo > 0 // <--- CLAVE: Solo lo que se debe
+                                     && est.Nombre != "Anulado"
+                                  orderby d.FechaVencimiento ascending // Lo más urgente primero
+                                  select new
+                                  {
+                                      d.Id,
+                                      Tipo = t.Codigo, // FAC, BOL, ANT
+                                      Numero = d.Serie + "-" + d.Numero,
+                                      Proveedor = prov.RazonSocial,
+                                      FechaEmision = d.FechaEmision,
+                                      FechaVencimiento = d.FechaVencimiento, // <--- CRÍTICO
+                                      Moneda = mon.Simbolo,
+                                      Total = d.Total,
+                                      Saldo = d.Saldo
+                                  }).ToListAsync();
 
-                int idAprobado = estAprobado?.Id ?? 0;
-                int idPagadoTotal = estPagadoTotal?.Id ?? 0;
-
-                // 2. Compras: Aprobadas Y (EstadoPago ES NULL O EstadoPago != PagadoTotal)
-                var compras = from o in _context.OrdenCompras
-                              join ent in _context.Proveedores on o.ProveedorId equals ent.Id
-                              join mon in _context.Monedas on o.MonedaId equals mon.Id
-                              join est in _context.Estados on o.EstadoPagoId equals est.Id
-                              where o.EstadoId == idAprobado
-                                 && (o.EstadoPagoId == null || o.EstadoPagoId != idPagadoTotal)
-                              select new
-                              {
-                                  Id = o.Id,
-                                  Tipo = "COMPRA",
-                                  Numero = o.Numero,
-                                  Fecha = o.FechaEmision,
-                                  Proveedor = ent.RazonSocial,
-                                  Moneda = mon.Nombre,
-                                  MonedaSimbolo = mon.Simbolo,
-                                  EstadoPago = est.Nombre,
-                                  Total = o.Total,
-                                  EmpresaId = o.EmpresaId
-                              };
-
-                // 3. Servicios
-                var servicios = from o in _context.OrdenServicios
-                                join ent in _context.Proveedores on o.ProveedorId equals ent.Id
-                                join mon in _context.Monedas on o.MonedaId equals mon.Id
-                                join est in _context.Estados on o.EstadoPagoId equals est.Id
-                                where o.EstadoId == idAprobado
-                                   && (o.EstadoPagoId == null || o.EstadoPagoId != idPagadoTotal)
-                                select new
-                                {
-                                    Id = o.Id,
-                                    Tipo = "SERVICIO",
-                                    Numero = o.Numero,
-                                    Fecha = o.FechaEmision,
-                                    Proveedor = ent.RazonSocial,
-                                    Moneda = mon.Nombre,
-                                    MonedaSimbolo = mon.Simbolo,
-                                    EstadoPago = est.Nombre,
-                                    Total = o.Total,
-                                    EmpresaId = o.EmpresaId
-                                };
-
-                var union = await compras.Union(servicios).OrderByDescending(x => x.Fecha).ToListAsync();
-
-                if (!esGlobal) union = union.Where(x => x.EmpresaId == miEmpresaId).ToList();
-
-                // Calcular saldo pendiente para mostrarlo en la vista (Opcional pero útil)
-                // Para simplificar la vista actual, mandamos el Total Original, 
-                // pero podrías mandar 'SaldoPendiente' haciendo una subconsulta aquí.
-
-                var data = union.Select(x => new
+                // Procesamiento en memoria para cálculo de días
+                var hoy = DateTime.Now.Date;
+                var resultado = data.Select(x =>
                 {
-                    x.Id,
-                    x.Tipo,
-                    x.Numero,
-                    Fecha = x.Fecha.GetValueOrDefault().ToString("dd/MM/yyyy"),
-                    x.Proveedor,
-                    x.Moneda,
-                    x.MonedaSimbolo,
-                    Total = x.Total,
-                    x.EstadoPago,
-                });
+                    double diasRestantes = 0;
+                    string estadoVenc = "VIGENTE";
+                    string colorSem = "badge-success";
 
-                return Json(new { status = true, data });
+                    if (x.FechaVencimiento.HasValue)
+                    {
+                        diasRestantes = (x.FechaVencimiento.Value.Date - hoy).TotalDays;
+
+                        if (diasRestantes < 0)
+                        {
+                            estadoVenc = "VENCIDO";
+                            colorSem = "badge-danger";
+                        }
+                        else if (diasRestantes <= 3)
+                        {
+                            estadoVenc = "POR VENCER";
+                            colorSem = "badge-warning";
+                        }
+                    }
+                    else
+                    {
+                        // Si es anticipo, no vence, es inmediato
+                        if (x.Tipo == "ANT") { estadoVenc = "INMEDIATO"; colorSem = "badge-info"; }
+                    }
+
+                    return new
+                    {
+                        x.Id,
+                        x.Tipo,
+                        x.Numero,
+                        x.Proveedor,
+                        Emision = x.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                        Vencimiento = x.FechaVencimiento.HasValue ? x.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
+                        x.Moneda,
+                        Total = x.Total,
+                        Saldo = x.Saldo,
+                        EstadoVencimiento = estadoVenc,
+                        ColorSem = colorSem,
+                        Dias = Math.Abs(diasRestantes)
+                    };
+                }).ToList();
+
+                return Json(new { status = true, data = resultado });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
         #endregion
 
-        #region 2. DATOS PARA EL FORMULARIO (Sin cambios mayores)
+        #region 2. DATOS PARA EL MODAL (DETALLE DEUDA)
         [HttpGet]
-        public async Task<JsonResult> GetDatosOrden(int id, string tipo)
+        public async Task<JsonResult> GetDatosDeuda(int id)
         {
             try
             {
-                string condicionPago = "";
-                string monedaNombre = "";
-                string monedaSimbolo = "";
-                decimal total = 0;
-                DateTime fechaEmision = DateTime.Now;
-                int monedaId = 0;
-                decimal pagadoHastaAhora = 0; // Nuevo: Saber cuánto ya se pagó
+                var doc = await _context.DocumentosPagar.FindAsync(id);
+                if (doc == null) throw new Exception("Documento no encontrado");
 
-                if (tipo == "COMPRA")
-                {
-                    var oc = await _context.OrdenCompras.FindAsync(id);
-                    if (oc != null)
-                    {
-                        condicionPago = oc.CondicionPago;
-                        total = oc.Total ?? 0;
-                        fechaEmision = oc.FechaEmision ?? DateTime.Now;
-                        monedaId = oc.MonedaId ?? 0;
+                var moneda = await _context.Monedas.FindAsync(doc.MonedaId);
+                var bancos = await _context.Bancos.Where(b => b.Estado == true).Select(b => new { b.Id, b.Nombre }).ToListAsync();
 
-                        // Monedas
-                        var monedaOc = _context.Monedas.FirstOrDefault(mo => mo.Id == monedaId);
-                        monedaNombre = monedaOc?.Nombre ?? "";
-                        monedaSimbolo = monedaOc?.Simbolo ?? "";
-
-                        // Sumar pagos previos
-                        pagadoHastaAhora = await _context.OrdenPagos
-                            .Where(p => p.OrdenCompraId == id && p.EstadoId == 1) // 1=Generado/Valido
-                            .SumAsync(p => p.MontoAbonado);
-                    }
-                }
-                else
-                {
-                    var os = await _context.OrdenServicios.FindAsync(id);
-                    if (os != null)
-                    {
-                        condicionPago = os.CondicionPago;
-                        total = os.Total ?? 0;
-                        fechaEmision = os.FechaEmision ?? DateTime.Now;
-                        monedaId = os.MonedaId ?? 0;
-
-                        // Monedas
-                        var monedaOs = _context.Monedas.FirstOrDefault(mo => mo.Id == monedaId);
-                        monedaNombre = monedaOs?.Nombre ?? "";
-                        monedaSimbolo = monedaOs?.Simbolo ?? "";
-
-                        pagadoHastaAhora = await _context.OrdenPagos
-                            .Where(p => p.OrdenServicioId == id && p.EstadoId == 1)
-                            .SumAsync(p => p.MontoAbonado);
-                    }
-                }
-
-                var bancos = await _context.Bancos.Where(b => b.Estado == true).Select(b => new { b.Id, b.Nombre, b.Ruc }).ToListAsync();
-
-                // Calculamos el saldo sugerido a pagar
-                decimal saldoPendiente = total - pagadoHastaAhora;
-                if (saldoPendiente < 0) saldoPendiente = 0;
+                // Calcular estado financiero actual
+                decimal pagado = doc.Total - doc.Saldo;
 
                 return Json(new
                 {
                     status = true,
                     data = new
                     {
-                        FechaOrden = fechaEmision.ToString("yyyy-MM-dd"),
-                        Condicion = condicionPago,
-                        Total = total,
-                        MonedaId = monedaId,
-                        MonedaNombre = monedaNombre,
-                        MonedaSimbolo = monedaSimbolo,
-                        PagadoPrevio = pagadoHastaAhora, // Para mostrar info
-                        SaldoPendiente = saldoPendiente  // Para sugerir en el input
+                        Documento = doc.Serie + "-" + doc.Numero,
+                        FechaEmision = doc.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                        FechaVencimiento = doc.FechaVencimiento.HasValue ? doc.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
+                        Total = doc.Total,
+                        Pagado = pagado,
+                        Saldo = doc.Saldo,
+                        MonedaId = doc.MonedaId,
+                        MonedaSimbolo = moneda.Simbolo
                     },
                     bancos
                 });
@@ -190,8 +139,7 @@ namespace ERPKardex.Controllers
         }
         #endregion
 
-        #region 3. REGISTRAR PAGO (LÓGICA PARCIALES)
-
+        #region 3. REGISTRAR PAGO (AMORTIZACIÓN)
         [HttpPost]
         public async Task<JsonResult> RegistrarPago(string pagoJson, DateTime fechaPagoReal, IFormFile archivoVoucher)
         {
@@ -201,116 +149,70 @@ namespace ERPKardex.Controllers
                 {
                     var pago = JsonConvert.DeserializeObject<OrdenPago>(pagoJson);
 
-                    // --- ARCHIVO ---
+                    // 1. SUBIDA DE ARCHIVO
                     if (archivoVoucher != null && archivoVoucher.Length > 0)
                     {
-                        string webRootPath = _env.WebRootPath;
-                        string uploadDir = Path.Combine(webRootPath, "uploads", "vouchers");
+                        string uploadDir = Path.Combine(_env.WebRootPath, "uploads", "vouchers");
                         if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
-
-                        string extension = Path.GetExtension(archivoVoucher.FileName);
-                        string nombreArchivo = $"VOUCHER_{DateTime.Now:yyyyMMddHHmmss}_{new Random().Next(1000, 9999)}{extension}";
-                        string rutaCompleta = Path.Combine(uploadDir, nombreArchivo);
-
-                        using (var stream = new FileStream(rutaCompleta, FileMode.Create))
-                        {
-                            await archivoVoucher.CopyToAsync(stream);
-                        }
-                        pago.RutaVoucher = $"uploads/vouchers/{nombreArchivo}";
+                        string fileName = $"OP_{DateTime.Now:yyyyMMddHHmmss}_{new Random().Next(100, 999)}{Path.GetExtension(archivoVoucher.FileName)}";
+                        using (var stream = new FileStream(Path.Combine(uploadDir, fileName), FileMode.Create)) { await archivoVoucher.CopyToAsync(stream); }
+                        pago.RutaVoucher = $"uploads/vouchers/{fileName}";
                     }
 
-                    // --- T.C. ---
-                    var tcDia = await _context.TipoCambios
-                        .Where(x => x.Fecha.Date == fechaPagoReal.Date)
-                        .Select(x => x.TcVenta).FirstOrDefaultAsync();
+                    // 2. VALIDACIÓN DE CAJA / TIPO CAMBIO
+                    var tcDia = await _context.TipoCambios.Where(x => x.Fecha.Date == fechaPagoReal.Date).Select(x => x.TcVenta).FirstOrDefaultAsync();
+                    if (tcDia <= 0) return Json(new { status = false, message = $"No hay Tipo de Cambio para {fechaPagoReal:dd/MM/yyyy}." });
 
-                    if (tcDia <= 0) return Json(new { status = false, message = $"No existe T.C. para {fechaPagoReal:dd/MM/yyyy}." });
-
-                    pago.TipoCambioPago = tcDia;
+                    // 3. DATOS GENERALES
+                    pago.TipoCambio = tcDia;
                     pago.FechaPago = fechaPagoReal;
                     pago.FechaRegistro = DateTime.Now;
                     pago.UsuarioRegistroId = UsuarioActualId;
+                    pago.EmpresaId = EmpresaUsuarioId;
                     pago.EstadoId = 1; // Generado
 
-                    // --- CÁLCULO DÍAS RETRASO ---
-                    if (pago.FechaOrden.HasValue)
-                    {
-                        var fechaVencimiento = pago.FechaOrden.Value.AddDays(pago.DiasCredito);
-                        var diferencia = (fechaPagoReal - fechaVencimiento).TotalDays;
-                        pago.DiasRetraso = diferencia > 0 ? (int)diferencia : 0;
-                    }
+                    // Generar Correlativo OP-00001
+                    var ultimo = _context.OrdenPagos.Where(x => x.EmpresaId == EmpresaUsuarioId).OrderByDescending(x => x.Numero).FirstOrDefault();
+                    int n = 1;
+                    if (ultimo != null && int.TryParse(ultimo.Numero.Replace("OP-", ""), out int num)) n = num + 1;
+                    pago.Numero = "OP-" + n.ToString("D5");
 
-                    // --- LÓGICA DE ESTADOS FINANCIEROS (PARCIAL vs TOTAL) ---
-
-                    // 1. Obtener IDs de estados FINANCIEROS
-                    var estPagadoTotal = await _context.Estados.FirstOrDefaultAsync(e => e.Nombre == "Pagado Total" && e.Tabla == "FINANZAS");
-                    var estPagadoParcial = await _context.Estados.FirstOrDefaultAsync(e => e.Nombre == "Pagado Parcial" && e.Tabla == "FINANZAS");
-
-                    if (estPagadoTotal == null || estPagadoParcial == null)
-                        throw new Exception("Faltan configurar estados financieros (Pagado Total/Parcial) en la tabla 'estado'.");
-
-                    decimal totalOrden = 0;
-                    decimal pagadoAcumulado = 0; // Incluyendo el actual
-
-                    // 2. Procesar según tipo
-                    if (pago.OrdenCompraId.HasValue)
-                    {
-                        var oc = await _context.OrdenCompras.FindAsync(pago.OrdenCompraId);
-                        if (oc != null)
-                        {
-                            totalOrden = oc.Total ?? 0;
-                            // Sumar lo histórico + lo actual
-                            var previos = await _context.OrdenPagos
-                                .Where(p => p.OrdenCompraId == pago.OrdenCompraId && p.EstadoId == 1)
-                                .SumAsync(p => p.MontoAbonado);
-
-                            pagadoAcumulado = previos + pago.MontoAbonado;
-
-                            // Decisión
-                            if (pagadoAcumulado >= totalOrden - 0.1m) // Tolerancia de 10 céntimos por redondeo
-                            {
-                                oc.EstadoPagoId = estPagadoTotal.Id;
-                                // Opcional: También poner el estado administrativo en 'Pagado' si deseas mantener compatibilidad visual antigua
-                                // oc.EstadoId = (await _context.Estados.FirstAsync(e => e.Nombre == "Pagado" && e.Tabla == "ORDEN")).Id; 
-                            }
-                            else
-                            {
-                                oc.EstadoPagoId = estPagadoParcial.Id;
-                            }
-                            _context.OrdenCompras.Update(oc);
-                        }
-                    }
-                    else if (pago.OrdenServicioId.HasValue)
-                    {
-                        var os = await _context.OrdenServicios.FindAsync(pago.OrdenServicioId);
-                        if (os != null)
-                        {
-                            totalOrden = os.Total ?? 0;
-                            var previos = await _context.OrdenPagos
-                                .Where(p => p.OrdenServicioId == pago.OrdenServicioId && p.EstadoId == 1)
-                                .SumAsync(p => p.MontoAbonado);
-
-                            pagadoAcumulado = previos + pago.MontoAbonado;
-
-                            if (pagadoAcumulado >= totalOrden - 0.1m)
-                            {
-                                os.EstadoPagoId = estPagadoTotal.Id;
-                            }
-                            else
-                            {
-                                os.EstadoPagoId = estPagadoParcial.Id;
-                            }
-                            _context.OrdenServicios.Update(os);
-                        }
-                    }
-
-                    // --- GUARDAR ---
                     _context.OrdenPagos.Add(pago);
+                    await _context.SaveChangesAsync(); // Guardamos para tener ID si fuera necesario
+
+                    // 4. ACTUALIZACIÓN DE LA DEUDA (PROVISIÓN)
+                    var doc = await _context.DocumentosPagar.FindAsync(pago.DocumentoPagarId);
+
+                    if (pago.MontoPagado > doc.Saldo + 0.1m) // Pequeña tolerancia
+                        throw new Exception($"El pago ({pago.MontoPagado}) excede el saldo pendiente ({doc.Saldo}).");
+
+                    // RESTA DEL SALDO
+                    doc.Saldo -= pago.MontoPagado.GetValueOrDefault();
+
+                    // CAMBIO DE ESTADO
+                    var estCancelado = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
+                    var estPorPagar = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+
+                    if (doc.Saldo <= 0) doc.EstadoId = estCancelado.Id;
+                    else doc.EstadoId = estPorPagar.Id;
+
+                    // 5. REGISTRO EN HISTORIAL DE APLICACIONES (Para que salga en el historial de la factura)
+                    // Creamos un registro virtual de aplicación para trazabilidad visual
+                    _context.DocumentoPagarAplicaciones.Add(new DocumentoPagarAplicacion
+                    {
+                        EmpresaId = EmpresaUsuarioId,
+                        DocumentoCargoId = doc.Id,
+                        // DocumentoAbonoId = NULL, // No hay documento abono, es un pago directo
+                        MontoAplicado = pago.MontoPagado.GetValueOrDefault(),
+                        FechaAplicacion = DateTime.Now,
+                        UsuarioId = UsuarioActualId
+                    });
+
                     await _context.SaveChangesAsync();
                     transaction.Commit();
 
-                    string msgExtra = (pagadoAcumulado < totalOrden) ? " (Pago Parcial registrado)" : " (Orden Cancelada Totalmente)";
-                    return Json(new { status = true, message = "Pago registrado correctamente." + msgExtra });
+                    string estadoFinal = doc.Saldo <= 0 ? "DEUDA CANCELADA TOTALMENTE" : $"AMORTIZACIÓN REGISTRADA. SALDO: {doc.Saldo}";
+                    return Json(new { status = true, message = $"Operación Exitosa. {estadoFinal}" });
                 }
                 catch (Exception ex)
                 {
@@ -319,38 +221,39 @@ namespace ERPKardex.Controllers
                 }
             }
         }
-
         #endregion
 
-        #region 4. HISTORIAL (Sin cambios)
+        #region 4. HISTORIAL DE PAGOS
         [HttpGet]
         public async Task<JsonResult> GetHistorialPagos()
         {
             try
             {
-                var pagos = await (from op in _context.OrdenPagos
-                                   join b in _context.Bancos on op.BancoId equals b.Id
-                                   join m in _context.Monedas on op.MonedaOrdenId equals m.Id
-                                   orderby op.FechaPago descending
-                                   select new
-                                   {
-                                       op.Id,
-                                       Fecha = op.FechaPago.ToString("dd/MM/yyyy"),
-                                       Orden = op.NumeroOrden,
-                                       Moneda = m.Nombre,
-                                       MonedaSimbolo = m.Simbolo,
-                                       Monto = op.MontoAbonado,
-                                       Banco = b.Nombre,
-                                       Operacion = op.NumeroOperacion,
-                                       TC = op.TipoCambioPago,
-                                       Estado = (op.EstadoId == 1) ? "GENERADO" : "ANULADO",
-                                       op.RutaVoucher,
-                                       DiasCredito = op.DiasCredito,
-                                       DiasRetraso = op.DiasRetraso,
-                                       Condicion = op.CondicionPago
-                                   }).ToListAsync();
+                // Listamos las Órdenes de Pago realizadas
+                var data = await (from op in _context.OrdenPagos
+                                  join doc in _context.DocumentosPagar on op.DocumentoPagarId equals doc.Id
+                                  join prov in _context.Proveedores on doc.ProveedorId equals prov.Id
+                                  join t in _context.TiposDocumentoInterno on doc.TipoDocumentoInternoId equals t.Id
+                                  join mon in _context.Monedas on op.MonedaId equals mon.Id
+                                  join ban in _context.Bancos on op.BancoId equals ban.Id into banG
+                                  from b in banG.DefaultIfEmpty()
+                                  where op.EmpresaId == EmpresaUsuarioId
+                                  orderby op.FechaPago descending
+                                  select new
+                                  {
+                                      op.Id,
+                                      Fecha = op.FechaPago.ToString("dd/MM/yyyy"),
+                                      NumeroOP = op.Numero,
+                                      DocRef = t.Codigo + " " + doc.Serie + "-" + doc.Numero,
+                                      Proveedor = prov.RazonSocial,
+                                      Moneda = mon.Simbolo,
+                                      Monto = op.MontoPagado,
+                                      Banco = b != null ? b.Nombre : "CAJA/EFECTIVO",
+                                      Operacion = op.NumeroOperacion,
+                                      op.RutaVoucher
+                                  }).ToListAsync();
 
-                return Json(new { status = true, data = pagos });
+                return Json(new { status = true, data = data });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }

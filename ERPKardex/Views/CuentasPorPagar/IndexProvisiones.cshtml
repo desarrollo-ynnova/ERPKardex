@@ -73,7 +73,7 @@
                 ajax: {
                     url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250,
                     processResults: function (data) {
-                        return { results: data.proveedores.map(x => ({ id: x.id, text: x.ruc + ' - ' + x.razonSocial })) };
+                        return { results: data.proveedores.map(x => ({ id: x.id, text: x.tipoDocumentoIdentidad + ': ' + x.numeroDocumento + ' - ' + x.razonSocial })) };
                     }
                 }
             });
@@ -94,7 +94,7 @@
                             <td>${x.fecha}</td>
                             <td><span class="badge badge-light border">${x.tipoDoc}</span></td>
                             <td class="font-weight-bold">${x.documento}</td>
-                            <td><small>${x.ruc}</small><br>${x.proveedor}</td>
+                            <td><small>${x.tipoDocumentoIdentidad}: ${x.numeroDocumento}</small><br>${x.proveedor}</td>
                             <td><small class="text-muted">${x.referencia}</small></td>
                             <td class="text-right">${x.moneda} ${x.total.toFixed(2)}</td>
                             <td class="text-right font-weight-bold text-danger">${x.moneda} ${x.saldo.toFixed(2)}</td>

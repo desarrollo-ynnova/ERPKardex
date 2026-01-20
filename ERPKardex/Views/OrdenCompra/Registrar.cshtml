@@ -275,7 +275,7 @@
         $.get('/OrdenCompra/GetCombosRegistro', function(res) {
             if(res.status) {
                 let htmlProv = '<option value="">-- SELECCIONE --</option>';
-                res.proveedores.forEach(x => htmlProv += `<option value="${x.id}">${x.ruc} - ${x.razonSocial}</option>`);
+                res.proveedores.forEach(x => htmlProv += `<option value="${x.id}">${x.tipoDocumentoIdentidad}: ${x.numeroDocumento} - ${x.razonSocial}</option>`);
                 $('#cbx_Proveedor').html(htmlProv);
 
                 let htmlMon = '';

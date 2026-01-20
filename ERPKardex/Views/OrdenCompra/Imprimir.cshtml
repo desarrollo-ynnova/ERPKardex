@@ -3,7 +3,7 @@
     Layout = null;
 
     var empresa = ViewBag.Empresa as ERPKardex.Models.Empresa;
-    var proveedor = ViewBag.Proveedor as ERPKardex.Models.Proveedor;
+    var proveedor = ViewBag.Proveedor as ERPKardex.Models.Proveedor; // Ahora usa el nuevo Modelo
     var moneda = ViewBag.Moneda as ERPKardex.Models.Moneda;
     var usuario = ViewBag.Usuario as ERPKardex.Models.Usuario;
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
@@ -118,14 +118,14 @@
                                 <div class="col-3 font-weight-bold">RAZÓN SOCIAL:</div>
                                 <div class="col-9">@proveedor?.RazonSocial</div>
 
-                                <div class="col-3 font-weight-bold">RUC:</div>
-                                <div class="col-9">@proveedor?.Ruc</div>
+                                <div class="col-3 font-weight-bold">N° DOC:</div>
+                                <div class="col-9">@proveedor?.NumeroDocumento</div>
 
                                 <div class="col-3 font-weight-bold">CONTACTO:</div>
                                 <div class="col-9">@(proveedor?.NombreContacto ?? "-")</div>
 
                                 <div class="col-3 font-weight-bold">EMAIL/TELF:</div>
-                                <div class="col-9">@(proveedor?.Email) / @(proveedor?.Telefono)</div>
+                                <div class="col-9">@(proveedor?.CorreoElectronico) / @(proveedor?.Telefono)</div>
                             </div>
                         </div>
 
@@ -249,13 +249,12 @@
                     @if (!string.IsNullOrEmpty(aprobadorNombre))
                     {
                         <span class="text-uppercase small font-weight-bold">@aprobadorNombre</span>
-                    
                         <br>
                         @if (!string.IsNullOrEmpty(aprobadorCargo))
                         {
                             <span class="small text-muted">@aprobadorCargo</span>
                             <br>
-     }
+                        }
 
                         @if (fechaResolucion.HasValue)
                         {

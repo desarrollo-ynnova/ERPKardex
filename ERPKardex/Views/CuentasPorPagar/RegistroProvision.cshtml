@@ -27,7 +27,7 @@
                         </div>
                         <div class="col-md-9">
                             <div class="input-group">
-                                <input type="text" id="txt_OrdenSeleccionada" class="form-control font-weight-bold bg-white" readonly placeholder="Haga clic aquí para buscar la orden..." onclick="abrirModalBusqueda()" style="cursor: pointer;">
+                                <input type="text" id="txt_OrdenSeleccionada" class="form-control font-weight-bold bg-white" readonly placeholder="Clic para buscar orden..." onclick="abrirModalBusqueda()" style="cursor: pointer;">
                                 <div class="input-group-append"><button class="btn btn-dark" type="button" onclick="abrirModalBusqueda()">BUSCAR</button></div>
                             </div>
                         </div>
@@ -42,14 +42,8 @@
                                 <option value="RH">RECIBO X HONORARIOS</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="font-weight-bold">Serie</label>
-                            <input type="text" id="txt_Serie" class="form-control text-uppercase" placeholder="Ej: F001" maxlength="10">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="font-weight-bold">Número</label>
-                            <input type="text" id="txt_Numero" class="form-control" placeholder="Ej: 0004561" maxlength="20">
-                        </div>
+                        <div class="col-md-3"><label class="font-weight-bold">Serie</label><input type="text" id="txt_Serie" class="form-control text-uppercase" maxlength="10"></div>
+                        <div class="col-md-3"><label class="font-weight-bold">Número</label><input type="text" id="txt_Numero" class="form-control" maxlength="20"></div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">Moneda</label>
                             <select id="cbx_Moneda" class="form-control bg-light font-weight-bold" disabled>
@@ -60,41 +54,42 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="small text-muted">Datos del Proveedor</label>
+                        <div class="col-md-4">
+                            <label class="small text-muted">Proveedor</label>
                             <input type="text" id="txt_ProveedorDisplay" class="form-control bg-light" readonly>
                             <input type="hidden" id="hdn_ProveedorId"><input type="hidden" id="hdn_OrdenId">
                         </div>
-                        <div class="col-md-3">
-                            <label class="small font-weight-bold">Fecha Emisión</label>
-                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTipoCambio()">
+
+                        <div class="col-md-2">
+                            <label class="small text-muted font-weight-bold">Condición (Orden)</label>
+                            <input type="text" id="txt_CondicionPago" class="form-control bg-warning text-dark font-weight-bold text-center" readonly placeholder="---">
                         </div>
-                        <div class="col-md-3">
+
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Fecha Emisión</label>
+                            <input type="date" id="txt_FechaEmision" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTipoCambio(); calcularVencimiento();">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold text-danger">Fecha Vencimiento</label>
+                            <input type="date" id="txt_FechaVencimiento" class="form-control border-danger" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+
+                        <div class="col-md-2">
                             <label class="small text-muted">Tipo Cambio</label>
                             <input type="number" id="txt_TipoCambio" class="form-control bg-light text-center" readonly>
                         </div>
                     </div>
 
                     <div class="row mt-4">
-                        <div class="col-12 mb-2">
-                            <h6 class="font-weight-bold text-dark border-bottom pb-2"><i class="fas fa-list"></i> Detalle del Comprobante (Items Pendientes)</h6>
-                        </div>
+                        <div class="col-12 mb-2"><h6 class="font-weight-bold text-dark border-bottom pb-2">Detalle</h6></div>
                         <div class="col-12">
-                            <div class="table-responsive border rounded" style="max-height: 350px; overflow-y: auto;">
+                            <div class="table-responsive border rounded" style="max-height: 350px;">
                                 <table class="table table-sm table-bordered mb-0 text-center table-hover">
                                     <thead class="bg-secondary text-white small sticky-top">
-                                        <tr>
-                                            <th width="5%">Opción</th>
-                                            <th width="45%">Descripción</th>
-                                            <th width="10%">U.M.</th>
-                                            <th width="15%" class="bg-warning text-dark">Cantidad</th>
-                                            <th width="15%">P. Unitario</th>
-                                            <th width="10%">Subtotal</th>
-                                        </tr>
+                                        <tr><th width="5%">Opción</th><th width="45%">Descripción</th><th width="10%">U.M.</th><th width="15%">Cantidad</th><th width="15%">P. Unitario</th><th width="10%">Subtotal</th></tr>
                                     </thead>
-                                    <tbody id="tbl_DetalleBody">
-                                        <tr><td colspan="6" class="text-muted py-5 small">Seleccione una orden para cargar los ítems pendientes...</td></tr>
-                                    </tbody>
+                                    <tbody id="tbl_DetalleBody"><tr><td colspan="6" class="text-muted py-5 small">Seleccione una orden...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -117,21 +112,13 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <label>Glosa / Observación</label>
-                            <input type="text" id="txt_Observacion" class="form-control" placeholder="Ingrese alguna referencia adicional...">
+                        <div class="row mt-3">
+                            <div class="col-12"><label>Glosa</label><input type="text" id="txt_Observacion" class="form-control"></div>
                         </div>
                     </div>
                 </div>
-
                 <div class="card-footer text-right">
-                    <a href="/CuentasPorPagar/IndexProvisiones" class="btn btn-secondary mr-2">Cancelar</a>
-                    <button class="btn btn-dark px-5 font-weight-bold" onclick="guardarProvision()">
-                        <i class="fas fa-save"></i> GUARDAR COMPROBANTE
-                    </button>
+                    <button class="btn btn-dark px-5 font-weight-bold" onclick="guardarProvision()"><i class="fas fa-save"></i> GUARDAR COMPROBANTE</button>
                 </div>
             </div>
         </div>
@@ -148,9 +135,7 @@
             <div class="modal-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover table-striped mb-0">
-                        <thead class="bg-light">
-                            <tr><th>Acción</th><th>Número</th><th>Proveedor</th><th>Fecha</th><th class="text-right">Total Orig.</th></tr>
-                        </thead>
+                        <thead class="bg-light"><tr><th>Acción</th><th>Número</th><th>Proveedor</th><th>Fecha</th><th class="text-right">Total Orig.</th></tr></thead>
                         <tbody id="tbl_BodyOrdenes"></tbody>
                     </table>
                 </div>
@@ -169,39 +154,56 @@
              if(f) $.get('/TipoCambio/GetTcPorFecha?fecha=' + f, (r) => $('#txt_TipoCambio').val((r.status ? r.valor : (r.ultimoConocido||0)).toFixed(3)));
         }
 
-        // 1. BUSCAR Y SELECCIONAR
-        function abrirModalBusqueda() {
-            let tipo = $('input[name="optOrigen"]:checked').val();
-            $('#modalBusquedaOrden').modal('show');
-            $('#tbl_BodyOrdenes').html('<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+        // --- LÓGICA DE CÁLCULO DE VENCIMIENTO ---
+        function calcularVencimiento() {
+            let fechaEmision = $('#txt_FechaEmision').val();
+            let condicion = $('#txt_CondicionPago').val();
 
-            $.get(`/CuentasPorPagar/BuscarOrdenesPendientes?tipoOrigen=${tipo}`, function(res) {
-                if (res.status && res.data.length > 0) {
-                    let html = '';
-                    res.data.forEach(x => {
-                        html += `<tr>
-                            <td class="text-center"><button class="btn btn-sm btn-dark" onclick="seleccionarOrden(${x.id},'${x.numero}','${x.proveedor}',${x.proveedorId},${x.monedaId})"><i class="fas fa-check"></i></button></td>
-                            <td class="font-weight-bold">${x.numero}</td><td>${x.proveedor}</td><td>${x.fecha}</td><td class="text-right font-weight-bold">${x.totalOrden.toFixed(2)}</td>
-                        </tr>`;
-                    });
-                    $('#tbl_BodyOrdenes').html(html);
-                } else { $('#tbl_BodyOrdenes').html('<tr><td colspan="5" class="text-center">No hay órdenes pendientes.</td></tr>'); }
-            });
+            if (!fechaEmision || !condicion) return;
+
+            let dias = 0;
+            // Buscamos números en la cadena (Ej: "CREDITO 30 DIAS" -> 30)
+            let match = condicion.match(/\d+/);
+            if (match) {
+                dias = parseInt(match[0]);
+            }
+
+            // Si es contado o no hay número, dias sigue siendo 0
+            let fecha = new Date(fechaEmision + 'T00:00:00'); // Forzar zona horaria
+            fecha.setDate(fecha.getDate() + dias);
+
+            // Formatear YYYY-MM-DD
+            let dia = ("0" + fecha.getDate()).slice(-2);
+            let mes = ("0" + (fecha.getMonth() + 1)).slice(-2);
+            let anio = fecha.getFullYear();
+
+            $('#txt_FechaVencimiento').val(`${anio}-${mes}-${dia}`);
         }
 
+        // --- SELECCIONAR ORDEN (MODIFICADO) ---
         function seleccionarOrden(id, numero, proveedor, provId, monId) {
-            $('#hdn_OrdenId').val(id); $('#txt_OrdenSeleccionada').val(numero);
+            $('#hdn_OrdenId').val(id);
+            $('#txt_OrdenSeleccionada').val(numero);
             $('#hdn_ProveedorId').val(provId); $('#txt_ProveedorDisplay').val(proveedor);
             $('#cbx_Moneda').val(monId);
 
             let tipo = $('input[name="optOrigen"]:checked').val();
             $('#tbl_DetalleBody').html('<tr><td colspan="6" class="text-center">Trayendo ítems...</td></tr>');
 
+            // AHORA TRAEMOS CABECERA
             $.get(`/CuentasPorPagar/GetDetallesOrden?ordenId=${id}&tipoOrigen=${tipo}`, function(res) {
+
+                // 1. LLENAR DATOS DE CABECERA (CONDICIÓN PAGO)
+                if(res.status && res.cabecera) {
+                    let cond = res.cabecera.condicionPago || "CONTADO";
+                    $('#txt_CondicionPago').val(cond);
+                    calcularVencimiento(); // Calcular fecha automáticamente
+                }
+
+                // 2. LLENAR DETALLES
                 let html = '';
                 if(res.status && res.data.length > 0) {
                     res.data.forEach(d => {
-                        // AQUÍ ESTÁ EL TEMA: d.precioUnitario es BASE. Multiplicamos por saldo para Subtotal.
                         html += `<tr data-ref="${d.id}" class="fila-detalle">
                             <td><button class="btn btn-sm btn-outline-danger" onclick="$(this).closest('tr').remove(); recalcularTotal();"><i class="fas fa-trash"></i></button></td>
                             <td class="text-left"><small>${d.producto}</small></td>
@@ -213,12 +215,26 @@
                     });
                     $('#tbl_DetalleBody').html(html);
                     recalcularTotal();
-                } else { $('#tbl_DetalleBody').html('<tr><td colspan="6" class="text-center text-danger">Sin ítems pendientes.</td></tr>'); }
+                }
                 $('#modalBusquedaOrden').modal('hide');
             });
         }
 
-        // 2. CÁLCULO DE SUB Y TOTAL (+ IGV)
+        // Resto de funciones (abrirModal, calcularFila, recalcularTotal) igual que antes...
+        function abrirModalBusqueda() {
+            let tipo = $('input[name="optOrigen"]:checked').val();
+            $('#modalBusquedaOrden').modal('show');
+            $.get(`/CuentasPorPagar/BuscarOrdenesPendientes?tipoOrigen=${tipo}`, function(res) {
+                if (res.status && res.data.length > 0) {
+                    let html = '';
+                    res.data.forEach(x => {
+                        html += `<tr><td class="text-center"><button class="btn btn-sm btn-dark" onclick="seleccionarOrden(${x.id},'${x.numero}','${x.proveedor}',${x.proveedorId},${x.monedaId})"><i class="fas fa-check"></i></button></td><td class="font-weight-bold">${x.numero}</td><td>${x.proveedor}</td><td>${x.fecha}</td><td class="text-right font-weight-bold">${x.totalOrden.toFixed(2)}</td></tr>`;
+                    });
+                    $('#tbl_BodyOrdenes').html(html);
+                } else { $('#tbl_BodyOrdenes').html('<tr><td colspan="5" class="text-center">No hay órdenes pendientes.</td></tr>'); }
+            });
+        }
+
         function calcularFila(input) {
             let row = $(input).closest('tr');
             let cant = parseFloat($(input).val()) || 0;
@@ -230,35 +246,22 @@
         function recalcularTotal() {
             let subtotal = 0;
             $('.txt-subtotal').each(function() { subtotal += parseFloat($(this).text()); });
-
-            // LÓGICA DE IMPUESTOS
-            // Si es Recibo x Honorarios (RH), IGV es 0.
-            // Si es Factura (FAC) o Boleta (BOL), calculamos 18%.
             let tipo = $('#cbx_TipoDocumento').val();
             let tasaIGV = (tipo === 'RH') ? 0 : 0.18;
-
             let igv = subtotal * tasaIGV;
             let total = subtotal + igv;
-
             $('#txt_SubTotal').val(subtotal.toFixed(2));
             $('#txt_Igv').val(igv.toFixed(2));
             $('#txt_TotalPagar').val(total.toFixed(2));
         }
-
-        // Al cambiar tipo doc, recalcular IGV (ej. pasar de FAC a RH)
         $('#cbx_TipoDocumento').change(function() { recalcularTotal(); });
 
-        // 3. GUARDAR
         function guardarProvision() {
             let ordenId = $('#hdn_OrdenId').val();
             if (!ordenId) return Swal.fire("Atención", "Debe seleccionar una Orden.", "warning");
             if (!$('#txt_Serie').val() || !$('#txt_Numero').val()) return toastr.warning("Ingrese Serie y Número.");
 
-            // Tomamos los valores calculados
-            let subtotal = parseFloat($('#txt_SubTotal').val());
-            let montoIgv = parseFloat($('#txt_Igv').val());
             let total = parseFloat($('#txt_TotalPagar').val());
-
             if (total <= 0) return toastr.error("El total debe ser mayor a 0.");
 
             let detalles = [];
@@ -268,15 +271,12 @@
                 if (cant > 0) {
                     detalles.push({
                         IdReferencia: row.data('ref'),
-                        Descripcion: row.find('td:eq(1)').text(),
                         Cantidad: cant,
                         PrecioUnitario: parseFloat(row.find('.txt-precio').val()),
-                        Total: parseFloat(row.find('.txt-subtotal').text()) // Esto es el subtotal de linea
+                        Total: parseFloat(row.find('.txt-subtotal').text())
                     });
                 }
             });
-
-            if (detalles.length === 0) return toastr.error("Debe facturar al menos un ítem.");
 
             let documento = {
                 ProveedorId: parseInt($('#hdn_ProveedorId').val()),
@@ -285,20 +285,18 @@
                 OrdenServicioId: ($('input[name="optOrigen"]:checked').val() === 'OS') ? parseInt(ordenId) : null,
                 Serie: $('#txt_Serie').val(),
                 Numero: $('#txt_Numero').val(),
-
-                // ENVIAMOS EL DESGLOSE COMPLETO
-                SubTotal: subtotal,
-                MontoIgv: montoIgv,
+                SubTotal: parseFloat($('#txt_SubTotal').val()),
+                MontoIgv: parseFloat($('#txt_Igv').val()),
                 Total: total,
-
                 FechaEmision: $('#txt_FechaEmision').val(),
+                FechaVencimiento: $('#txt_FechaVencimiento').val(), // <--- ENVIAMOS FECHA VENC
                 TipoCambio: parseFloat($('#txt_TipoCambio').val()),
                 Observacion: $('#txt_Observacion').val()
             };
 
             Swal.fire({
                 title: "¿Registrar Comprobante?",
-                text: `Total: ${total.toFixed(2)} (Inc. IGV).`,
+                text: `Vence el: ${documento.FechaVencimiento}`,
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: "Sí, Registrar"
@@ -322,6 +320,13 @@
                     });
                 }
             });
+        }
+
+        function limpiar() {
+            $('#txt_OrdenSeleccionada, #txt_ProveedorDisplay, #txt_CondicionPago').val('');
+            $('#hdn_OrdenId, #hdn_ProveedorId').val('');
+            $('#tbl_DetalleBody').html('<tr><td colspan="6" class="text-muted py-5 small">Seleccione una orden...</td></tr>');
+            recalcularTotal();
         }
     </script>
 }

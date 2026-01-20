@@ -46,7 +46,7 @@
     <script>
         $(document).ready(function() {
             // ... (Mismo Select2) ...
-            $('#cbx_ProveedorFiltro').select2({ theme: 'bootstrap4', placeholder: "Todos", allowClear:true, ajax: { url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250, processResults: function (d) { return { results: d.proveedores.map(x => ({ id: x.id, text: x.ruc + ' - ' + x.razonSocial })) }; } } });
+            $('#cbx_ProveedorFiltro').select2({ theme: 'bootstrap4', placeholder: "Todos", allowClear:true, ajax: { url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250, processResults: function (d) { return { results: d.proveedores.map(x => ({ id: x.id, text: x.tipoDocumentoIdentidad + ': ' + x.numeroDocumento + ' - ' + x.razonSocial })) }; } } });
             listarNotas();
         });
 

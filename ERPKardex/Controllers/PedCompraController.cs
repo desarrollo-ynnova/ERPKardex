@@ -40,8 +40,8 @@ namespace ERPKardex.Controllers
                                 p.Id,
                                 p.EmpresaId,
                                 p.Numero,
-                                p.FechaEmision,
-                                p.FechaNecesaria,
+                                FechaEmision = p.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
+                                FechaNecesaria = p.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                 Solicitante = u.Nombre,
                                 Estado = e.Nombre,
                                 // Subconsulta de Centros de Costo
@@ -63,8 +63,8 @@ namespace ERPKardex.Controllers
                 {
                     x.Id,
                     x.Numero,
-                    FechaEmision = x.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
-                    FechaNecesaria = x.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                    x.FechaEmision,
+                    x.FechaNecesaria,
                     CentroCosto = x.CentrosInvolucrados.Any() ? string.Join(", ", x.CentrosInvolucrados) : "N/A",
                     x.Solicitante,
                     x.Estado

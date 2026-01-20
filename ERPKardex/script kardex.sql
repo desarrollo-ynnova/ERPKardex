@@ -56,6 +56,11 @@ drop table if exists dmovimiento_activo;
 drop table if exists banco;
 drop table if exists tipo_cambio;
 drop table if exists orden_pago;
+drop table if exists tipo_documento_identidad;
+drop table if exists tipo_persona;
+drop table if exists pais;
+drop table if exists ciudad;
+drop table if exists origen;
 drop table if exists proveedor;
 drop table if exists cliente;
 drop table if exists documento_pagar_aplicacion;
@@ -221,17 +226,70 @@ create table tipo_documento (
 	estado BIT
 );
 
+create table origen (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(255),
+    estado BIT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE tipo_documento_identidad (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    codigo VARCHAR(20),      -- 'RUC', 'DNI', 'CE', 'TAX', 'PAS'
+    descripcion VARCHAR(100), -- 'Régimen Único de Contribuyentes', etc.
+    longitud INT NULL,       -- Para validación (11, 8, etc.)
+    es_alfanumerico BIT DEFAULT 0, -- 0: Solo números, 1: Letras y números
+    estado BIT DEFAULT 1
+);
+
+create table tipo_persona (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(255),
+    estado BIT,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+create table pais (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre varchar(255),
+    estado BIT,
+);
+
+create table ciudad (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre varchar(255),
+    estado BIT,
+    pais_id INT,
+);
+
 CREATE TABLE proveedor (
 	id INT IDENTITY(1,1) PRIMARY KEY,
-	ruc varchar(255),
-	razon_social varchar(255),
+    origen_id INT, -- NACIONAL O EXTRANJERO
+    tipo_persona_id INT, -- PERSONA NATURAL, JURÍDICA, NO DOMICILIADO
+    tipo_documento_identidad_id INT,
+    numero_documento VARCHAR(50),
+    razon_social varchar(255),
+    direccion varchar(255),
+    pais_id INT,
+    ciudad_id INT,
 	nombre_contacto varchar(255),
+    cargo_contacto varchar(255),
+    correo_electronico varchar(255),
     telefono varchar(255),
-    email varchar(255),
     banco_id INT,
-    numero_cuenta VARCHAR(255),
-    numero_detraccion VARCHAR(255),
-    numero_cci VARCHAR(255),
+    codigo_swift varchar(255),
+    -- 1era cuenta
+    moneda_id_uno INT,
+    numero_cuenta_uno VARCHAR(255),
+    numero_cci_uno varchar(255),
+    -- 2da cuenta
+    moneda_id_dos INT,
+    numero_cuenta_dos VARCHAR(255),
+    numero_cci_dos VARCHAR(255),
+    -- 3era cuenta
+    moneda_id_tres INT,
+    numero_cuenta_tres VARCHAR(255),
+    numero_cci_tres VARCHAR(255),
 	estado BIT,
 	empresa_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
@@ -907,44 +965,32 @@ CREATE TABLE tipo_cambio (
 CREATE TABLE orden_pago (
     id INT IDENTITY(1,1) PRIMARY KEY,
     
-    -- VINCULACIÓN (Solo se llenará uno de los dos)
-    ordencompra_id INT NULL,
-    ordenservicio_id INT NULL,
-    
-    -- DATOS SNAPSHOT (Copia de la orden al momento del pago para reporte rápido)
-    fecha_orden DATE,
-    numero_orden VARCHAR(20),
-    moneda_orden_id INT,
-    monto_total_orden DECIMAL(18,2),
-    
-    -- DATOS DE CRÉDITO
-    condicion_pago VARCHAR(50), -- 'CONTADO', 'CREDITO'
-    dias_credito INT DEFAULT 0,
+    -- VINCULACIÓN: Apuntamos a la DEUDA (Factura o Anticipo)
+    documento_pagar_id INT NOT NULL, 
     
     -- DATOS DEL PAGO REAL
-    fecha_pago DATE,
-    tipo_cambio_pago DECIMAL(12,6), -- El TC del día que se pagó (vital para contabilidad)
-    monto_abonado DECIMAL(18,2),    -- Cuánto pagaste realmente
+    numero VARCHAR(20),             -- Ej: OP-00001
+    fecha_pago DATE NOT NULL,
     
-    -- DATOS BANCARIOS
-    banco_id INT,                   -- Referencia a la tabla BANCO
-    numero_operacion VARCHAR(50),   -- El voucher o código de op.
+    moneda_id INT NOT NULL,         
+    tipo_cambio DECIMAL(12,6),      -- TC del día
+    monto_pagado DECIMAL(18,2),     -- El monto de ESTA amortización
     
-    -- DEDUCCIONES (Detracciones / Retenciones)
-    tiene_deduccion BIT DEFAULT 0,
-    tipo_deduccion VARCHAR(20),     -- 'DETRACCION', 'RETENCION' o NULL
-    monto_deduccion DECIMAL(18,2) DEFAULT 0, -- Opcional, por si quieren guardar cuánto fue
+    -- TESORERÍA
+    banco_id INT NULL,              
+    numero_operacion VARCHAR(50),   -- Voucher / Cheque / Transferencia
+    ruta_voucher VARCHAR(255),      
     
-    -- CÁLCULOS
-    dias_retraso INT DEFAULT 0,     -- Se calcula: DATEDIFF(day, fecha_orden, fecha_pago)
-  
-    estado_id INT,
-    ruta_voucher VARCHAR(255),
-  
+    -- ESTADOS (Generado / Anulado)
+    estado_id INT,                  
+    
     -- AUDITORÍA
     observacion VARCHAR(500),
+    empresa_id INT,
     usuario_registro_id INT,
     fecha_registro DATETIME DEFAULT GETDATE(),
+    usuario_anulacion_id INT,
+    fecha_anulacion DATETIME
 );
 
 CREATE TABLE banco (
@@ -1140,9 +1186,6 @@ INSERT INTO estado (nombre, tabla) VALUES
 ('Pendiente', 'DORDEN'),
 ('Atendido Parcial', 'DORDEN'),
 ('Atendido Total', 'DORDEN');
-
-INSERT INTO estado (nombre, tabla) VALUES ('Registrado', 'CXP'); -- El documento existe y es válido
-INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'CXP');    -- El documento fue anulado (extornado)
 
 -- =============================================================================
 -- 2. ESTADOS PARA LA DEUDA (El ciclo de vida del dinero)
@@ -1615,6 +1658,14 @@ INSERT INTO banco (ruc, nombre, estado) VALUES ('20132243230','CAJA MUNICIPAL DE
 INSERT INTO banco (ruc, nombre, estado) VALUES ('20114105024','CAJA MUNICIPAL DEL SANTA',1);
 
 GO
+
+INSERT INTO tipo_documento_identidad (codigo, descripcion, longitud, es_alfanumerico) VALUES 
+('RUC', 'RUC', 11, 0),
+('DNI', 'DNI', 8, 0),
+('TAX', 'TAX ID', 20, 1);
+
+GO
+
 
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-01',3.358,3.368,1);
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-02',3.358,3.368,1);

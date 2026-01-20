@@ -60,6 +60,8 @@ namespace ERPKardex.Controllers
                                      from td in joinDoc.DefaultIfEmpty()
                                      join ent in _context.Proveedores on isa.ProveedorId equals ent.Id into joinEnt
                                      from ent in joinEnt.DefaultIfEmpty()
+                                     join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id into joinTdi
+                                     from tdi in joinTdi.DefaultIfEmpty()
                                      where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
                                      select new
                                      {
@@ -72,7 +74,7 @@ namespace ERPKardex.Controllers
                                          pro.DescripcionProducto,
                                          pro.CodUnidadMedida,
                                          disa.Cantidad,
-                                         Proveedor = ((ent.Ruc ?? "") + " - " + (ent.RazonSocial ?? "")) ?? "Sin Proveedor",
+                                         Proveedor = ((tdi.Descripcion ?? "") + ": " + (ent.NumeroDocumento ?? "") + " - " + (ent.RazonSocial ?? "")) ?? "Sin Proveedor",
                                          TipoDocumento = td != null ? td.Descripcion : "S/D",
                                          Documento = (isa.SerieDocumento ?? "") + " - " + (isa.NumeroDocumento ?? ""),
                                      }).ToList();

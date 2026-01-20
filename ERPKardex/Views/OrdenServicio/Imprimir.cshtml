@@ -118,17 +118,19 @@
                                 <div class="col-3 font-weight-bold">RAZÓN SOCIAL:</div>
                                 <div class="col-9">@proveedor?.RazonSocial</div>
 
-                                <div class="col-3 font-weight-bold">RUC:</div>
-                                <div class="col-9">@proveedor?.Ruc</div>
+                                <div class="col-3 font-weight-bold">N° DOC:</div>
+                                <div class="col-9">@proveedor?.NumeroDocumento</div>
 
                                 <div class="col-3 font-weight-bold">CONTACTO:</div>
                                 <div class="col-9">@(proveedor?.NombreContacto ?? "-")</div>
 
                                 <div class="col-3 font-weight-bold">TELÉFONO:</div>
                                 <div class="col-9">@(proveedor?.Telefono ?? "-")</div>
+
+                                <div class="col-3 font-weight-bold">EMAIL:</div>
+                                <div class="col-9">@(proveedor?.CorreoElectronico ?? "-")</div>
                             </div>
                         </div>
-
                         <div class="col-5">
                             <h6 class="font-weight-bold text-decoration-underline mb-2">CONDICIONES DEL SERVICIO</h6>
                             <div class="row">
@@ -255,13 +257,12 @@
                     @if (!string.IsNullOrEmpty(aprobadorNombre))
                     {
                         <span class="text-uppercase small font-weight-bold">@aprobadorNombre</span>
-                    
                         <br>
                         @if (!string.IsNullOrEmpty(aprobadorCargo))
                         {
                             <span class="small text-muted">@aprobadorCargo</span>
                             <br>
-     }
+                        }
 
                         @if (fechaResolucion.HasValue)
                         {

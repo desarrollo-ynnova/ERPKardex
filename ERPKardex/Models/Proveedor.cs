@@ -6,37 +6,66 @@ namespace ERPKardex.Models
     [Table("proveedor")]
     public class Proveedor
     {
-        [Key] // Es buena práctica marcar la llave primaria
+        [Key]
         public int Id { get; set; }
 
-        public string? Ruc { get; set; }
+        [Column("origen_id")]
+        public int? OrigenId { get; set; }
+
+        [Column("tipo_persona_id")]
+        public int? TipoPersonaId { get; set; }
+
+        // --- CAMBIO: PROPIEDADES UNIFICADAS ---
+        [Column("tipo_documento_identidad_id")]
+        public int? TipoDocumentoIdentidadId { get; set; }
+
+        [Column("numero_documento")]
+        public string? NumeroDocumento { get; set; }
+        // -------------------------------------
 
         [Column("razon_social")]
         public string? RazonSocial { get; set; }
 
+        [Column("direccion")]
+        public string? Direccion { get; set; }
+
+        [Column("pais_id")]
+        public int? PaisId { get; set; }
+
+        [Column("ciudad_id")]
+        public int? CiudadId { get; set; }
+
         [Column("nombre_contacto")]
         public string? NombreContacto { get; set; }
 
+        [Column("cargo_contacto")]
+        public string? CargoContacto { get; set; }
+
+        [Column("correo_electronico")]
+        public string? CorreoElectronico { get; set; }
+
+        [Column("telefono")]
         public string? Telefono { get; set; }
-        public string? Email { get; set; }
 
-        // --- CAMPOS NUEVOS ---
-        [Column("banco_id")]
-        public int? BancoId { get; set; }
+        // Bancos
+        [Column("banco_id")] public int? BancoId { get; set; }
+        [Column("codigo_swift")] public string? CodigoSwift { get; set; }
 
-        [Column("numero_cuenta")]
-        public string? NumeroCuenta { get; set; }
+        // Cuentas (1, 2, 3) se mantienen igual que en tu código anterior...
+        [Column("moneda_id_uno")] public int? MonedaIdUno { get; set; }
+        [Column("numero_cuenta_uno")] public string? NumeroCuentaUno { get; set; }
+        [Column("numero_cci_uno")] public string? NumeroCciUno { get; set; }
 
-        [Column("numero_detraccion")]
-        public string? NumeroDetraccion { get; set; }
+        [Column("moneda_id_dos")] public int? MonedaIdDos { get; set; }
+        [Column("numero_cuenta_dos")] public string? NumeroCuentaDos { get; set; }
+        [Column("numero_cci_dos")] public string? NumeroCciDos { get; set; }
 
-        [Column("numero_cci")]
-        public string? NumeroCci { get; set; }
-        // ---------------------
+        [Column("moneda_id_tres")] public int? MonedaIdTres { get; set; }
+        [Column("numero_cuenta_tres")] public string? NumeroCuentaTres { get; set; }
+        [Column("numero_cci_tres")] public string? NumeroCciTres { get; set; }
 
         public bool? Estado { get; set; }
-
-        [Column("empresa_id")]
-        public int? EmpresaId { get; set; }
+        [Column("empresa_id")] public int? EmpresaId { get; set; }
+        [Column("fecha_registro")] public DateTime? FechaRegistro { get; set; }
     }
 }

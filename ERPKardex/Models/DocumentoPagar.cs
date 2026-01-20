@@ -20,6 +20,7 @@ namespace ERPKardex.Models
         [Column("serie")] public string? Serie { get; set; }
         [Column("numero")] public string? Numero { get; set; }
         [Column("fecha_emision")] public DateTime? FechaEmision { get; set; }
+        [Column("fecha_vencimiento")] public DateTime? FechaVencimiento { get; set; }
         [Column("moneda_id")] public int? MonedaId { get; set; }
         [Column("tipo_cambio")] public decimal? TipoCambio { get; set; }
 

@@ -485,8 +485,8 @@ DECLARE @EntidadComexdiID INT;
 -- Insertamos el entidad solo si no existe
 IF NOT EXISTS (SELECT 1 FROM proveedor WHERE razon_social = 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.' AND empresa_id = @EmpresaID)
 BEGIN
-    INSERT INTO proveedor (ruc, razon_social, estado, empresa_id)
-    VALUES ('20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1, @EmpresaID); -- RUC en NULL como indicaste
+    INSERT INTO proveedor (tipo_documento_identidad_id, numero_documento, razon_social, estado, empresa_id)
+    VALUES (1, '20609093561', 'COMERCIALIZADORA EXPORTADORA Y DISTRIBUIDORA S.A.C.', 1, @EmpresaID); -- RUC en NULL como indicaste
 END
 
 -- Recuperamos el ID (Sea el 1 o cualquiera que le asigne el Identity)

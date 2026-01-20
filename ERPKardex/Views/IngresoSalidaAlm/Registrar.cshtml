@@ -404,6 +404,6 @@
         fct_FillCombo('/IngresoSalidaAlm/GetActividades', '#cbx_Actividad', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         cargarComboEntidades();
     }
-    function cargarComboEntidades() { $.get('/IngresoSalidaAlm/GetEntidades', function (res) { let ops = '<option value="">-- Seleccione --</option>'; if(res.status) res.data.forEach(i => ops += `<option value="${i.id}">${i.ruc} - ${i.razonSocial}</option>`); $('#cbx_ProveedorVal').html(ops); }); }
+    function cargarComboEntidades() { $.get('/IngresoSalidaAlm/GetEntidades', function (res) { let ops = '<option value="">-- Seleccione --</option>'; if(res.status) res.data.forEach(i => ops += `<option value="${i.id}">${i.tipoDocumentoIdentidad}: ${i.numeroDocumento} - ${i.razonSocial}</option>`); $('#cbx_ProveedorVal').html(ops); }); }
     function fct_FillCombo(url, id, val, txt, ph, extra) { $.getJSON(url, function (res) { let h = `<option value="">${ph}</option>`; if (res.status) res.data.forEach(i => h += `<option value="${i[val]}">${extra ? i[extra] + ' - ' : ''}${i[txt]}</option>`); $(id).html(h); }); }
 </script>
