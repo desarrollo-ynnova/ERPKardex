@@ -42,7 +42,7 @@ namespace ERPKardex.Controllers
                                 o.Id,
                                 o.EmpresaId,
                                 o.Numero,
-                                Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
+                                Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 Proveedor = ent.RazonSocial,
                                 Ruc = ent.Ruc,
                                 Moneda = mon.Nombre,
@@ -146,7 +146,7 @@ namespace ERPKardex.Controllers
                                {
                                    g.Key.Id,
                                    g.Key.Numero,
-                                   Fecha = g.Key.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
+                                   Fecha = g.Key.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                    FechaNecesaria = g.Key.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                    g.Key.Observacion
                                }).ToList();
@@ -491,13 +491,18 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. CABECERA (JOIN con Empresa, Proveedor, Moneda, Usuario y Estado)
+                // 1. CABECERA
                 var dataCabecera = await (from o in _context.OrdenCompras
                                           join e in _context.Empresas on o.EmpresaId equals e.Id
-                                          join prov in _context.Proveedores on o.ProveedorId equals prov.Id // PROVEEDOR
-                                          join mon in _context.Monedas on o.MonedaId equals mon.Id      // MONEDA
+                                          join prov in _context.Proveedores on o.ProveedorId equals prov.Id
+                                          join mon in _context.Monedas on o.MonedaId equals mon.Id
                                           join u in _context.Usuarios on o.UsuarioCreacionId equals u.Id
                                           join est in _context.Estados on o.EstadoId equals est.Id
+
+                                          // LEFT JOIN para obtener al Aprobador/Rechazador
+                                          join ua in _context.Usuarios on o.UsuarioAprobador equals ua.Id into joinAprob
+                                          from uAprob in joinAprob.DefaultIfEmpty()
+
                                           where o.Id == id
                                           select new
                                           {
@@ -506,12 +511,17 @@ namespace ERPKardex.Controllers
                                               Proveedor = prov,
                                               Moneda = mon,
                                               Usuario = u,
-                                              Estado = est.Nombre
+                                              Estado = est.Nombre,
+
+                                              // Datos del Aprobador
+                                              AprobadorNombre = uAprob != null ? uAprob.Nombre : null,
+                                              AprobadorCargo = uAprob != null ? uAprob.Cargo : null,
+                                              FechaResolucion = o.FechaAprobacion
                                           }).FirstOrDefaultAsync();
 
                 if (dataCabecera == null) return NotFound();
 
-                // 2. DETALLES (JOIN con Centro Costo)
+                // 2. DETALLES
                 var detalles = await (from d in _context.DOrdenCompras
                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
                                       from cc in ccJoin.DefaultIfEmpty()
@@ -523,17 +533,23 @@ namespace ERPKardex.Controllers
                                           d.UnidadMedida,
                                           d.Cantidad,
                                           d.PrecioUnitario,
-                                          d.Total,          // Importe total de la línea
-                                          d.Lugar,          // Lugar de entrega por ítem si aplica
+                                          d.Total,
+                                          d.Lugar,
                                           CentroCosto = cc != null ? cc.Nombre : ""
                                       }).ToListAsync();
 
                 // 3. Pasar a la vista
                 ViewBag.Empresa = dataCabecera.Empresa;
-                ViewBag.Proveedor = dataCabecera.Proveedor; // Vital para la OC
-                ViewBag.Moneda = dataCabecera.Moneda;       // S/. o $
+                ViewBag.Proveedor = dataCabecera.Proveedor;
+                ViewBag.Moneda = dataCabecera.Moneda;
                 ViewBag.Usuario = dataCabecera.Usuario;
                 ViewBag.Estado = dataCabecera.Estado;
+
+                // Datos del Aprobador para la firma
+                ViewBag.AprobadorNombre = dataCabecera.AprobadorNombre;
+                ViewBag.AprobadorCargo = dataCabecera.AprobadorCargo;
+                ViewBag.FechaResolucion = dataCabecera.FechaResolucion;
+
                 ViewBag.Detalles = detalles;
 
                 return View(dataCabecera.Orden);

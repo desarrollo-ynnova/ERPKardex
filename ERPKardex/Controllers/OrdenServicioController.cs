@@ -42,7 +42,7 @@ namespace ERPKardex.Controllers
                                 o.Id,
                                 o.EmpresaId,
                                 o.Numero,
-                                Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
+                                Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 Proveedor = ent.RazonSocial,
                                 Ruc = ent.Ruc,
                                 Moneda = mon.Nombre,
@@ -141,7 +141,7 @@ namespace ERPKardex.Controllers
                                {
                                    g.Key.Id,
                                    g.Key.Numero,
-                                   Fecha = g.Key.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy"),
+                                   Fecha = g.Key.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                    FechaNecesaria = g.Key.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                    g.Key.Observacion
                                }).ToList();
@@ -251,7 +251,7 @@ namespace ERPKardex.Controllers
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
                     var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DORDEN");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OS");
-                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "FINANZAS");
+                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "ORDEN");
 
                     if (estadoGenerado == null || estadoPendientePago == null || tipoDoc == null || estadoPendiente == null) throw new Exception("Estados o tipo de documento no configurado");
 
@@ -483,13 +483,18 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. CABECERA (JOIN MANUAL)
+                // 1. CABECERA
                 var dataCabecera = await (from o in _context.OrdenServicios
                                           join e in _context.Empresas on o.EmpresaId equals e.Id
                                           join prov in _context.Proveedores on o.ProveedorId equals prov.Id
                                           join mon in _context.Monedas on o.MonedaId equals mon.Id
                                           join u in _context.Usuarios on o.UsuarioCreacionId equals u.Id
                                           join est in _context.Estados on o.EstadoId equals est.Id
+
+                                          // LEFT JOIN para obtener al Aprobador/Rechazador
+                                          join ua in _context.Usuarios on o.UsuarioAprobador equals ua.Id into joinAprob
+                                          from uAprob in joinAprob.DefaultIfEmpty()
+
                                           where o.Id == id
                                           select new
                                           {
@@ -498,12 +503,17 @@ namespace ERPKardex.Controllers
                                               Proveedor = prov,
                                               Moneda = mon,
                                               Usuario = u,
-                                              Estado = est.Nombre
+                                              Estado = est.Nombre,
+
+                                              // Datos del Aprobador
+                                              AprobadorNombre = uAprob != null ? uAprob.Nombre : null,
+                                              AprobadorCargo = uAprob != null ? uAprob.Cargo : null,
+                                              FechaResolucion = o.FechaAprobacion
                                           }).FirstOrDefaultAsync();
 
                 if (dataCabecera == null) return NotFound();
 
-                // 2. DETALLES (JOIN CON CENTRO COSTO)
+                // 2. DETALLES
                 var detalles = await (from d in _context.DOrdenServicios
                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
                                       from cc in ccJoin.DefaultIfEmpty()
@@ -511,12 +521,12 @@ namespace ERPKardex.Controllers
                                       select new
                                       {
                                           d.Item,
-                                          d.Descripcion,    // Descripción del servicio
+                                          d.Descripcion,
                                           d.UnidadMedida,
                                           d.Cantidad,
                                           d.PrecioUnitario,
                                           d.Total,
-                                          d.Lugar,          // Lugar específico si aplica
+                                          d.Lugar,
                                           CentroCosto = cc != null ? cc.Nombre : ""
                                       }).ToListAsync();
 
@@ -526,6 +536,12 @@ namespace ERPKardex.Controllers
                 ViewBag.Moneda = dataCabecera.Moneda;
                 ViewBag.Usuario = dataCabecera.Usuario;
                 ViewBag.Estado = dataCabecera.Estado;
+
+                // Datos del Aprobador para la firma
+                ViewBag.AprobadorNombre = dataCabecera.AprobadorNombre;
+                ViewBag.AprobadorCargo = dataCabecera.AprobadorCargo;
+                ViewBag.FechaResolucion = dataCabecera.FechaResolucion;
+
                 ViewBag.Detalles = detalles;
 
                 return View(dataCabecera.Orden);

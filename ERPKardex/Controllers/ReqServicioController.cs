@@ -42,8 +42,8 @@ namespace ERPKardex.Controllers
                             {
                                 r.Id,
                                 r.Numero,
-                                FechaEmision = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
-                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                FechaEmision = r.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
+                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                 Solicitante = usu.Nombre,
                                 Estado = est.Nombre,
                                 r.EstadoId,
@@ -176,8 +176,7 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioRegistro = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.EstadoId = estadoPendienteREQ.Id;
-
-                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
+                    cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now.AddDays(1);
 
                     _context.ReqServicios.Add(cabecera);
@@ -265,47 +264,64 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. CABECERA
-                var dataCabecera = await (from r in _context.ReqServicios // <-- CAMBIO AQUÍ
+                // 1. OBTENER CABECERA
+                var dataCabecera = await (from r in _context.ReqServicios
                                           join e in _context.Empresas on r.EmpresaId equals e.Id
                                           join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
-                                          join est in _context.Estados on r.EstadoId equals est.Id // <--- NUEVO JOIN
+                                          join est in _context.Estados on r.EstadoId equals est.Id
+
+                                          // LEFT JOIN para obtener datos del Aprobador/Rechazador
+                                          join ua in _context.Usuarios on r.UsuarioAprobador equals ua.Id into joinAprob
+                                          from uAprob in joinAprob.DefaultIfEmpty()
+
                                           where r.Id == id
                                           select new
                                           {
                                               Req = r,
                                               Emp = e,
                                               Usu = u,
-                                              NombreEstado = est.Nombre // <--- OBTENER NOMBRE
+                                              NombreEstado = est.Nombre,
+
+                                              // Datos de la persona que resolvió el documento
+                                              AprobadorNombre = uAprob != null ? uAprob.Nombre : null,
+                                              AprobadorCargo = uAprob != null ? uAprob.Cargo : null,
+                                              FechaResolucion = r.FechaAprobacion // Fecha única para aprobación o rechazo
                                           }).FirstOrDefaultAsync();
 
                 if (dataCabecera == null) return NotFound();
 
-                // 2. DETALLES
-                var detalles = await (from d in _context.DReqServicios // <-- CAMBIO AQUÍ
+                // 2. OBTENER DETALLES
+                var detalles = await (from d in _context.DReqServicios
                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
                                       from cc in ccJoin.DefaultIfEmpty()
-                                      where d.ReqServicioId == id // <-- CAMBIO AQUÍ
+                                      where d.ReqServicioId == id
                                       select new
                                       {
                                           d.Item,
-                                          d.DescripcionServicio, // O DescripcionServicio según tu modelo
+                                          d.DescripcionServicio,
                                           d.UnidadMedida,
                                           d.CantidadSolicitada,
                                           d.Lugar,
                                           CentroCosto = cc != null ? cc.Nombre : ""
                                       }).ToListAsync();
 
+                // 3. PASAR DATOS A LA VISTA
                 ViewBag.Empresa = dataCabecera.Emp;
                 ViewBag.Usuario = dataCabecera.Usu;
-                ViewBag.Estado = dataCabecera.NombreEstado; // <--- PASAR A LA VISTA
+                ViewBag.Estado = dataCabecera.NombreEstado;
+
+                // Datos del Aprobador
+                ViewBag.AprobadorNombre = dataCabecera.AprobadorNombre;
+                ViewBag.AprobadorCargo = dataCabecera.AprobadorCargo;
+                ViewBag.FechaResolucion = dataCabecera.FechaResolucion;
+
                 ViewBag.Detalles = detalles;
 
                 return View(dataCabecera.Req);
             }
             catch (Exception ex)
             {
-                return Content($"Error: {ex.Message}");
+                return Content($"Error al generar formato: {ex.Message}");
             }
         }
     }

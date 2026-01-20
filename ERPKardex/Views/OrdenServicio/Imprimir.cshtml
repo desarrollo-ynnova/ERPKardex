@@ -9,6 +9,11 @@
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
     var estado = ViewBag.Estado as string;
 
+    // Datos del Aprobador
+    var aprobadorNombre = ViewBag.AprobadorNombre as string;
+    var aprobadorCargo = ViewBag.AprobadorCargo as string;
+    var fechaResolucion = ViewBag.FechaResolucion as DateTime?;
+
     string simbolo = moneda?.Simbolo ?? "S/.";
 }
 
@@ -128,7 +133,7 @@
                             <h6 class="font-weight-bold text-decoration-underline mb-2">CONDICIONES DEL SERVICIO</h6>
                             <div class="row">
                                 <div class="col-5 font-weight-bold">F. EMISIÓN:</div>
-                                <div class="col-7">@Model.FechaEmision?.ToString("dd/MM/yyyy")</div>
+                                <div class="col-7">@Model.FechaEmision?.ToString("dd/MM/yyyy HH:mm")</div>
 
                                 <div class="col-5 font-weight-bold">INICIO SERV.:</div>
                                 <div class="col-7">@Model.FechaInicioServicio?.ToString("dd/MM/yyyy")</div>
@@ -182,7 +187,6 @@
                                 @if (!string.IsNullOrEmpty(item.Lugar))
                                 {
                                     <br>
-                        
                                     <small class="text-muted">Lugar: @item.Lugar</small>
                                 }
                             </td>
@@ -232,10 +236,42 @@
                     <span class="text-uppercase small">@usuario?.Nombre</span>
                 </div>
             </div>
+
             <div class="col-6 text-center">
                 <div class="border-top border-dark w-75 mx-auto pt-1">
-                    <strong>AUTORIZADO POR</strong><br>
-                    <small>Gerencia / Finanzas</small>
+                    <strong>
+                        @{
+                            string tituloFirma = "AUTORIZADO POR";
+                            if (!string.IsNullOrEmpty(estado))
+                            {
+                                var st = estado.ToUpper();
+                                if (st.Contains("ANULADO") || st.Contains("RECHAZADO")) tituloFirma = "RECHAZADO/ANULADO POR";
+                            }
+                        }
+                        @tituloFirma
+                    </strong>
+                    <br>
+
+                    @if (!string.IsNullOrEmpty(aprobadorNombre))
+                    {
+                        <span class="text-uppercase small font-weight-bold">@aprobadorNombre</span>
+                    
+                        <br>
+                        @if (!string.IsNullOrEmpty(aprobadorCargo))
+                        {
+                            <span class="small text-muted">@aprobadorCargo</span>
+                            <br>
+     }
+
+                        @if (fechaResolucion.HasValue)
+                        {
+                            <span class="small">Fecha: @fechaResolucion.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    }
+                    else
+                    {
+                        <small class="text-muted">Gerencia / Finanzas</small>
+                    }
                 </div>
             </div>
         </div>

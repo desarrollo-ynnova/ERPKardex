@@ -9,6 +9,11 @@
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
     var estado = ViewBag.Estado as string;
 
+    // Datos del Aprobador
+    var aprobadorNombre = ViewBag.AprobadorNombre as string;
+    var aprobadorCargo = ViewBag.AprobadorCargo as string;
+    var fechaResolucion = ViewBag.FechaResolucion as DateTime?;
+
     string simbolo = moneda?.Simbolo ?? "S/.";
 }
 
@@ -63,7 +68,7 @@
                 background-color: #eee !important;
                 -webkit-print-color-adjust: exact;
             }
-            /* Ajuste para que el borde del estado se vea bien impreso */
+
             .box-border {
                 border: 1px solid #000 !important;
             }
@@ -128,14 +133,13 @@
                             <h6 class="font-weight-bold text-decoration-underline mb-2">CONDICIONES COMERCIALES</h6>
                             <div class="row">
                                 <div class="col-5 font-weight-bold">FECHA EMISIÓN:</div>
-                                <div class="col-7">@Model.FechaEmision?.ToString("dd/MM/yyyy")</div>
+                                <div class="col-7">@Model.FechaEmision?.ToString("dd/MM/yyyy HH:mm")</div>
 
                                 <div class="col-5 font-weight-bold">FORMA PAGO:</div>
                                 <div class="col-7">@Model.CondicionPago</div>
 
                                 <div class="col-5 font-weight-bold">MONEDA:</div>
                                 <div class="col-7">@moneda?.Nombre.ToUpper()</div>
-
                             </div>
                         </div>
                     </div>
@@ -177,7 +181,6 @@
                                 @if (!string.IsNullOrEmpty(item.Lugar))
                                 {
                                     <br>
-                        
                                     <small class="text-muted">Destino: @item.Lugar</small>
                                 }
                             </td>
@@ -227,10 +230,43 @@
                     <span class="text-uppercase small">@usuario?.Nombre</span>
                 </div>
             </div>
+
             <div class="col-6 text-center">
                 <div class="border-top border-dark w-75 mx-auto pt-1">
-                    <strong>AUTORIZADO POR</strong><br>
-                    <small>Gerencia / Finanzas</small>
+                    <strong>
+                        @{
+                            string tituloFirma = "AUTORIZADO POR";
+                            if (!string.IsNullOrEmpty(estado))
+                            {
+                                var st = estado.ToUpper();
+                                if (st.Contains("ANULADO") || st.Contains("RECHAZADO")) tituloFirma = "RECHAZADO/ANULADO POR";
+                            }
+                        }
+                        @tituloFirma
+                    </strong>
+                    <br>
+
+                    @if (!string.IsNullOrEmpty(aprobadorNombre))
+                    {
+                        <span class="text-uppercase small font-weight-bold">@aprobadorNombre</span>
+                    
+                        <br>
+                        @if (!string.IsNullOrEmpty(aprobadorCargo))
+                        {
+                            <span class="small text-muted">@aprobadorCargo</span>
+                            <br>
+     }
+
+                        @if (fechaResolucion.HasValue)
+                        {
+                            <span class="small">Fecha: @fechaResolucion.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    }
+                    else
+                    {
+                        @* Si no hay aprobador aún (ej. en Borrador o Generado), mostramos el genérico *@
+                        <small class="text-muted">Gerencia / Finanzas</small>
+                    }
                 </div>
             </div>
         </div>

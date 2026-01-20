@@ -2,11 +2,15 @@
 @{
     Layout = null;
 
-    // Recuperamos los datos del Controller
     var empresa = ViewBag.Empresa as ERPKardex.Models.Empresa;
     var usuario = ViewBag.Usuario as ERPKardex.Models.Usuario;
     var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
     var nombreEstado = ViewBag.Estado as string;
+
+    // Datos del Aprobador/Rechazador
+    var aprobadorNombre = ViewBag.AprobadorNombre as string;
+    var aprobadorCargo = ViewBag.AprobadorCargo as string;
+    var fechaResolucion = ViewBag.FechaResolucion as DateTime?;
 }
 
 <!DOCTYPE html>
@@ -59,7 +63,7 @@
             .box-border {
                 border: 1px solid #000 !important;
             }
-            /* Asegurar que el fondo del estado se vea si usamos badge */
+
             -webkit-print-color-adjust: exact;
         }
     </style>
@@ -102,11 +106,11 @@
                 <div class="box-border">
                     <div class="row">
                         <div class="col-md-7 mb-2">
-                            <strong>SOLICITANTE:</strong> @usuario?.Nombre.ToUpper() <br>
+                            <strong>SOLICITADO POR:</strong> @usuario?.Nombre.ToUpper() <br>
                             <strong>CARGO:</strong> @usuario?.Cargo?.ToUpper()
                         </div>
                         <div class="col-md-5 mb-2 text-right">
-                            <strong>FECHA EMISIÓN:</strong> @Model.FechaEmision?.ToString("dd/MM/yyyy") <br>
+                            <strong>FECHA EMISIÓN:</strong> @Model.FechaEmision?.ToString("dd/MM/yyyy HH:mm") <br>
                             <strong>FECHA NECESARIA:</strong> @Model.FechaNecesaria?.ToString("dd/MM/yyyy")
                         </div>
                         <div class="col-md-12 border-top pt-2">
@@ -169,8 +173,41 @@
 
             <div class="col-6 text-center">
                 <div class="border-top border-dark w-75 mx-auto pt-1">
-                    <strong>AUTORIZADO POR</strong><br>
-                    <small>Firma y Sello</small>
+                    <strong>
+                        @{
+                            string tituloFirma = "AUTORIZADO POR";
+                            if (!string.IsNullOrEmpty(nombreEstado))
+                            {
+                                var st = nombreEstado.ToUpper();
+                                if (st.Contains("ANULADO") || st.Contains("RECHAZADO")) tituloFirma = "RECHAZADO/ANULADO POR";
+                            }
+                        }
+                        @tituloFirma
+                    </strong>
+                    <br>
+
+                    @if (!string.IsNullOrEmpty(aprobadorNombre))
+                    {
+                        @* Si existe usuario en el campo usuario_aprobador, lo mostramos *@
+                        <span class="text-uppercase small font-weight-bold">@aprobadorNombre</span>
+                    
+                        <br>
+                        @if (!string.IsNullOrEmpty(aprobadorCargo))
+                        {
+                            <span class="small text-muted">@aprobadorCargo</span>
+                            <br>
+     }
+
+                        @if (fechaResolucion.HasValue)
+                        {
+                            <span class="small">Fecha: @fechaResolucion.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    }
+                    else
+                    {
+                        @* Si no hay nadie registrado en ese campo (ej. está Pendiente), mostramos espacio *@
+                        <small class="text-muted">Firma y Sello</small>
+                    }
                 </div>
             </div>
         </div>

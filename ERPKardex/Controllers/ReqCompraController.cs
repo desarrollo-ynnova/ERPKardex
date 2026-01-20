@@ -43,8 +43,8 @@ namespace ERPKardex.Controllers
                             {
                                 r.Id,
                                 r.Numero,
-                                FechaEmision = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
-                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                FechaEmision = r.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
+                                FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
                                 Solicitante = usu.Nombre,
                                 Estado = est.Nombre,
                                 r.EstadoId,
@@ -180,8 +180,7 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioRegistro = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.EstadoId = estadoPendienteREQ.Id;
-
-                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
+                    cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now.AddDays(1);
 
                     _context.ReqCompras.Add(cabecera);
@@ -255,26 +254,38 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                // 1. OBTENER CABECERA (JOIN MANUAL CON EMPRESA Y USUARIO)
+                // 1. OBTENER CABECERA
                 var dataCabecera = await (from r in _context.ReqCompras
                                           join e in _context.Empresas on r.EmpresaId equals e.Id
                                           join u in _context.Usuarios on r.UsuarioSolicitanteId equals u.Id
-                                          join est in _context.Estados on r.EstadoId equals est.Id // <--- NUEVO JOIN
+                                          join est in _context.Estados on r.EstadoId equals est.Id
+
+                                          // UN SOLO JOIN: El campo UsuarioAprobador maneja tanto aprobación como rechazo
+                                          join ua in _context.Usuarios on r.UsuarioAprobador equals ua.Id into joinAprob
+                                          from uAprob in joinAprob.DefaultIfEmpty()
+
                                           where r.Id == id
                                           select new
                                           {
-                                              Req = r,      // Objeto ReqCompra
-                                              Emp = e,      // Objeto Empresa (Para RUC, Logo)
-                                              Usu = u,       // Objeto Usuario (Para Firma)
-                                              NombreEstado = est.Nombre // <--- OBTENER NOMBRE
+                                              Req = r,
+                                              Emp = e,
+                                              Usu = u,
+                                              NombreEstado = est.Nombre,
+
+                                              // Datos del Aprobador/Rechazador
+                                              AprobadorNombre = uAprob != null ? uAprob.Nombre : null,
+                                              AprobadorCargo = uAprob != null ? uAprob.Cargo : null,
+
+                                              // La fecha de resolución es siempre FechaAprobacion
+                                              FechaResolucion = r.FechaAprobacion
                                           }).FirstOrDefaultAsync();
 
                 if (dataCabecera == null) return NotFound();
 
-                // 2. OBTENER DETALLES (JOIN MANUAL CON CENTRO COSTO)
+                // 2. OBTENER DETALLES (Sin cambios)
                 var detalles = await (from d in _context.DReqCompras
                                       join cc in _context.CentroCostos on d.CentroCostoId equals cc.Id into ccJoin
-                                      from cc in ccJoin.DefaultIfEmpty() // Left Join por si no tiene CC
+                                      from cc in ccJoin.DefaultIfEmpty()
                                       where d.ReqCompraId == id
                                       select new
                                       {
@@ -287,13 +298,18 @@ namespace ERPKardex.Controllers
                                       }).ToListAsync();
 
                 // 3. PASAR DATOS A LA VISTA
-                // Como 'Model' solo soporta un tipo, usamos ViewBag para los satélites
                 ViewBag.Empresa = dataCabecera.Emp;
                 ViewBag.Usuario = dataCabecera.Usu;
-                ViewBag.Estado = dataCabecera.NombreEstado; // <--- PASAR A LA VISTA
+                ViewBag.Estado = dataCabecera.NombreEstado;
+
+                // Pasamos los datos tal cual vienen de la BD
+                ViewBag.AprobadorNombre = dataCabecera.AprobadorNombre;
+                ViewBag.AprobadorCargo = dataCabecera.AprobadorCargo;
+                ViewBag.FechaResolucion = dataCabecera.FechaResolucion;
+
                 ViewBag.Detalles = detalles;
 
-                return View(dataCabecera.Req); // El Modelo principal sigue siendo ReqCompra
+                return View(dataCabecera.Req);
             }
             catch (Exception ex)
             {

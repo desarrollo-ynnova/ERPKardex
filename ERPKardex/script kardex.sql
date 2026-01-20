@@ -436,7 +436,7 @@ CREATE TABLE reqcompra (
     id INT IDENTITY(1,1) PRIMARY KEY,
     tipo_documento_interno_id INT, 
     numero VARCHAR(20),
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_necesaria DATE,
     
     usuario_solicitante_id INT, -- Solo quién pide
@@ -474,7 +474,7 @@ CREATE TABLE reqservicio (
     id INT IDENTITY(1,1) PRIMARY KEY,
     tipo_documento_interno_id INT, 
     numero VARCHAR(20),
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_necesaria DATE,
     
     usuario_solicitante_id INT,
@@ -517,7 +517,7 @@ CREATE TABLE pedcompra (
     tipo_documento_interno_id INT, -- Referencia a 'PED'
     numero VARCHAR(20),            -- Ej: 'PED-00001'
     
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_necesaria DATE,
     
     lugar_destino VARCHAR(255),
@@ -566,7 +566,7 @@ CREATE TABLE pedservicio (
     tipo_documento_interno_id INT, -- Referencia a 'PS'
     numero VARCHAR(20),            -- Ej: 'PS-00001'
     
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_necesaria DATE,
 
 	lugar_destino VARCHAR(255),
@@ -614,7 +614,7 @@ CREATE TABLE ordencompra (
     -- Datos del Proveedor (Vital para la Orden)
     proveedor_id INT,                -- Proveedor seleccionado
     
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_entrega DATE,            -- NISIRA: Plazo de Entrega
     
     moneda_id INT,                 -- NISIRA: Moneda
@@ -691,7 +691,7 @@ CREATE TABLE ordenservicio (
     
     proveedor_id INT,                -- Proveedor del Servicio
     
-    fecha_emision DATE,
+    fecha_emision DATETIME,
     fecha_inicio_servicio DATE,    -- NISIRA: Fecha Inicio
     fecha_fin_servicio DATE,       -- NISIRA: Fecha Fin
     

@@ -63,7 +63,7 @@ namespace ERPKardex.Controllers
                 {
                     x.Id,
                     x.Numero,
-                    FechaEmision = x.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                    FechaEmision = x.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                     FechaNecesaria = x.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
                     CentroCosto = x.CentrosInvolucrados.Any() ? string.Join(", ", x.CentrosInvolucrados) : "N/A",
                     x.Solicitante,
@@ -172,7 +172,7 @@ namespace ERPKardex.Controllers
                             {
                                 r.Id,
                                 r.Numero,
-                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd"),
+                                Fecha = r.FechaEmision.GetValueOrDefault().ToString("yyyy-MM-dd HH:mm"),
                                 FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("yyyy-MM-dd"),
                                 Solicitante = u.Nombre,
                                 r.Observacion
@@ -289,8 +289,7 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioRegistro = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.EstadoId = estGeneradoPED.Id;
-
-                    if (cabecera.FechaEmision == DateTime.MinValue) cabecera.FechaEmision = DateTime.Now;
+                    cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now;
 
                     _context.PedCompras.Add(cabecera);
