@@ -224,8 +224,11 @@
                 text: `Esto generará una deuda adicional de ${monto.toFixed(2)} al proveedor.`,
                 icon: "info",
                 showCancelButton: true,
-                confirmButtonText: "Sí, Registrar",
-                cancelButtonText: "Cancelar"
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                reverseButtons: true,
+                cancelButtonText: "Cancelar",
+                confirmButtonText: "Sí, Registrar"
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#efec-cargando').removeClass('d-none');

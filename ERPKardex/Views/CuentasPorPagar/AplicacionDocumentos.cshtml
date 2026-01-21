@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Aplicación de Documentos (Cuentas por Pagar)";
+    ViewData["Title"] = "Aplicación de Anticipos (Cuentas por Pagar)";
 }
 
 <style>
@@ -278,8 +278,16 @@
             if(monto > g_saldoAbono) return Swal.fire("Error", "Excede saldo disponible.", "error");
 
             Swal.fire({
-                title: "¿Aplicar?", text: `Se descontarán ${monto.toFixed(2)} del anticipo.`, icon: "question",
-                showCancelButton: true, confirmButtonText: "Sí, Aplicar"
+                title: "¿Aplicar?", 
+                text: `Se descontarán ${monto.toFixed(2)} del anticipo.`, 
+                icon: "question",
+                showCancelButton: true,
+                reverseButtons: true,
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                cancelButtonText: "Cancelar",
+                confirmButtonText: "Sí, Aplicar"
             }).then((result) => {
                 if (result.isConfirmed) {
                     $('#efec-cargando').removeClass('d-none');
