@@ -176,8 +176,21 @@
                     data: 'infoContacto',
                     className: 'small',
                     render: function(data) {
-                        // Formateamos para que el email baje de línea si es muy largo
-                        return data ? data.replace(' / ', '<br><i class="fas fa-envelope text-muted mr-1"></i>') : '-';
+                        if (!data) return '-';
+
+                        // 1. Dividimos el string por el separador
+                        var partes = data.split(' / ');
+                        var telefono = partes[0] ? partes[0] : '';
+                        var email = partes[1] ? partes[1] : '';
+
+                        // 2. Construimos el HTML con ambos iconos
+                        var html = '<i class="fas fa-phone text-muted mr-1"></i>' + telefono;
+
+                        if (email) {
+                            html += '<br><i class="fas fa-envelope text-muted mr-1"></i>' + email;
+                        }
+
+                        return html;
                     }
                 },
                 {

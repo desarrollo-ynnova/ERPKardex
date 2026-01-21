@@ -109,28 +109,65 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var doc = await _context.DocumentosPagar.FindAsync(id);
-                if (doc == null) throw new Exception("Documento no encontrado");
+                var consulta = await (from d in _context.DocumentosPagar
+                                      join p in _context.Proveedores on d.ProveedorId equals p.Id
+                                      join m in _context.Monedas on d.MonedaId equals m.Id
+                                      where d.Id == id
+                                      select new
+                                      {
+                                          DocumentoId = d.Id,
+                                          Serie = d.Serie,
+                                          Numero = d.Numero,
+                                          Total = d.Total,
+                                          Saldo = d.Saldo,
+                                          FechaVencimiento = d.FechaVencimiento,
+                                          MonedaId = d.MonedaId,
+                                          MonedaSimbolo = m.Simbolo,
+                                          // Datos del Proveedor para Tesorería
+                                          ProveedorNombre = p.RazonSocial,
+                                          CuentaDetraccion = p.NumeroCuentaDetracciones,
+                                          // Cuentas Bancarias
+                                          M1 = p.MonedaIdUno,
+                                          C1 = p.NumeroCuentaUno,
+                                          CCI1 = p.NumeroCciUno,
+                                          M2 = p.MonedaIdDos,
+                                          C2 = p.NumeroCuentaDos,
+                                          CCI2 = p.NumeroCciDos,
+                                          M3 = p.MonedaIdTres,
+                                          C3 = p.NumeroCuentaTres,
+                                          CCI3 = p.NumeroCciTres
+                                      }).FirstOrDefaultAsync();
 
-                var moneda = await _context.Monedas.FindAsync(doc.MonedaId);
+                if (consulta == null) throw new Exception("No se encontró el documento o proveedor.");
+
+                // Bancos para el combo del modal
                 var bancos = await _context.Bancos.Where(b => b.Estado == true).Select(b => new { b.Id, b.Nombre }).ToListAsync();
 
-                // Calcular estado financiero actual
-                decimal pagado = doc.Total - doc.Saldo.Value;
+                // Filtramos las cuentas que coinciden con la moneda del documento
+                var cuentasFiltradas = new List<object>();
+                if (consulta.M1 == consulta.MonedaId && !string.IsNullOrEmpty(consulta.C1))
+                    cuentasFiltradas.Add(new { Banco = "CTA 1", Cuenta = consulta.C1, CCI = consulta.CCI1 });
+
+                if (consulta.M2 == consulta.MonedaId && !string.IsNullOrEmpty(consulta.C2))
+                    cuentasFiltradas.Add(new { Banco = "CTA 2", Cuenta = consulta.C2, CCI = consulta.CCI2 });
+
+                if (consulta.M3 == consulta.MonedaId && !string.IsNullOrEmpty(consulta.C3))
+                    cuentasFiltradas.Add(new { Banco = "CTA 3", Cuenta = consulta.C3, CCI = consulta.CCI3 });
 
                 return Json(new
                 {
                     status = true,
                     data = new
                     {
-                        Documento = doc.Serie + "-" + doc.Numero,
-                        FechaEmision = doc.FechaEmision.Value.ToString("dd/MM/yyyy"),
-                        FechaVencimiento = doc.FechaVencimiento.HasValue ? doc.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
-                        Total = doc.Total,
-                        Pagado = pagado,
-                        Saldo = doc.Saldo,
-                        MonedaId = doc.MonedaId,
-                        MonedaSimbolo = moneda.Simbolo
+                        Documento = $"{consulta.Serie}-{consulta.Numero}",
+                        ProveedorNombre = consulta.ProveedorNombre,
+                        FechaVencimiento = consulta.FechaVencimiento?.ToString("dd/MM/yyyy") ?? "-",
+                        Total = consulta.Total,
+                        Saldo = consulta.Saldo,
+                        MonedaId = consulta.MonedaId,
+                        MonedaSimbolo = consulta.MonedaSimbolo,
+                        CuentasProveedor = cuentasFiltradas,
+                        CuentaDetraccion = consulta.CuentaDetraccion
                     },
                     bancos
                 });

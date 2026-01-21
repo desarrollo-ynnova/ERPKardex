@@ -150,8 +150,16 @@
 
                     <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <h6 class="text-success font-weight-bold mb-3 border-bottom pb-2">Detalle de la Transacción</h6>
+                            <div id="div_InfoBancaria" class="alert alert-warning border-warning mb-3 d-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-university mr-1"></i> Datos para Transferencia</h6>
+                                    <small class="badge badge-dark" id="lbl_MonedaCta"></small>
+                                </div>
+                                <div id="lista_cuentas" class="small">
+                                </div>
+                            </div>
 
+                            <h6 class="text-success font-weight-bold mb-3 border-bottom pb-2">Detalle de la Transacción</h6>
                             <div class="form-row">
                                 <div class="form-group col-md-4">
                                     <label class="small font-weight-bold">Fecha Pago</label>
@@ -330,6 +338,42 @@
                     res.bancos.forEach(b => htmlB += `<option value="${b.id}">${b.nombre}</option>`);
                     $('#cbxBanco').html(htmlB);
 
+                    // LÓGICA DE VISUALIZACIÓN DE CUENTAS
+                    $('#lista_cuentas').empty();
+                    $('#lbl_MonedaCta').text("Moneda: " + d.monedaSimbolo);
+
+                    let tieneDatos = false;
+
+                    // 1. Mostrar cuentas de la moneda
+                    if (d.cuentasProveedor && d.cuentasProveedor.length > 0) {
+                        tieneDatos = true;
+                        d.cuentasProveedor.forEach((c, i) => {
+                            $('#lista_cuentas').append(`
+                                <div class="mb-2 p-1 border-bottom border-white">
+                                    <strong>${c.banco}:</strong> <span id="txtCta_${i}">${c.cuenta}</span>
+                                    <button type="button" class="btn btn-xs btn-light ml-1" onclick="copyText('txtCta_${i}')"><i class="far fa-copy"></i></button>
+                                    <br>
+                                    <strong>CCI:</strong> <span id="txtCci_${i}">${c.cci || '---'}</span>
+                                    ${c.cci ? `<button type="button" class="btn btn-xs btn-light ml-1" onclick="copyText('txtCci_${i}')"><i class="far fa-copy"></i></button>` : ''}
+                                </div>
+                            `);
+                        });
+                    }
+
+                    // 2. Mostrar cuenta de detracción si existe
+                    if (d.cuentaDetraccion) {
+                        tieneDatos = true;
+                        $('#lista_cuentas').append(`
+                            <div class="mt-1">
+                                <strong class="text-danger">DETRACCIÓN:</strong> <span id="txtDetr">${d.cuentaDetraccion}</span>
+                                <button type="button" class="btn btn-xs btn-light ml-1" onclick="copyText('txtDetr')"><i class="far fa-copy"></i></button>
+                            </div>
+                        `);
+                    }
+
+                    if(tieneDatos) $('#div_InfoBancaria').removeClass('d-none');
+                    else $('#div_InfoBancaria').addClass('d-none');
+
                     $('#modalPago').modal('show');
                 }
             });
@@ -364,8 +408,10 @@
                 text: "Se amortizará la deuda seleccionada.",
                 icon: "warning",
                 showCancelButton: true,
+                reverseButtons: true,
                 confirmButtonColor: '#1cc88a',
-                confirmButtonText: 'Sí, Pagar'
+                confirmButtonText: 'Sí, Pagar',
+                cancelButtonText: "Cancelar",
             }).then((r) => {
                 if(r.isConfirmed) {
                     $.ajax({
@@ -403,6 +449,12 @@
                     $('#tblHistorial tbody').html(html);
                 }
             });
+        }
+        
+        function copyText(id) {
+            let text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            toastr.success("Copiado al portapapeles");
         }
     </script>
 }

@@ -319,22 +319,56 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Anticipo requiere Orden.");
-                    var est = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                    if (doc.OrdenCompraId == null && doc.OrdenServicioId == null)
+                        throw new Exception("Anticipo requiere Orden.");
 
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     doc.FechaRegistro = DateTime.Now;
-                    doc.FechaEmision = DateTime.Now;
-                    doc.EstadoId = est.Id; doc.Saldo = doc.Total;
-                    doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == "ANT").Id;
+                    doc.FechaEmision = DateTime.Now; // Fecha del sistema o la que elija el usuario
+
+                    // 1. Configurar Estados y Tipo
+                    var estPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                    var tipoAnticipo = _context.TiposDocumentoInterno.First(x => x.Codigo == "ANT");
+
+                    doc.EstadoId = estPorPagar.Id;
+                    doc.Saldo = doc.Total;
+                    doc.TipoDocumentoInternoId = tipoAnticipo.Id;
+
+                    // ---------------------------------------------------------
+                    // 2. GENERACIÓN DE CORRELATIVO (Serie ANT - Número D8)
+                    // ---------------------------------------------------------
+                    doc.Serie = "ANT";
+
+                    // Buscamos el último documento de tipo ANT registrado en la empresa
+                    var ultimoDoc = _context.DocumentosPagar
+                        .Where(x => x.EmpresaId == EmpresaUsuarioId && x.TipoDocumentoInternoId == tipoAnticipo.Id)
+                        .OrderByDescending(x => x.Id) // Ordenamos por ID para obtener el último insertado
+                        .FirstOrDefault();
+
+                    int nroSiguiente = 1; // Valor por defecto si es el primero
+
+                    // Si existe uno previo, intentamos leer su número y sumar 1
+                    if (ultimoDoc != null && int.TryParse(ultimoDoc.Numero, out int ultimoNro))
+                    {
+                        nroSiguiente = ultimoNro + 1;
+                    }
+
+                    // Asignamos con formato de 8 dígitos (Ej: 00000001, 00000002...)
+                    doc.Numero = nroSiguiente.ToString("D8");
+                    // ---------------------------------------------------------
 
                     _context.DocumentosPagar.Add(doc);
                     _context.SaveChanges();
                     transaction.Commit();
-                    return Json(new { status = true, message = "Anticipo registrado." });
+
+                    return Json(new { status = true, message = $"Anticipo {doc.Serie}-{doc.Numero} registrado correctamente." });
                 }
-                catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = ex.Message });
+                }
             }
         }
         #endregion
