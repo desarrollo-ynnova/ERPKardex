@@ -35,7 +35,7 @@ builder.Services.AddControllersWithViews()
     });
 
 // Configurar el Worker automático
-builder.Services.AddHostedService<ERPKardex.Workers.VerificadorVencimientosWorker>();
+//builder.Services.AddHostedService<ERPKardex.Workers.VerificadorVencimientosWorker>();
 
 // CACHÉ PARA PERMISOS
 builder.Services.AddMemoryCache(); // Habilitar Caché en RAM

@@ -40,12 +40,12 @@
     </div>
 
     <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Gasto Ejecutado</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Gasto Comprometido (Aprobado)</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Total">0.00</div>
                         </div>
                         <div class="col-auto"><i class="fas fa-chart-line fa-2x text-gray-300"></i></div>
@@ -53,12 +53,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Órdenes</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Órdenes Generadas</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_CountOC">0</div>
                         </div>
                         <div class="col-auto"><i class="fas fa-file-invoice fa-2x text-gray-300"></i></div>
@@ -66,7 +66,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -79,16 +79,26 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-white">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-shopping-cart mr-2"></i> Evolución Gastos: COMPRAS</h6>
+                </div>
                 <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Pagado</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="lbl_Pagado">0.00</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-hand-holding-usd fa-2x text-gray-300"></i></div>
-                    </div>
+                    <div id="chartEvolucionCompra" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-white">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-tools mr-2"></i> Evolución Gastos: SERVICIOS</h6>
+                </div>
+                <div class="card-body">
+                    <div id="chartEvolucionServicio" style="height: 300px;"></div>
                 </div>
             </div>
         </div>
@@ -97,64 +107,26 @@
     <div class="row">
         <div class="col-md-3">
             <div class="card shadow mb-4">
-                <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-warning small">Req. Compra</h6></div>
-                <div class="card-body p-2"><div id="chartPieRC" style="height: 220px;"></div></div>
+                <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-secondary small">Req. Compra</h6></div>
+                <div class="card-body p-2"><div id="chartPieRC" style="height: 200px;"></div></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow mb-4">
-                <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-warning small">Req. Servicio</h6></div>
-                <div class="card-body p-2"><div id="chartPieRS" style="height: 220px;"></div></div>
+                <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-secondary small">Req. Servicio</h6></div>
+                <div class="card-body p-2"><div id="chartPieRS" style="height: 200px;"></div></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow mb-4">
                 <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-info small">Orden Compra (Estado)</h6></div>
-                <div class="card-body p-2"><div id="chartPieOC" style="height: 220px;"></div></div>
+                <div class="card-body p-2"><div id="chartPieOC" style="height: 200px;"></div></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow mb-4">
                 <div class="card-header py-2"><h6 class="m-0 font-weight-bold text-info small">Orden Servicio (Estado)</h6></div>
-                <div class="card-body p-2"><div id="chartPieOS" style="height: 220px;"></div></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-2 bg-white"><h6 class="m-0 font-weight-bold text-success">Estado Pagos: Compras</h6></div>
-                <div class="card-body"><div id="chartPagoOC" style="height: 250px;"></div></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-2 bg-white"><h6 class="m-0 font-weight-bold text-success">Estado Pagos: Servicios</h6></div>
-                <div class="card-body"><div id="chartPagoOS" style="height: 250px;"></div></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-2">
-        <div class="col-md-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-white">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-chart-bar mr-2"></i> Evolución COMPRAS: Ejecutado vs Pagado</h6>
-                </div>
-                <div class="card-body">
-                    <div id="chartEvolucionCompra" style="height: 380px;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-white">
-                    <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-chart-bar mr-2"></i> Evolución SERVICIOS: Ejecutado vs Pagado</h6>
-                </div>
-                <div class="card-body">
-                    <div id="chartEvolucionServicio" style="height: 380px;"></div>
-                </div>
+                <div class="card-body p-2"><div id="chartPieOS" style="height: 200px;"></div></div>
             </div>
         </div>
     </div>
@@ -170,7 +142,6 @@
                     res.data.forEach(e => $('#cbxEmpresaDash').append(`<option value="${e.id}">${e.nombre}</option>`));
                 }
             });
-
             // Fechas Default
             let date = new Date();
             let currentYear = date.getFullYear();
@@ -187,60 +158,47 @@
 
         function fct_CargarDashboard() {
             let empresa = $('#cbxEmpresaDash').val();
-            let moneda = $('#cbxMonedaDash').val(); // Capturar moneda
+            let moneda = $('#cbxMonedaDash').val();
             let inicio = $('#txtFInicio').val();
             let fin = $('#txtFFin').val();
 
-            // Determinar Símbolo para el formato visual
             let simbolo = (moneda == '2') ? '$' : 'S/.';
             let codigoIso = (moneda == '2') ? 'USD' : 'PEN';
-            
-            // Formateador dinámico
             const formatMoney = new Intl.NumberFormat('es-PE', { style: 'currency', currency: codigoIso });
 
             Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-            // Enviar parámetro monedaId
             $.get(`/Logistica/GetDashboardData?empresaId=${empresa}&monedaId=${moneda}&fechaInicio=${inicio}&fechaFin=${fin}`, function (res) {
                 Swal.close();
                 if (res.status) {
-                    // KPIs con Símbolo Correcto
+                    // KPIs
                     $('#lbl_Total').text(formatMoney.format(res.kpis.montoTotal));
                     $('#lbl_CountOC').text(res.kpis.countOC);
                     $('#lbl_CountReq').text(res.kpis.countReq);
-                    $('#lbl_Pagado').text(formatMoney.format(res.kpis.montoPagado));
 
-                    // Tortas
-                    initDonut('chartPieRC', res.charts.pieRC, 'Req. Compra');
-                    initDonut('chartPieRS', res.charts.pieRS, 'Req. Servicio');
-                    initDonut('chartPieOC', res.charts.pieOC, 'Estado OC');
-                    initDonut('chartPieOS', res.charts.pieOS, 'Estado OS');
+                    // Tortas Operativas
+                    initDonut('chartPieRC', res.charts.pieRC);
+                    initDonut('chartPieRS', res.charts.pieRS);
+                    initDonut('chartPieOC', res.charts.pieOC);
+                    initDonut('chartPieOS', res.charts.pieOS);
 
-                    let colorPagos = { 'Pagado Total': '#1cc88a', 'Pagado Parcial': '#f6c23e', 'Vencido': '#e74a3b', 'Pendiente Pago': '#858796' };
-                    initDonut('chartPagoOC', res.charts.piePagoOC, 'Pagos OC', colorPagos);
-                    initDonut('chartPagoOS', res.charts.piePagoOS, 'Pagos OS', colorPagos);
-
-                    // Evolución con Símbolo Correcto
-                    initEvolutionChart('chartEvolucionCompra', res.charts.evolucionCategories, res.charts.seriesCompra.ejecutado, res.charts.seriesCompra.pagado, '#4e73df', simbolo);
-                    initEvolutionChart('chartEvolucionServicio', res.charts.evolucionCategories, res.charts.seriesServicio.ejecutado, res.charts.seriesServicio.pagado, '#1cc88a', simbolo);
+                    // Evolución Gastos (Solo una serie)
+                    initEvolutionChart('chartEvolucionCompra', res.charts.evolucionCategories, res.charts.seriesCompra, '#4e73df', simbolo);
+                    initEvolutionChart('chartEvolucionServicio', res.charts.evolucionCategories, res.charts.seriesServicio, '#1cc88a', simbolo);
                 }
             });
         }
 
-        function initDonut(id, data, title, colorMap = null) {
+        function initDonut(id, data) {
             let chart = echarts.init(document.getElementById(id));
-            if(colorMap) {
-                data.forEach(d => { if(colorMap[d.name]) d.itemStyle = { color: colorMap[d.name] }; });
-            }
             let option = {
                 title: { show: false },
                 tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
                 legend: { show: true, bottom: '0%', left: 'center', itemWidth: 10, itemHeight: 10 },
                 series: [{
-                    type: 'pie', radius: ['35%', '60%'], center: ['50%', '45%'],
+                    type: 'pie', radius: ['40%', '65%'], center: ['50%', '45%'],
                     data: data,
-                    label: { show: true, formatter: '{b}\n{c} ({d}%)', position: 'outside', fontSize: 11, color: '#333' },
-                    labelLine: { show: true, length: 10, length2: 10 },
+                    label: { show: true, formatter: '{c}', position: 'inside', fontSize: 10, color: '#fff' },
                     itemStyle: { borderRadius: 3, borderColor: '#fff', borderWidth: 1 }
                 }]
             };
@@ -248,20 +206,15 @@
             window.addEventListener('resize', () => chart.resize());
         }
 
-        // --- AHORA RECIBE 'SIMBOLO' PARA FORMATEAR TOOLTIP Y ETIQUETAS ---
-        function initEvolutionChart(id, categories, dataEjecutado, dataPagado, colorBase, simbolo) {
+        function initEvolutionChart(id, categories, dataEjecutado, colorBase, simbolo) {
             let chart = echarts.init(document.getElementById(id));
-            
-            // Formateador solo números (1,500.00)
             const numFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
             let option = {
                 title: { show: false },
-                toolbox: { show: true, feature: { magicType: { show: true, type: ['line', 'bar'] }, saveAsImage: { show: true } }, right: 10 },
-                tooltip: { 
-                    trigger: 'axis', 
+                toolbox: { show: true, feature: { saveAsImage: { show: true } }, right: 10 },
+                tooltip: {
+                    trigger: 'axis',
                     axisPointer: { type: 'shadow' },
-                    // Tooltip con Símbolo Dinámico (S/. o $)
                     valueFormatter: (value) => simbolo + ' ' + numFmt.format(value)
                 },
                 legend: { top: 0 },
@@ -269,12 +222,8 @@
                 xAxis: { type: 'category', data: categories },
                 yAxis: { type: 'value' },
                 series: [
-                    { 
-                        name: 'Monto Ejecutado', type: 'bar', data: dataEjecutado, itemStyle: { color: colorBase }, barMaxWidth: 30,
-                        label: { show: true, position: 'top', formatter: (p) => p.value > 0 ? numFmt.format(p.value) : '', fontSize: 10, color: '#666' }
-                    },
-                    { 
-                        name: 'Monto Pagado', type: 'bar', data: dataPagado, itemStyle: { color: '#f6c23e' }, barMaxWidth: 30,
+                    {
+                        name: 'Gasto Aprobado', type: 'bar', data: dataEjecutado, itemStyle: { color: colorBase }, barMaxWidth: 40,
                         label: { show: true, position: 'top', formatter: (p) => p.value > 0 ? numFmt.format(p.value) : '', fontSize: 10, color: '#666' }
                     }
                 ]

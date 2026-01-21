@@ -112,67 +112,51 @@ namespace ERPKardex.Controllers
                 modelo.RazonSocial = modelo.RazonSocial?.ToUpper();
                 modelo.NombreContacto = modelo.NombreContacto?.ToUpper();
 
-                // Validación de Duplicidad (Unificada por Tipo + Número)
+                // Validación de Duplicidad
                 var existe = await _context.Proveedores.AnyAsync(x =>
                     x.TipoDocumentoIdentidadId == modelo.TipoDocumentoIdentidadId &&
                     x.NumeroDocumento == modelo.NumeroDocumento &&
                     x.EmpresaId == EmpresaUsuarioId &&
-                    x.Id != modelo.Id); // Ignorar el mismo registro al editar
+                    x.Id != modelo.Id);
 
                 if (existe) return Json(new { status = false, message = "Ya existe un proveedor con este Número de Documento." });
 
                 if (modelo.Id == 0)
                 {
-                    // --- NUEVO ---
                     modelo.EmpresaId = EmpresaUsuarioId;
                     modelo.FechaRegistro = DateTime.Now;
-                    modelo.Estado = true; // Por defecto activo
+                    modelo.Estado = true;
                     _context.Proveedores.Add(modelo);
                 }
                 else
                 {
-                    // --- EDICIÓN ---
                     var db = await _context.Proveedores.FindAsync(modelo.Id);
                     if (db == null) return Json(new { status = false, message = "No encontrado" });
 
-                    // 1. Clasificación e Identificación
+                    // Mapeo
                     db.OrigenId = modelo.OrigenId;
                     db.TipoPersonaId = modelo.TipoPersonaId;
                     db.TipoDocumentoIdentidadId = modelo.TipoDocumentoIdentidadId;
                     db.NumeroDocumento = modelo.NumeroDocumento;
-
-                    // 2. Datos Generales
                     db.RazonSocial = modelo.RazonSocial;
                     db.Direccion = modelo.Direccion;
                     db.PaisId = modelo.PaisId;
                     db.CiudadId = modelo.CiudadId;
-
-                    // 3. Contacto
                     db.NombreContacto = modelo.NombreContacto;
                     db.CargoContacto = modelo.CargoContacto;
                     db.CorreoElectronico = modelo.CorreoElectronico;
                     db.Telefono = modelo.Telefono;
 
-                    // 4. Datos Bancarios
+                    // Bancos
                     db.BancoId = modelo.BancoId;
                     db.CodigoSwift = modelo.CodigoSwift;
+                    db.NumeroCuentaDetracciones = modelo.NumeroCuentaDetracciones; // <--- NUEVO
 
-                    // Cuenta 1
-                    db.MonedaIdUno = modelo.MonedaIdUno;
-                    db.NumeroCuentaUno = modelo.NumeroCuentaUno;
-                    db.NumeroCciUno = modelo.NumeroCciUno;
+                    // Cuentas
+                    db.MonedaIdUno = modelo.MonedaIdUno; db.NumeroCuentaUno = modelo.NumeroCuentaUno; db.NumeroCciUno = modelo.NumeroCciUno;
+                    db.MonedaIdDos = modelo.MonedaIdDos; db.NumeroCuentaDos = modelo.NumeroCuentaDos; db.NumeroCciDos = modelo.NumeroCciDos;
+                    db.MonedaIdTres = modelo.MonedaIdTres; db.NumeroCuentaTres = modelo.NumeroCuentaTres; db.NumeroCciTres = modelo.NumeroCciTres;
 
-                    // Cuenta 2
-                    db.MonedaIdDos = modelo.MonedaIdDos;
-                    db.NumeroCuentaDos = modelo.NumeroCuentaDos;
-                    db.NumeroCciDos = modelo.NumeroCciDos;
-
-                    // Cuenta 3
-                    db.MonedaIdTres = modelo.MonedaIdTres;
-                    db.NumeroCuentaTres = modelo.NumeroCuentaTres;
-                    db.NumeroCciTres = modelo.NumeroCciTres;
-
-                    // 5. Estado
                     db.Estado = modelo.Estado;
                 }
 

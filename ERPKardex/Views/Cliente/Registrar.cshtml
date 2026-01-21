@@ -5,82 +5,103 @@
 
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
             <div class="card shadow mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="m-0 font-weight-bold">
-                        <i class="fas fa-user-tag"></i> @(idCliente == 0 ? "Registro de Cliente" : "Edición de Cliente")
-                    </h5>
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-users mr-2"></i> @ViewData["Title"]</h5>
                 </div>
                 <div class="card-body">
                     <input type="hidden" id="hdn_Id" value="@idCliente" />
 
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label class="font-weight-bold">RUC (*)</label>
-                            <input type="text" id="txt_Ruc" class="form-control" placeholder="Ingrese 11 dígitos" maxlength="11" onkeypress="return /[0-9]/i.test(event.key)">
+                    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                        <li class="nav-item"><a class="nav-link active font-weight-bold" data-toggle="tab" href="#general">1. Datos Generales</a></li>
+                        <li class="nav-item"><a class="nav-link font-weight-bold" data-toggle="tab" href="#bancos">2. Información Bancaria</a></li>
+                        <li class="nav-item"><a class="nav-link font-weight-bold" data-toggle="tab" href="#contacto">3. Contacto</a></li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="general">
+                            <div class="form-row">
+                                <div class="form-group col-md-3"><label class="font-weight-bold">Origen (*)</label><select id="cbx_Origen" class="form-control"></select></div>
+                                <div class="form-group col-md-3"><label class="font-weight-bold">Tipo Persona</label><select id="cbx_TipoPersona" class="form-control"></select></div>
+                                <div class="form-group col-md-6"><label class="font-weight-bold">Razón Social (*)</label><input type="text" id="txt_RazonSocial" class="form-control text-uppercase"></div>
+                            </div>
+
+                            <div class="form-row bg-light p-3 rounded mb-3 border">
+                                <div class="form-group col-md-4">
+                                    <label class="font-weight-bold text-primary">Tipo Documento (*)</label>
+                                    <select id="cbx_TipoDoc" class="form-control font-weight-bold" onchange="configurarInputDoc()"></select>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="font-weight-bold text-primary">Número Documento (*)</label>
+                                    <input type="text" id="txt_NumDoc" class="form-control font-weight-bold border-primary" placeholder="Seleccione tipo...">
+                                    <small id="lbl_HelpDoc" class="text-muted"></small>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="font-weight-bold">Estado</label>
+                                    <select id="cbx_Estado" class="form-control"><option value="1">ACTIVO</option><option value="0">INACTIVO</option></select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-md-3"><label>País</label><select id="cbx_Pais" class="form-control select2" onchange="filtrarCiudades()"></select></div>
+                                <div class="form-group col-md-3"><label>Ciudad</label><select id="cbx_Ciudad" class="form-control select2"></select></div>
+                                <div class="form-group col-md-6"><label>Dirección Fiscal</label><input type="text" id="txt_Direccion" class="form-control"></div>
+                            </div>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label class="font-weight-bold">Teléfono</label>
-                            <input type="text" id="txt_Telefono" class="form-control" placeholder="Celular o Fijo">
+
+                        <div class="tab-pane fade" id="bancos">
+                            <div class="form-row mb-3">
+                                <div class="form-group col-md-4"><label class="font-weight-bold">Banco Principal</label><select id="cbx_Banco" class="form-control select2"></select></div>
+                                <div class="form-group col-md-4"><label class="font-weight-bold">Código SWIFT</label><input type="text" id="txt_Swift" class="form-control text-uppercase"></div>
+                            </div>
+
+                            <h6 class="text-primary font-weight-bold mb-3 border-bottom">Cuentas Bancarias</h6>
+                            <div class="card mb-2 border-left-primary">
+                                <div class="card-body p-2">
+                                    <div class="form-row align-items-center">
+                                        <div class="col-md-1 text-center font-weight-bold text-primary">CTA 1</div>
+                                        <div class="col-md-3"><select id="cbx_Moneda1" class="form-control form-control-sm cbx-moneda"></select></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cuenta1" class="form-control form-control-sm" placeholder="N° Cuenta"></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cci1" class="form-control form-control-sm" placeholder="CCI"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mb-2 border-left-success">
+                                <div class="card-body p-2">
+                                    <div class="form-row align-items-center">
+                                        <div class="col-md-1 text-center font-weight-bold text-success">CTA 2</div>
+                                        <div class="col-md-3"><select id="cbx_Moneda2" class="form-control form-control-sm cbx-moneda"></select></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cuenta2" class="form-control form-control-sm" placeholder="N° Cuenta"></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cci2" class="form-control form-control-sm" placeholder="CCI"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mb-2 border-left-warning">
+                                <div class="card-body p-2">
+                                    <div class="form-row align-items-center">
+                                        <div class="col-md-1 text-center font-weight-bold text-warning">CTA 3</div>
+                                        <div class="col-md-3"><select id="cbx_Moneda3" class="form-control form-control-sm cbx-moneda"></select></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cuenta3" class="form-control form-control-sm" placeholder="N° Cuenta"></div>
+                                        <div class="col-md-4"><input type="text" id="txt_Cci3" class="form-control form-control-sm" placeholder="CCI"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="contacto">
+                            <div class="form-row">
+                                <div class="form-group col-md-6"><label class="font-weight-bold">Nombre Completo</label><input type="text" id="txt_ContactoNombre" class="form-control"></div>
+                                <div class="form-group col-md-6"><label>Cargo</label><input type="text" id="txt_ContactoCargo" class="form-control"></div>
+                                <div class="form-group col-md-6"><label>Correo Electrónico</label><input type="email" id="txt_Email" class="form-control"></div>
+                                <div class="form-group col-md-6"><label>Teléfono / Celular</label><input type="text" id="txt_Telefono" class="form-control"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="font-weight-bold">Razón Social (*)</label>
-                        <input type="text" id="txt_RazonSocial" class="form-control" placeholder="Nombre de la empresa o persona">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="font-weight-bold">Nombre de Contacto (*)</label>
-                        <input type="text" id="txt_NombreContacto" class="form-control" placeholder="Nombre de la persona de contacto">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label class="font-weight-bold">Correo Electrónico</label>
-                            <input type="email" id="txt_Email" class="form-control" placeholder="contacto@empresa.com">
-                        </div>
-
-                        <div class="form-group col-md-6">
-                            <label class="font-weight-bold">Estado</label>
-                            <select id="cbo_Estado" class="form-control">
-                                <option value="1">ACTIVO</option>
-                                <option value="0">INACTIVO (DE BAJA)</option>
-                            </select>
-                            <small class="text-muted">Utilice "INACTIVO" para dar de baja si ya tiene historial.</small>
-                        </div>
-                    </div>
-
-                    <h6 class="text-success font-weight-bold mt-3 mb-3 border-bottom pb-2">Información Financiera</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label>Banco</label>
-                            <select id="cbxBanco" class="form-control">
-                                <option value="">-- Seleccione --</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>N° Cuenta</label>
-                            <input type="text" class="form-control" id="txtCuenta" placeholder="Cta. Corriente / Ahorros">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>CCI</label>
-                            <input type="text" class="form-control" id="txtCci" placeholder="Código Interbancario">
-                        </div>
-                        <div class="form-group col-md-12">
-                            <label>Cta. Detracciones (Banco Nación)</label>
-                            <input type="text" class="form-control bg-light" id="txtDetraccion" placeholder="00-000-00000">
-                        </div>
-                    </div>
-                    <hr />
-                    <div class="text-right">
-                        <a href="/Cliente/Index" class="btn btn-secondary mr-2">
-                            <i class="fas fa-arrow-left"></i> Volver
-                        </a>
-                        <button class="btn btn-success px-4" onclick="guardar()">
-                            <i class="fas fa-save"></i> GUARDAR
-                        </button>
+                    <div class="text-right mt-4 pt-3 border-top">
+                        <a href="/Cliente/Index" class="btn btn-secondary mr-2">Cancelar</a>
+                        <button class="btn btn-success px-4 font-weight-bold" onclick="guardar()"><i class="fas fa-save mr-1"></i> GUARDAR</button>
                     </div>
                 </div>
             </div>
@@ -90,90 +111,117 @@
 
 @section Scripts {
     <script>
+        var CIUDADES_FULL = [];
+
         $(document).ready(function() {
-            // Cargar bancos y luego verificar si hay datos para editar
-            fct_CargarBancos();
+            $('.select2').select2({ theme: 'bootstrap4' });
+            cargarCombosIniciales();
         });
 
-        // 1. CARGAR BANCOS
-        function fct_CargarBancos() {
-            $.get('/Cliente/GetBancosCombo', function (res) {
-                if (res.status) {
-                    let html = '<option value="">-- Sin Banco --</option>';
-                    res.data.forEach(b => {
-                        html += `<option value="${b.id}">${b.nombre}</option>`;
-                    });
-                    $('#cbxBanco').html(html);
+        function cargarCombosIniciales() {
+            $.get('/Cliente/GetCombosMaestros', function(res) {
+                if(res.status) {
+                    res.tiposDoc.forEach(x => $('#cbx_TipoDoc').append(`<option value="${x.id}" data-len="${x.longitud || 0}" data-alfa="${x.esAlfanumerico}">${x.descripcion}</option>`));
+                    res.origenes.forEach(x => $('#cbx_Origen').append(`<option value="${x.id}">${x.nombre}</option>`));
+                    res.tiposPersona.forEach(x => $('#cbx_TipoPersona').append(`<option value="${x.id}">${x.nombre}</option>`));
+                    res.paises.forEach(x => $('#cbx_Pais').append(`<option value="${x.id}">${x.nombre}</option>`));
+                    res.bancos.forEach(x => $('#cbx_Banco').append(`<option value="${x.id}">${x.nombre}</option>`));
+                    CIUDADES_FULL = res.ciudades;
 
-                    // Una vez cargado el combo, cargamos la data si es edición
+                    let optMon = '<option value="">-- Moneda --</option>';
+                    res.monedas.forEach(x => optMon += `<option value="${x.id}">${x.nombre} (${x.simbolo})</option>`);
+                    $('.cbx-moneda').html(optMon);
+
                     let id = $('#hdn_Id').val();
-                    if(id > 0) {
-                        cargarDatos(id);
-                    } else {
-                        $('#cbo_Estado').val("1");
-                    }
+                    if(id > 0) cargarDatos(id);
+                    else { configurarInputDoc(); filtrarCiudades(); }
                 }
             });
+        }
+
+        function filtrarCiudades() {
+            let paisId = $('#cbx_Pais').val();
+            let ciudades = CIUDADES_FULL.filter(x => x.paisId == paisId);
+            let html = '<option value="">-- Seleccione --</option>';
+            ciudades.forEach(c => html += `<option value="${c.id}">${c.nombre}</option>`);
+            $('#cbx_Ciudad').html(html);
+        }
+
+        function configurarInputDoc() {
+            let opt = $('#cbx_TipoDoc option:selected');
+
+            let len = opt.data('len');
+            let esAlfa = opt.data('alfa');
+
+            let input = $('#txt_NumDoc');
+            input.val('');
+
+            input.attr('maxlength', len > 0 ? len : 50);
+
+            let msg = len > 0 ? `Debe tener exactamente ${len} dígitos.` : 'Longitud variable (Máx. 50 caracteres).';
+            if(!esAlfa) msg += " Solo números.";
+            else msg += " Acepta letras y números.";
+
+            $('#lbl_HelpDoc').text(msg);
+
+            input.off('keypress');
+
+            if(!esAlfa) {
+                input.on('keypress', function(e) { return /[0-9]/.test(e.key); });
+            }
         }
 
         function cargarDatos(id) {
             $.get('/Cliente/Obtener?id=' + id, function(res) {
                 if(res.status) {
-                    // Datos Generales
-                    $('#txt_Ruc').val(res.data.ruc);
-                    $('#txt_RazonSocial').val(res.data.razonSocial);
-                    $('#txt_NombreContacto').val(res.data.nombreContacto);
-                    $('#txt_Telefono').val(res.data.telefono);
-                    $('#txt_Email').val(res.data.email);
-                    $('#cbo_Estado').val(res.data.estado ? "1" : "0");
+                    let d = res.data;
+                    $('#cbx_Origen').val(d.origenId); $('#cbx_TipoPersona').val(d.tipoPersonaId);
+                    $('#cbx_TipoDoc').val(d.tipoDocumentoIdentidadId); configurarInputDoc(); $('#txt_NumDoc').val(d.numeroDocumento);
 
-                    // Datos Financieros (AQUÍ ESTÁ LA MAGIA)
-                    $('#cbxBanco').val(res.data.bancoId);
-                    $('#txtCuenta').val(res.data.numeroCuenta);
-                    $('#txtCci').val(res.data.numeroCci);
-                    $('#txtDetraccion').val(res.data.numeroDetraccion);
+                    $('#txt_RazonSocial').val(d.razonSocial); $('#txt_Direccion').val(d.direccion);
+                    $('#cbx_Pais').val(d.paisId).trigger('change'); filtrarCiudades(); $('#cbx_Ciudad').val(d.ciudadId).trigger('change');
+                    $('#cbx_Estado').val(d.estado ? "1" : "0");
 
-                } else {
-                    Swal.fire("Error", "No se pudo cargar la información.", "error");
+                    $('#txt_ContactoNombre').val(d.nombreContacto); $('#txt_ContactoCargo').val(d.cargoContacto);
+                    $('#txt_Email').val(d.correoElectronico); $('#txt_Telefono').val(d.telefono);
+
+                    $('#cbx_Banco').val(d.bancoId).trigger('change'); $('#txt_Swift').val(d.codigoSwift);
+                    $('#cbx_Moneda1').val(d.monedaIdUno); $('#txt_Cuenta1').val(d.numeroCuentaUno); $('#txt_Cci1').val(d.numeroCciUno);
+                    $('#cbx_Moneda2').val(d.monedaIdDos); $('#txt_Cuenta2').val(d.numeroCuentaDos); $('#txt_Cci2').val(d.numeroCciDos);
+                    $('#cbx_Moneda3').val(d.monedaIdTres); $('#txt_Cuenta3').val(d.numeroCuentaTres); $('#txt_Cci3').val(d.numeroCciTres);
                 }
             });
         }
 
         function guardar() {
-            // Validaciones
-            let ruc = $('#txt_Ruc').val().trim();
-            let razon = $('#txt_RazonSocial').val().trim();
-            let nombreContacto = $('#txt_NombreContacto').val().trim();
+            if(!$('#txt_RazonSocial').val()) return Swal.fire("Aviso", "Ingrese Razón Social", "warning");
+            if(!$('#txt_NumDoc').val()) return Swal.fire("Aviso", "Ingrese Documento", "warning");
 
-            if(!ruc || ruc.length < 11) return Swal.fire("Aviso", "El RUC debe tener 11 dígitos.", "warning");
-            if(!razon) return Swal.fire("Aviso", "Ingrese la Razón Social.", "warning");
-            if(!nombreContacto) return Swal.fire("Aviso", "Ingrese el nombre de contacto.", "warning");
+            let opt = $('#cbx_TipoDoc option:selected');
+            let len = opt.data('len');
+
+            if(len > 0 && $('#txt_NumDoc').val().length !== len) {
+                return Swal.fire("Atención", `El ${opt.text()} debe tener exactamente ${len} dígitos.`, "warning");
+            }
 
             let modelo = {
                 Id: $('#hdn_Id').val(),
-                Ruc: ruc,
-                RazonSocial: razon,
-                NombreContacto: nombreContacto,
-                Telefono: $('#txt_Telefono').val(),
-                Email: $('#txt_Email').val(),
-
-                // Nuevos Campos Financieros
-                BancoId: $('#cbxBanco').val() || null, // Enviamos null si está vacío
-                NumeroCuenta: $('#txtCuenta').val(),
-                NumeroCci: $('#txtCci').val(),
-                NumeroDetraccion: $('#txtDetraccion').val(),
-
-                Estado: $('#cbo_Estado').val() === "1"
+                OrigenId: $('#cbx_Origen').val(), TipoPersonaId: $('#cbx_TipoPersona').val(),
+                TipoDocumentoIdentidadId: $('#cbx_TipoDoc').val(), NumeroDocumento: $('#txt_NumDoc').val(),
+                RazonSocial: $('#txt_RazonSocial').val(), Direccion: $('#txt_Direccion').val(),
+                PaisId: $('#cbx_Pais').val(), CiudadId: $('#cbx_Ciudad').val(),
+                NombreContacto: $('#txt_ContactoNombre').val(), CargoContacto: $('#txt_ContactoCargo').val(),
+                CorreoElectronico: $('#txt_Email').val(), Telefono: $('#txt_Telefono').val(),
+                BancoId: $('#cbx_Banco').val(), CodigoSwift: $('#txt_Swift').val(),
+                MonedaIdUno: $('#cbx_Moneda1').val(), NumeroCuentaUno: $('#txt_Cuenta1').val(), NumeroCciUno: $('#txt_Cci1').val(),
+                MonedaIdDos: $('#cbx_Moneda2').val(), NumeroCuentaDos: $('#txt_Cuenta2').val(), NumeroCciDos: $('#txt_Cci2').val(),
+                MonedaIdTres: $('#cbx_Moneda3').val(), NumeroCuentaTres: $('#txt_Cuenta3').val(), NumeroCciTres: $('#txt_Cci3').val(),
+                Estado: $('#cbx_Estado').val() === "1"
             };
 
             $.post('/Cliente/Guardar', { modelo: modelo }, function(res) {
-                if(res.status) {
-                    Swal.fire("Éxito", res.message, "success").then(() => {
-                        window.location.href = '/Cliente/Index';
-                    });
-                } else {
-                    Swal.fire("Error", res.message, "error");
-                }
+                if(res.status) Swal.fire("Éxito", res.message, "success").then(() => window.location.href = '/Cliente/Index');
+                else Swal.fire("Error", res.message, "error");
             });
         }
     </script>

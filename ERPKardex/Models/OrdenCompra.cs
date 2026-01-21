@@ -60,9 +60,6 @@ namespace ERPKardex.Models
         [Column("estado_id")]
         public int? EstadoId { get; set; }
 
-        [Column("estado_pago_id")]
-        public int? EstadoPagoId { get; set; }
-
         [Column("usuario_creacion_id")]
         public int? UsuarioCreacionId { get; set; }
 

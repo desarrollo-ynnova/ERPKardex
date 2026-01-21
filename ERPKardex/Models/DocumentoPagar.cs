@@ -29,7 +29,8 @@ namespace ERPKardex.Models
         [Column("monto_igv")] public decimal MontoIgv { get; set; } = 0;
         [Column("monto_inafecto")] public decimal MontoInafecto { get; set; } = 0;
         [Column("total")] public decimal Total { get; set; } = 0;
-        [Column("saldo")] public decimal Saldo { get; set; } = 0;
+        [Column("saldo")] public decimal? Saldo { get; set; } = 0;
+        [Column("monto_usado")] public decimal? MontoUsado { get; set; } = 0;
 
         // AUDITORÍA
         [Column("estado_id")] public int? EstadoId { get; set; }

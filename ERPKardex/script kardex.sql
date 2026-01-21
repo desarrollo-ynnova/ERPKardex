@@ -75,6 +75,7 @@ CREATE TABLE tipo_documento_interno (
     codigo VARCHAR(20),      -- Ej: PED, PS, REQ, NI (Nota Ingreso)
     descripcion VARCHAR(200),
     ultimo_correlativo INT DEFAULT 0, -- Para llevar el control del número actual (ej. va en el 150)
+    tipo_documento_id INT,
     estado BIT DEFAULT 1
 );
 
@@ -296,6 +297,8 @@ CREATE TABLE proveedor (
     moneda_id_tres INT,
     numero_cuenta_tres VARCHAR(255),
     numero_cci_tres VARCHAR(255),
+    -- ESTA ES DEL BANCO DE LA NACIÓN
+    numero_cuenta_detracciones VARCHAR(255),
 	estado BIT,
 	empresa_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
@@ -303,15 +306,32 @@ CREATE TABLE proveedor (
 
 CREATE TABLE cliente (
     id INT IDENTITY(1,1) PRIMARY KEY,
-	ruc varchar(255),
-	razon_social varchar(255),
+	origen_id INT, -- NACIONAL O EXTRANJERO
+    tipo_persona_id INT, -- PERSONA NATURAL, JURÍDICA, NO DOMICILIADO
+    tipo_documento_identidad_id INT,
+    numero_documento VARCHAR(50),
+    razon_social varchar(255),
+    direccion varchar(255),
+    pais_id INT,
+    ciudad_id INT,
 	nombre_contacto varchar(255),
+    cargo_contacto varchar(255),
+    correo_electronico varchar(255),
     telefono varchar(255),
-    email varchar(255),
     banco_id INT,
-    numero_cuenta VARCHAR(255),
-    numero_detraccion VARCHAR(255),
-    numero_cci VARCHAR(255),
+    codigo_swift varchar(255),
+    -- 1era cuenta
+    moneda_id_uno INT,
+    numero_cuenta_uno VARCHAR(255),
+    numero_cci_uno varchar(255),
+    -- 2da cuenta
+    moneda_id_dos INT,
+    numero_cuenta_dos VARCHAR(255),
+    numero_cci_dos VARCHAR(255),
+    -- 3era cuenta
+    moneda_id_tres INT,
+    numero_cuenta_tres VARCHAR(255),
+    numero_cci_tres VARCHAR(255),
 	estado BIT,
 	empresa_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
@@ -331,10 +351,6 @@ create table ingresosalidaalm (
 	tipo_documento_id int,
 	serie_documento varchar(255),
 	numero_documento varchar(255),
-	fecha_documento_valorizacion DATE,
-	tipo_documento_valorizacion_id int,
-	serie_documento_valorizacion varchar(255),
-	numero_documento_valorizacion varchar(255),
 	moneda_id int,
     id_referencia INT NULL,
     tabla_referencia VARCHAR(50) NULL,
@@ -700,7 +716,6 @@ CREATE TABLE ordencompra (
     total DECIMAL(18,2) DEFAULT 0,
 
     estado_id INT,
-    estado_pago_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
 
@@ -775,7 +790,6 @@ CREATE TABLE ordenservicio (
     total DECIMAL(18,2) DEFAULT 0, -- NISIRA: Total Servicio
 
     estado_id INT,
-    estado_pago_id INT,
     usuario_creacion_id INT,
     empresa_id INT,
 
@@ -1017,7 +1031,7 @@ CREATE TABLE documento_pagar (
     empresa_id INT NOT NULL,
     proveedor_id INT NOT NULL,
     tipo_documento_interno_id INT NOT NULL, -- FAC, ANT, NC, ND
-    
+
     -- EL AMARRE SAGRADO (1:1)
     -- Aunque en SQL permitimos NULL por flexibilidad técnica, 
     -- tu Lógica de Negocio OBLIGARÁ a que tengan datos.
@@ -1047,6 +1061,7 @@ CREATE TABLE documento_pagar (
     -- Factura: Nace igual al Total. Baja cuando le aplicas un Anticipo o pagas.
     -- Anticipo: Nace igual al Total. Baja cuando lo usas para matar una Factura.
     saldo DECIMAL(18,2) DEFAULT 0, 
+    monto_usado DECIMAL(18,2) DEFAULT 0,
 
     estado_id INT, -- Pendiente, Cancelado, Anulado
     observacion VARCHAR(500),
@@ -1123,6 +1138,19 @@ GO
 -- ==========================================
 -- 5. DATOS DE CONFIGURACIÓN INICIAL
 -- ==========================================
+-- inserts de 'tipo_documento'
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('01','Factura',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('02','Recibo por Honorarios',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('03','Boleta de Venta',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('04','Liquidación de compra',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('05','Boletos de Transporte Aéreo',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('06','Carta de porte aéreo por el servicio de transporte de carga aérea',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('07','Nota de crédito',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('08','Nota de débito',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('09','Guía de remisión - Remitente',1);
+INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('10','Recibo por Arrendamiento',1);
+
+GO
 
 INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
 ('IALM', 'NOTA DE INGRESO ALMACEN', 0),
@@ -1138,14 +1166,14 @@ INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VAL
 -- 3. TIPOS DE DOCUMENTO INTERNO (Para tu correlativo FAC-0001, etc.)
 -- =============================================================================
 -- Esto es vital para el 'switch' que haremos en el Controlador
-INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
-('FAC', 'FACTURA', 0),
-('BOL', 'BOLETA', 0),
-('RH',  'RECIBO POR HONORARIOS', 0),
-('NC',  'NOTA CRÉDITO', 0),
-('ND',  'NOTA DÉBITO', 0),
-('ANT', 'ANTICIPO', 0),
-('LET', 'LETRA POR PAGAR', 0);
+INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo, tipo_documento_id) VALUES 
+('FAC', 'FACTURA', 0, (select id from tipo_documento where codigo like '01')),
+('BOL', 'BOLETA', 0, (select id from tipo_documento where codigo like '03')),
+('RH',  'RECIBO POR HONORARIOS', 0, (select id from tipo_documento where codigo like '02')),
+('NC',  'NOTA CRÉDITO', 0, (select id from tipo_documento where codigo like '07')),
+('ND',  'NOTA DÉBITO', 0, (select id from tipo_documento where codigo like '08')),
+('ANT', 'ANTICIPO', 0, NULL),
+('LET', 'LETRA POR PAGAR', 0, NULL);
 
 -- inserts de 'estado'
 INSERT INTO estado (nombre, tabla) VALUES ('Aprobado', 'INGRESOSALIDAALM');
@@ -1197,12 +1225,13 @@ INSERT INTO estado (nombre, tabla) VALUES
 -- 2. ESTADOS PARA LA DEUDA (El ciclo de vida del dinero)
 -- =============================================================================
 -- Tabla: 'PAGO' (Finanzas General)
-INSERT INTO estado (nombre, tabla) VALUES ('Pendiente', 'PAGO'); -- Se debe el 100%
-INSERT INTO estado (nombre, tabla) VALUES ('Parcial', 'PAGO');   -- Se ha pagado algo, pero falta
-INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'PAGO'); -- Deuda saldada (Saldo 0)
+INSERT INTO estado (nombre, tabla) VALUES ('Pagado', 'ORDEN_PAGO');
+INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'ORDEN_PAGO');
 
-INSERT INTO estado (nombre, tabla) VALUES ('Por Pagar', 'DOCUMENTO_PAGAR');
-INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'DOCUMENTO_PAGAR');
+INSERT INTO estado (nombre, tabla) VALUES ('Por Pagar', 'DOCUMENTO_PAGAR');      -- Deuda viva (Factura o Anticipo sin depositar)
+INSERT INTO estado (nombre, tabla) VALUES ('Cancelado', 'DOCUMENTO_PAGAR'); -- Deuda pagada (Factura cerrada)
+INSERT INTO estado (nombre, tabla) VALUES ('Disponible', 'DOCUMENTO_PAGAR'); -- Deuda pagada (Anticipo listo para usar)
+INSERT INTO estado (nombre, tabla) VALUES ('Agotado', 'DOCUMENTO_PAGAR'); -- Anticipo consumido al 100% en facturas
 INSERT INTO estado (nombre, tabla) VALUES ('Anulado', 'DOCUMENTO_PAGAR');
 
 GO
@@ -1358,18 +1387,6 @@ INSERT INTO sucursal (codigo, nombre, estado, empresa_id) VALUES ('001', 'PRINCI
 -- inserts de 'almacen'
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('01','PRINCIPAL',1,'001', 1, 1, 1);
 INSERT INTO almacen (codigo, nombre, estado, cod_sucursal, sucursal_id, es_valorizado, empresa_id) VALUES ('02','TERCEROS',1,'001', 1, 1, 1);
-
--- inserts de 'tipo_documento'
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('01','Factura',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('02','Recibo por Honorarios',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('03','Boleta de Venta',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('04','Liquidación de compra',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('05','Boletos de Transporte Aéreo',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('06','Carta de porte aéreo por el servicio de transporte de carga aérea',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('07','Nota de crédito',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('08','Nota de débito',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('09','Guía de remisión - Remitente',1);
-INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('10','Recibo por Arrendamiento',1);
 
 -- inserts de 'moneda'
 INSERT INTO moneda (codigo, nombre, simbolo, estado) VALUES ('01', 'SOLES', 'S/.', 1);
@@ -1684,13 +1701,6 @@ INSERT INTO tipo_persona (nombre, estado) VALUES
 ('NO DOMICILIADO', 1);
 
 GO
-
-
-
-select * from TIPo_PERSONA
-
-GO
-
 
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-01',3.358,3.368,1);
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-02',3.358,3.368,1);

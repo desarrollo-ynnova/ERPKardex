@@ -15,190 +15,163 @@ namespace ERPKardex.Controllers
         }
 
         #region VISTAS
-
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public IActionResult Index() => View();
 
         public IActionResult Registrar(int id = 0)
         {
-            // Pasamos el ID a la vista para saber si es Nuevo o Edición
             ViewBag.Id = id;
             return View();
         }
-
         #endregion
 
-        #region APIS JSON
-
-        // 1. LISTAR TODOS (Activos e Inactivos)
+        #region API LISTADO
         [HttpGet]
         public async Task<JsonResult> GetData()
         {
             try
             {
                 var miEmpresaId = EmpresaUsuarioId;
-                var esGlobal = EsAdminGlobal;
 
-                // Hacemos Join con Banco para mostrar el nombre
-                var query = from e in _context.Clientes
-                            join b in _context.Bancos on e.BancoId equals b.Id into bancoJoin
-                            from b in bancoJoin.DefaultIfEmpty() // Left Join (puede no tener banco)
-                            where e.Estado == true
+                var query = from c in _context.Clientes
+                            join td in _context.TiposDocumentoIdentidad on c.TipoDocumentoIdentidadId equals td.Id
+                            // Left Joins para ubicación
+                            join pa in _context.Paises on c.PaisId equals pa.Id into paJoin
+                            from pa in paJoin.DefaultIfEmpty()
+                            join ci in _context.Ciudades on c.CiudadId equals ci.Id into ciJoin
+                            from ci in ciJoin.DefaultIfEmpty()
+
+                            where c.Estado == true && c.EmpresaId == miEmpresaId
+                            orderby c.Id descending
                             select new
                             {
-                                e.Id,
-                                e.Ruc,
-                                e.RazonSocial,
-                                e.NombreContacto,
-                                e.Telefono,
-                                e.Email,
-                                e.EmpresaId,
-                                e.Estado,
-                                // Datos Bancarios para mostrarlos o usarlos al editar
-                                e.BancoId,
-                                BancoNombre = b != null ? b.Nombre : "-",
-                                e.NumeroCuenta,
-                                e.NumeroCci,
-                                e.NumeroDetraccion
+                                c.Id,
+                                // Ej: "RUC: 2055..."
+                                Documento = td.Codigo + ": " + c.NumeroDocumento,
+                                c.RazonSocial,
+                                Ubicacion = (pa != null ? pa.Nombre : "") + (ci != null ? " - " + ci.Nombre : ""),
+                                c.NombreContacto,
+                                InfoContacto = (c.Telefono ?? "") + (string.IsNullOrEmpty(c.CorreoElectronico) ? "" : " / " + c.CorreoElectronico),
+                                c.Estado
                             };
 
-                if (!esGlobal) query = query.Where(x => x.EmpresaId == miEmpresaId);
-
-                var lista = await query.OrderByDescending(x => x.Id).ToListAsync();
-                return Json(new { status = true, data = lista });
+                return Json(new { status = true, data = await query.ToListAsync() });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
+        #endregion
 
+        #region API MAESTROS
         [HttpGet]
-        public async Task<JsonResult> GetBancosCombo()
+        public async Task<JsonResult> GetCombosMaestros()
         {
             try
             {
-                var bancos = await _context.Bancos
-                                           .Where(x => x.Estado == true)
-                                           .Select(x => new { x.Id, x.Nombre })
-                                           .ToListAsync();
+                var tiposDoc = await _context.TiposDocumentoIdentidad.Where(x => x.Estado == true)
+                    .Select(x => new { x.Id, x.Descripcion, x.Codigo, x.Longitud, x.EsAlfanumerico }).ToListAsync();
 
-                return Json(new { status = true, data = bancos });
+                var origenes = await _context.Origenes.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
+                var tiposPersona = await _context.TiposPersona.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
+
+                var paises = await _context.Paises.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
+                var ciudades = await _context.Ciudades.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre, x.PaisId }).ToListAsync();
+
+                var bancos = await _context.Bancos.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre }).ToListAsync();
+                var monedas = await _context.Monedas.Where(x => x.Estado == true).Select(x => new { x.Id, x.Nombre, x.Simbolo }).ToListAsync();
+
+                return Json(new { status = true, tiposDoc, origenes, tiposPersona, paises, ciudades, bancos, monedas });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
+        #endregion
 
-        // 2. OBTENER UNO (Para cargar formulario)
+        #region API CRUD
         [HttpGet]
         public async Task<JsonResult> Obtener(int id)
         {
-            try
-            {
-                var entidad = await _context.Clientes.FindAsync(id);
-                if (entidad == null) return Json(new { status = false, message = "No encontrado" });
-
-                return Json(new { status = true, data = entidad });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
+            var ent = await _context.Clientes.FindAsync(id);
+            return Json(new { status = ent != null, data = ent });
         }
 
-        // 3. GUARDAR (Creación y Edición con Cambio de Estado)
         [HttpPost]
         public async Task<JsonResult> Guardar(Cliente modelo)
         {
             try
             {
-                var empresaId = int.Parse(User.FindFirst("EmpresaId")?.Value ?? "0");
                 modelo.RazonSocial = modelo.RazonSocial?.ToUpper();
                 modelo.NombreContacto = modelo.NombreContacto?.ToUpper();
 
-                // Validación de RUC duplicado en la misma empresa
-                var existeRuc = await _context.Clientes
-                    .AnyAsync(x => x.Ruc == modelo.Ruc
-                                && x.EmpresaId == empresaId
-                                && x.Id != modelo.Id); // Excluirse a sí mismo si edita
+                // Validación de duplicados
+                var existe = await _context.Clientes.AnyAsync(x =>
+                    x.TipoDocumentoIdentidadId == modelo.TipoDocumentoIdentidadId &&
+                    x.NumeroDocumento == modelo.NumeroDocumento &&
+                    x.EmpresaId == EmpresaUsuarioId &&
+                    x.Id != modelo.Id);
 
-                if (existeRuc)
-                    return Json(new { status = false, message = $"El RUC {modelo.Ruc} ya está registrado." });
+                if (existe) return Json(new { status = false, message = "Ya existe un cliente con este documento." });
 
                 if (modelo.Id == 0)
                 {
-                    // --- NUEVO ---
-                    modelo.EmpresaId = empresaId;
-                    // Al crear, forzamos Activo (o respetamos lo que venga del front si quisieran crear inactivos)
+                    modelo.EmpresaId = EmpresaUsuarioId;
+                    modelo.FechaRegistro = DateTime.Now;
                     modelo.Estado = true;
                     _context.Clientes.Add(modelo);
                 }
                 else
                 {
-                    // --- EDICIÓN ---
-                    var entidadDb = await _context.Clientes.FindAsync(modelo.Id);
-                    if (entidadDb == null) return Json(new { status = false, message = "No encontrado" });
+                    var db = await _context.Clientes.FindAsync(modelo.Id);
+                    if (db == null) return Json(new { status = false, message = "No encontrado" });
 
-                    // Actualizar datos
-                    entidadDb.Ruc = modelo.Ruc;
-                    entidadDb.RazonSocial = modelo.RazonSocial;
-                    entidadDb.NombreContacto = modelo.NombreContacto;
-                    entidadDb.Telefono = modelo.Telefono;
-                    entidadDb.Email = modelo.Email;
-                    entidadDb.NumeroCuenta = modelo.NumeroCuenta;
-                    entidadDb.NumeroCci = modelo.NumeroCci;
-                    entidadDb.NumeroDetraccion = modelo.NumeroDetraccion;
-                    entidadDb.BancoId = modelo.BancoId;
+                    // Mapeo completo
+                    db.OrigenId = modelo.OrigenId;
+                    db.TipoPersonaId = modelo.TipoPersonaId;
+                    db.TipoDocumentoIdentidadId = modelo.TipoDocumentoIdentidadId;
+                    db.NumeroDocumento = modelo.NumeroDocumento;
+                    db.RazonSocial = modelo.RazonSocial;
+                    db.Direccion = modelo.Direccion;
+                    db.PaisId = modelo.PaisId;
+                    db.CiudadId = modelo.CiudadId;
 
-                    // AQUÍ ES DONDE APLICAMOS LA BAJA O REACTIVACIÓN LÓGICA
-                    // Si el usuario marcó Inactivo en el combo, aquí se guarda false.
-                    entidadDb.Estado = modelo.Estado;
+                    db.NombreContacto = modelo.NombreContacto;
+                    db.CargoContacto = modelo.CargoContacto;
+                    db.CorreoElectronico = modelo.CorreoElectronico;
+                    db.Telefono = modelo.Telefono;
+
+                    db.BancoId = modelo.BancoId;
+                    db.CodigoSwift = modelo.CodigoSwift;
+
+                    // Cuentas
+                    db.MonedaIdUno = modelo.MonedaIdUno; db.NumeroCuentaUno = modelo.NumeroCuentaUno; db.NumeroCciUno = modelo.NumeroCciUno;
+                    db.MonedaIdDos = modelo.MonedaIdDos; db.NumeroCuentaDos = modelo.NumeroCuentaDos; db.NumeroCciDos = modelo.NumeroCciDos;
+                    db.MonedaIdTres = modelo.MonedaIdTres; db.NumeroCuentaTres = modelo.NumeroCuentaTres; db.NumeroCciTres = modelo.NumeroCciTres;
+
+                    db.Estado = modelo.Estado;
                 }
 
                 await _context.SaveChangesAsync();
-                return Json(new { status = true, message = "Datos guardados correctamente." });
+                return Json(new { status = true, message = "Cliente guardado correctamente." });
             }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
-        // 4. ELIMINAR ESTRICTO (Solo si no tiene historial)
         [HttpPost]
         public async Task<JsonResult> Eliminar(int id)
         {
             try
             {
-                var entidad = await _context.Clientes.FindAsync(id);
-                if (entidad == null) return Json(new { status = false, message = "No encontrado" });
+                var ent = await _context.Clientes.FindAsync(id);
+                if (ent == null) return Json(new { status = false, message = "No encontrado" });
 
-                // VALIDACIÓN DE INTEGRIDAD REFERENCIAL MANUAL
-                // Consultamos si el ID aparece en alguna tabla transaccional
-                bool tieneOrdenCompra = await _context.OrdenCompras.AnyAsync(x => x.ProveedorId == id);
-                bool tieneOrdenServicio = await _context.OrdenServicios.AnyAsync(x => x.ProveedorId == id);
-                bool tieneMovimientoAlmacen = await _context.IngresoSalidaAlms.AnyAsync(x => x.ProveedorId == id);
+                // Validación Historial (Ejemplo con Ordenes Venta si tuvieras)
+                /* bool tieneHistorial = await _context.OrdenVentas.AnyAsync(x => x.ClienteId == id);
+                if (tieneHistorial) return Json(new { status = false, message = "Tiene historial. Délo de baja (Inactivo)." });
+                */
 
-                if (tieneOrdenCompra || tieneOrdenServicio || tieneMovimientoAlmacen)
-                {
-                    // SI TIENE HISTORIAL, BLOQUEAMOS.
-                    return Json(new
-                    {
-                        status = false,
-                        message = "No se puede eliminar: Esta entidad tiene documentos asociados. Edite el registro y cambie el estado a 'INACTIVO' para darlo de baja."
-                    });
-                }
-
-                // SI ESTÁ LIMPIO, BORRAMOS FÍSICAMENTE
-                _context.Clientes.Remove(entidad);
+                _context.Clientes.Remove(ent);
                 await _context.SaveChangesAsync();
-
-                return Json(new { status = true, message = "Registro eliminado físicamente de la base de datos." });
+                return Json(new { status = true, message = "Eliminado correctamente." });
             }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = "Error interno: " + ex.Message });
-            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
-
         #endregion
     }
 }

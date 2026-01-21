@@ -9,49 +9,30 @@ namespace ERPKardex.Models
         [Key]
         public int Id { get; set; }
 
-        [Column("origen_id")]
-        public int? OrigenId { get; set; }
+        [Column("origen_id")] public int? OrigenId { get; set; }
+        [Column("tipo_persona_id")] public int? TipoPersonaId { get; set; }
+        [Column("tipo_documento_identidad_id")] public int? TipoDocumentoIdentidadId { get; set; }
+        [Column("numero_documento")] public string? NumeroDocumento { get; set; }
 
-        [Column("tipo_persona_id")]
-        public int? TipoPersonaId { get; set; }
+        [Column("razon_social")] public string? RazonSocial { get; set; }
+        [Column("direccion")] public string? Direccion { get; set; }
+        [Column("pais_id")] public int? PaisId { get; set; }
+        [Column("ciudad_id")] public int? CiudadId { get; set; }
 
-        // --- CAMBIO: PROPIEDADES UNIFICADAS ---
-        [Column("tipo_documento_identidad_id")]
-        public int? TipoDocumentoIdentidadId { get; set; }
+        [Column("nombre_contacto")] public string? NombreContacto { get; set; }
+        [Column("cargo_contacto")] public string? CargoContacto { get; set; }
+        [Column("correo_electronico")] public string? CorreoElectronico { get; set; }
+        [Column("telefono")] public string? Telefono { get; set; }
 
-        [Column("numero_documento")]
-        public string? NumeroDocumento { get; set; }
-        // -------------------------------------
-
-        [Column("razon_social")]
-        public string? RazonSocial { get; set; }
-
-        [Column("direccion")]
-        public string? Direccion { get; set; }
-
-        [Column("pais_id")]
-        public int? PaisId { get; set; }
-
-        [Column("ciudad_id")]
-        public int? CiudadId { get; set; }
-
-        [Column("nombre_contacto")]
-        public string? NombreContacto { get; set; }
-
-        [Column("cargo_contacto")]
-        public string? CargoContacto { get; set; }
-
-        [Column("correo_electronico")]
-        public string? CorreoElectronico { get; set; }
-
-        [Column("telefono")]
-        public string? Telefono { get; set; }
-
-        // Bancos
+        // --- DATOS BANCARIOS ---
         [Column("banco_id")] public int? BancoId { get; set; }
         [Column("codigo_swift")] public string? CodigoSwift { get; set; }
 
-        // Cuentas (1, 2, 3) se mantienen igual que en tu código anterior...
+        // NUEVO CAMPO: DETRACCIONES
+        [Column("numero_cuenta_detracciones")]
+        public string? NumeroCuentaDetracciones { get; set; }
+
+        // Cuentas Comerciales
         [Column("moneda_id_uno")] public int? MonedaIdUno { get; set; }
         [Column("numero_cuenta_uno")] public string? NumeroCuentaUno { get; set; }
         [Column("numero_cci_uno")] public string? NumeroCciUno { get; set; }

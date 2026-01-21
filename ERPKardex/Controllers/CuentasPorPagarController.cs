@@ -47,7 +47,7 @@ namespace ERPKardex.Controllers
                             from os in osG.DefaultIfEmpty()
 
                             where d.EmpresaId == EmpresaUsuarioId
-                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision.Value.Date <= fechaFin
                                && codigos.Contains(t.Codigo)
                                && (proveedorId == null || d.ProveedorId == proveedorId)
                             orderby d.FechaEmision descending
@@ -91,7 +91,7 @@ namespace ERPKardex.Controllers
                             from os in osG.DefaultIfEmpty()
 
                             where d.EmpresaId == EmpresaUsuarioId
-                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision.Value.Date <= fechaFin
                                && t.Codigo == "ANT" // Solo Anticipos
                                && (proveedorId == null || d.ProveedorId == proveedorId)
                             orderby d.FechaEmision descending
@@ -103,9 +103,10 @@ namespace ERPKardex.Controllers
                                 Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                 Moneda = m.Simbolo,
                                 Total = d.Total,
-                                Saldo = d.Saldo, // Cuánto anticipo queda por aplicar
+                                MontoUsado = d.MontoUsado,
+                                Saldo = d.Saldo,
                                 Estado = e.Nombre,
-                                ColorEstado = d.Saldo == 0 ? "badge-secondary" : "badge-success", // Verde si hay saldo disponible
+                                ColorEstado = d.Saldo == 0 ? "badge-success" : "badge-warning", // Verde si ya se pagó
                                 Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-")
                             }).ToList();
 
@@ -133,7 +134,7 @@ namespace ERPKardex.Controllers
                             from tipoPadre in tPadreG.DefaultIfEmpty()
 
                             where d.EmpresaId == EmpresaUsuarioId
-                               && d.FechaEmision >= fechaInicio && d.FechaEmision <= fechaFin
+                               && d.FechaEmision >= fechaInicio && d.FechaEmision.Value.Date <= fechaFin
                                && codigos.Contains(t.Codigo)
                                && (proveedorId == null || d.ProveedorId == proveedorId)
                             orderby d.FechaEmision descending
@@ -455,6 +456,7 @@ namespace ERPKardex.Controllers
             try
             {
                 var estadoPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                var estadoDisponible = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Disponible");
                 int idActivo = estadoPorPagar?.Id ?? 0;
 
                 // 1. PENDIENTES (FAC, BOL, RH) - Izquierda
@@ -482,7 +484,7 @@ namespace ERPKardex.Controllers
                                       OrdenId = d.OrdenCompraId ?? d.OrdenServicioId // ID para el match
                                   }).ToList();
 
-                // 2. DISPONIBLES (ANT, NC) - Derecha
+                // 2. DISPONIBLES (ANT) - Derecha
                 // También traemos Numero de Orden para mostrar en lugar del ID
                 var disponibles = (from d in _context.DocumentosPagar
                                    join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
@@ -491,9 +493,10 @@ namespace ERPKardex.Controllers
                                    join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
                                    from os in osG.DefaultIfEmpty()
                                    where d.ProveedorId == proveedorId
-                                      && d.EstadoId == idActivo
-                                      && d.Saldo > 0
-                                      && (t.Codigo == "ANT" || t.Codigo == "NC")
+                                      && d.EstadoId == estadoDisponible.Id
+                                      && d.Saldo == 0
+                                      && (d.Total - (d.MontoUsado ?? 0) > 0)
+                                      && (t.Codigo == "ANT")
                                    select new
                                    {
                                        d.Id,
@@ -501,7 +504,7 @@ namespace ERPKardex.Controllers
                                        Tipo = t.Codigo,
                                        Fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy HH:mm"),
                                        d.Total,
-                                       d.Saldo,
+                                       Saldo = d.Total - (d.MontoUsado ?? 0),
                                        OrdenNumero = oc != null ? oc.Numero : (os != null ? os.Numero : "--"),
                                        OrdenId = d.OrdenCompraId ?? d.OrdenServicioId // ID para el match
                                    }).ToList();
@@ -518,6 +521,7 @@ namespace ERPKardex.Controllers
             {
                 var historial = new List<object>();
 
+                // 1. CRUCES (Pagos con Anticipos o Notas de Crédito que reducen deuda)
                 var cruces = (from a in _context.DocumentoPagarAplicaciones
                               join docAbono in _context.DocumentosPagar on a.DocumentoAbonoId equals docAbono.Id
                               join tipo in _context.TiposDocumentoInterno on docAbono.TipoDocumentoInternoId equals tipo.Id
@@ -527,10 +531,11 @@ namespace ERPKardex.Controllers
                                   Fecha = a.FechaAplicacion,
                                   Concepto = "PAGO / APLICACIÓN",
                                   Documento = tipo.Codigo + " " + docAbono.Serie + "-" + docAbono.Numero,
-                                  Monto = a.MontoAplicado * -1,
+                                  Monto = a.MontoAplicado * -1, // Negativo porque reduce
                                   Color = "text-success"
                               }).ToList();
 
+                // 2. NOTAS DE DÉBITO (Cargos adicionales que aumentan deuda)
                 var notasDebito = (from d in _context.DocumentosPagar
                                    join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
                                    where d.DocumentoReferenciaId == documentoId && t.Codigo == "ND"
@@ -539,7 +544,7 @@ namespace ERPKardex.Controllers
                                        Fecha = d.FechaRegistro ?? DateTime.Now,
                                        Concepto = "CARGO ADICIONAL (ND)",
                                        Documento = t.Codigo + " " + d.Serie + "-" + d.Numero,
-                                       Monto = d.Total,
+                                       Monto = d.Total, // Positivo porque suma
                                        Color = "text-danger"
                                    }).ToList();
 
@@ -569,16 +574,33 @@ namespace ERPKardex.Controllers
                 try
                 {
                     if (montoAplicar <= 0) throw new Exception("Monto inválido");
-                    var estVivo = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
-                    var estFin = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
+                    var estadoPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                    var estadoAgotado = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Agotado");
+                    var estadoPagado = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
 
-                    var c = _context.DocumentosPagar.Find(idCargo); var a = _context.DocumentosPagar.Find(idAbono);
-                    if (c.Saldo < montoAplicar || a.Saldo < montoAplicar) throw new Exception("Saldo insuficiente.");
+                    var c = _context.DocumentosPagar.Find(idCargo);
+                    var a = _context.DocumentosPagar.Find(idAbono);
 
-                    c.Saldo -= montoAplicar; a.Saldo -= montoAplicar;
+                    if (c.Saldo < montoAplicar)
+                        throw new Exception($"El monto excede la deuda pendiente del comprobante ({c.Saldo}).");
 
-                    if (c.Saldo <= 0) c.EstadoId = estFin.Id; else c.EstadoId = estVivo.Id;
-                    if (a.Saldo <= 0) a.EstadoId = estFin.Id; else a.EstadoId = estVivo.Id;
+                    decimal disponibleAnticipo = a.Total - (a.MontoUsado ?? 0);
+                    if (disponibleAnticipo < montoAplicar)
+                        throw new Exception($"El anticipo solo tiene {disponibleAnticipo} disponible para aplicar.");
+
+                    c.Saldo -= montoAplicar;
+                    if (c.Saldo <= 0)
+                    {
+                        c.EstadoId = estadoPagado?.Id; // Se canceló la deuda
+                    }
+
+                    a.MontoUsado = (a.MontoUsado ?? 0) + montoAplicar;
+
+                    // Si ya se consumió todo el anticipo, cambiamos estado visual
+                    if ((a.Total - a.MontoUsado) <= 0)
+                    {
+                        a.EstadoId = estadoAgotado?.Id; // Estado "Agotado"
+                    }
 
                     _context.DocumentoPagarAplicaciones.Add(new DocumentoPagarAplicacion
                     {
@@ -590,7 +612,8 @@ namespace ERPKardex.Controllers
                         UsuarioId = UsuarioActualId
                     });
 
-                    _context.SaveChanges(); transaction.Commit();
+                    _context.SaveChanges();
+                    transaction.Commit();
                     return Json(new { status = true, message = "Aplicación exitosa." });
                 }
                 catch (Exception ex) { transaction.Rollback(); return Json(new { status = false, message = ex.Message }); }
@@ -606,8 +629,11 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
-                    doc.EmpresaId = EmpresaUsuarioId; doc.UsuarioRegistroId = UsuarioActualId; doc.FechaRegistro = DateTime.Now;
-                    var estFin = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
+                    doc.EmpresaId = EmpresaUsuarioId;
+                    doc.UsuarioRegistroId = UsuarioActualId;
+                    doc.FechaRegistro = DateTime.Now;
+
+                    var estFin = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
                     var tipo = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc);
                     doc.TipoDocumentoInternoId = tipo.Id;
 

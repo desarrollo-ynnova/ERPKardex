@@ -66,7 +66,7 @@
                                     <th width="5%"></th>
                                     <th>Documento</th>
                                     <th>Ref. Orden</th>
-                                    <th class="text-right text-muted">Total Orig.</th>
+                                    <th class="text-right font-weight-bold">Total Orig.</th>
                                     <th class="text-right font-weight-bold">Saldo Actual</th>
                                 </tr>
                             </thead>
@@ -187,7 +187,7 @@
                                 <td class="text-center align-middle"><input type="radio" name="rbPend"></td>
                                 <td class="align-middle"><span class="badge badge-secondary">${x.tipo}</span> ${x.documento}</td>
                                 <td class="align-middle"><small class="text-muted">${x.ordenNumero}</small></td>
-                                <td class="text-right align-middle text-muted"><small>${x.totalOriginal.toFixed(2)}</small></td>
+                                <td class="text-right align-middle font-weight-bold">${x.totalOriginal.toFixed(2)}</td>
                                 <td class="text-right align-middle cls-monto-pend">${x.saldoActual.toFixed(2)}</td>
                             </tr>`;
                         });

@@ -35,7 +35,6 @@ namespace ERPKardex.Controllers
                             join ent in _context.Proveedores on o.ProveedorId equals ent.Id
                             join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
-                            join est2 in _context.Estados on o.EstadoPagoId equals est2.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
                             orderby o.Id descending
                             select new
@@ -50,7 +49,6 @@ namespace ERPKardex.Controllers
                                 Moneda = mon.Nombre,
                                 Total = o.Total,
                                 Estado = est.Nombre,
-                                EstadoPago = est2.Nombre,
                                 o.EstadoId,
                                 o.Observacion
                             };
@@ -269,9 +267,8 @@ namespace ERPKardex.Controllers
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
                     var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DORDEN");
                     var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Codigo == "OCO");
-                    var estadoPendientePago = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente Pago" && e.Tabla == "ORDEN");
 
-                    if (estadoGenerado == null || estadoPendientePago == null || tipoDoc == null || estadoPendiente == null) throw new Exception("Estados o tipo de documento no configurado");
+                    if (estadoGenerado == null || tipoDoc == null || estadoPendiente == null) throw new Exception("Estados o tipo de documento no configurado");
 
                     var ultimo = _context.OrdenCompras
                         .Where(x => x.EmpresaId == empresaId && x.TipoDocumentoInternoId == tipoDoc.Id)
@@ -290,7 +287,6 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioCreacionId = usuarioId;
                     cabecera.EmpresaId = empresaId;
                     cabecera.EstadoId = estadoGenerado.Id;
-                    cabecera.EstadoPagoId = estadoPendientePago.Id;
                     cabecera.FechaRegistro = DateTime.Now;
 
                     // --------------------------------------------------------------------------------

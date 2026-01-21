@@ -12,6 +12,8 @@ namespace ERPKardex.Models
         public string? Descripcion { get; set; }
         [Column("ultimo_correlativo")]
         public int? UltimoCorrelativo { get; set; }
+        [Column("tipo_documento_id")]
+        public int? TipoDocumentoId { get; set; }
         public bool? Estado { get; set; }
     }
 }

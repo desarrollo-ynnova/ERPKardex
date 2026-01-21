@@ -31,7 +31,8 @@
                             <th>Proveedor</th>
                             <th>Orden Ref.</th>
                             <th class="text-right">Monto Original</th>
-                            <th class="text-right text-success">Saldo Disponible</th>
+                            <th class="text-right text-success">Monto Usado</th>
+                            <th class="text-right text-danger">Saldo por pagar</th>
                             <th class="text-center">Estado</th>
                         </tr>
                     </thead>
@@ -58,15 +59,16 @@
                 let html = '';
                 if(res.status && res.data.length > 0) {
                     res.data.forEach(x => {
-                        let estadoTexto = x.saldo > 0 ? "DISPONIBLE" : "CONSUMIDO";
+                        let estadoTexto = x.estado;
 
                         html += `<tr>
                             <td>${x.fecha}</td>
                             <td class="font-weight-bold">${x.documento}</td>
                             <td>${x.proveedor}</td>
                             <td><small>${x.referencia}</small></td>
-                            <td class="text-right">${x.moneda} ${x.total.toFixed(2)}</td>
-                            <td class="text-right font-weight-bold text-success">${x.moneda} ${x.saldo.toFixed(2)}</td>
+                            <td class="text-right font-weight-bold">${x.moneda} ${x.total.toFixed(2)}</td>
+                            <td class="text-right font-weight-bold text-success">${x.moneda} ${x.montoUsado.toFixed(2)}</td>
+                            <td class="text-right font-weight-bold text-danger">${x.moneda} ${x.saldo.toFixed(2)}</td>
                             <td class="text-center"><span class="badge ${x.colorEstado}">${estadoTexto}</span></td>
                         </tr>`;
                     });

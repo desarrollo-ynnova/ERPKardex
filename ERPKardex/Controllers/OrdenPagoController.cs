@@ -116,7 +116,7 @@ namespace ERPKardex.Controllers
                 var bancos = await _context.Bancos.Where(b => b.Estado == true).Select(b => new { b.Id, b.Nombre }).ToListAsync();
 
                 // Calcular estado financiero actual
-                decimal pagado = doc.Total - doc.Saldo;
+                decimal pagado = doc.Total - doc.Saldo.Value;
 
                 return Json(new
                 {
@@ -148,6 +148,7 @@ namespace ERPKardex.Controllers
                 try
                 {
                     var pago = JsonConvert.DeserializeObject<OrdenPago>(pagoJson);
+                    var estadoPagado = _context.Estados.FirstOrDefault(e => e.Tabla == "ORDEN_PAGO" && e.Nombre == "Pagado");
 
                     // 1. SUBIDA DE ARCHIVO
                     if (archivoVoucher != null && archivoVoucher.Length > 0)
@@ -169,7 +170,7 @@ namespace ERPKardex.Controllers
                     pago.FechaRegistro = DateTime.Now;
                     pago.UsuarioRegistroId = UsuarioActualId;
                     pago.EmpresaId = EmpresaUsuarioId;
-                    pago.EstadoId = 1; // Generado
+                    pago.EstadoId = estadoPagado?.Id; // Pagado
 
                     // Generar Correlativo OP-00001
                     var ultimo = _context.OrdenPagos.Where(x => x.EmpresaId == EmpresaUsuarioId).OrderByDescending(x => x.Numero).FirstOrDefault();
@@ -190,12 +191,26 @@ namespace ERPKardex.Controllers
                     doc.Saldo -= pago.MontoPagado.GetValueOrDefault();
 
                     // CAMBIO DE ESTADO
-                    var estCancelado = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
-                    var estPorPagar = _context.Estados.First(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
+                    var estCancelado = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
+                    var estDisponible = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Disponible");
+                    var estPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
 
-                    if (doc.Saldo <= 0) doc.EstadoId = estCancelado.Id;
-                    else doc.EstadoId = estPorPagar.Id;
-
+                    if (doc.Saldo <= 0)
+                    {
+                        var esAnticipo = _context.TiposDocumentoInterno.Where(tdi => tdi.Id == doc.TipoDocumentoInternoId).Any(tdi => tdi.Codigo == "ANT");
+                        if (esAnticipo)
+                        {
+                            doc.EstadoId = estDisponible?.Id;
+                        }
+                        else
+                        {
+                            doc.EstadoId = estCancelado?.Id;
+                        }
+                    }
+                    else
+                    {
+                        doc.EstadoId = estPorPagar?.Id;
+                    }
                     // 5. REGISTRO EN HISTORIAL DE APLICACIONES (Para que salga en el historial de la factura)
                     // Creamos un registro virtual de aplicación para trazabilidad visual
                     _context.DocumentoPagarAplicaciones.Add(new DocumentoPagarAplicacion
