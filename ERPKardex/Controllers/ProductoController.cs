@@ -53,7 +53,7 @@ namespace ERPKardex.Controllers
             {
                 // Uso de EmpresaUsuarioId heredado
                 var productosData = (from pro in _context.Productos
-                                     join disa in _context.DIngresoSalidaAlms on pro.Codigo equals disa.CodProducto
+                                     join disa in _context.DIngresoSalidaAlms on pro.Id equals disa.ProductoId
                                      join isa in _context.IngresoSalidaAlms on disa.IngresoSalidaAlmId equals isa.Id
                                      where isa.AlmacenId == almacenId
                                      join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
@@ -508,7 +508,7 @@ namespace ERPKardex.Controllers
                         }
                     }
 
-                    producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D5")}";
+                    producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D3")}";
 
                     if (_context.Productos.Any(p => p.Codigo == producto.Codigo))
                         return Json(new { status = false, message = $"Error crítico: El código generado {producto.Codigo} ya existe." });
@@ -611,7 +611,7 @@ namespace ERPKardex.Controllers
                             nuevoCorrelativo = ultimoCorrelativo + 1;
                         }
                     }
-                    producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D5")}";
+                    producto.Codigo = $"{prefijo}{nuevoCorrelativo.ToString("D3")}";
 
                     // Validar duplicado
                     if (_context.Productos.Any(p => p.Codigo == producto.Codigo))

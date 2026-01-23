@@ -66,6 +66,7 @@ drop table if exists cliente;
 drop table if exists documento_pagar_aplicacion;
 drop table if exists ddocumento_pagar;
 drop table if exists documento_pagar;
+drop table if exists detraccion;
 drop table if exists cuenta_contable;
 
 GO
@@ -1131,6 +1132,13 @@ CREATE TABLE cuenta_contable (
     
     empresa_id INT NULL, -- NULL si es plan estándar, ID si es específico
     estado BIT DEFAULT 1
+);
+
+create table detraccion (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    tipo varchar(255),
+    descripcion varchar(255),
+
 );
 
 GO
