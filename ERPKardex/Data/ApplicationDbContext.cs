@@ -74,6 +74,9 @@ namespace ERPKardex.Data
         public DbSet<TipoPersona> TiposPersona { get; set; }
         public DbSet<Pais> Paises { get; set; }
         public DbSet<Ciudad> Ciudades { get; set; }
+        public DbSet<ConfiguracionGeneral> ConfiguracionesGenerales { get; set; }
+        public DbSet<TipoDetraccion> TiposDetracciones { get; set; }
+        public DbSet<Detraccion> Detracciones { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

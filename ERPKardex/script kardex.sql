@@ -1,6 +1,8 @@
 ﻿-- USE DB
 use erp_kardex_dev;
 
+drop trigger if exists trg_ActualizarDetraccionesUIT;
+drop table if exists configuracion_general;
 drop table if exists empresa_usuario_permiso;
 drop table if exists permiso;
 drop table if exists stock_almacen;
@@ -66,6 +68,7 @@ drop table if exists cliente;
 drop table if exists documento_pagar_aplicacion;
 drop table if exists ddocumento_pagar;
 drop table if exists documento_pagar;
+drop table if exists tipo_detraccion;
 drop table if exists detraccion;
 drop table if exists cuenta_contable;
 
@@ -379,10 +382,10 @@ create table dingresosalidaalm (
 	numero_documento varchar(255),
 	moneda_id int,
 	tipo_cambio decimal(12,6),
-	precio decimal(19,6),
-	igv decimal(19,6),
-	subtotal decimal(19,6),
-	total decimal(19,6),
+	precio decimal(19,10),
+	igv decimal(19,10),
+	subtotal decimal(19,10),
+	total decimal(19,10),
 	centro_costo_id int,
 	actividad_id int,
     id_referencia INT NULL,
@@ -744,12 +747,12 @@ CREATE TABLE dordencompra (
     cantidad_atendida DECIMAL(12,2) DEFAULT 0,
     
     -- Valores Monetarios (Lo que negociaste con el proveedor)
-    precio_unitario DECIMAL(18,6), -- NISIRA: P.Unitario
+    precio_unitario DECIMAL(19,10), -- NISIRA: P.Unitario
     porc_descuento DECIMAL(12,2) DEFAULT 0, -- NISIRA: %Dscto
     
-    valor_venta DECIMAL(18,2),     -- Subtotal sin impuestos
-    impuesto DECIMAL(18,2),        -- IGV del ítem
-    total DECIMAL(18,2),           -- Total con impuestos
+    valor_venta DECIMAL(19,10),     -- Subtotal sin impuestos
+    impuesto DECIMAL(19,10),        -- IGV del ítem
+    total DECIMAL(19,10),           -- Total con impuestos
     
     centro_costo_id INT,           -- NISIRA: Destino/Centro de Costo
     lugar VARCHAR(255),
@@ -813,11 +816,11 @@ CREATE TABLE dordenservicio (
     
     cantidad DECIMAL(12,2),
     cantidad_atendida DECIMAL(12,2) DEFAULT 0,
-    precio_unitario DECIMAL(18,6),
+    precio_unitario DECIMAL(19,10),
     
-    valor_venta DECIMAL(18,2),
-    impuesto DECIMAL(18,2),
-    total DECIMAL(18,2),
+    valor_venta DECIMAL(19,10),
+    impuesto DECIMAL(19,10),
+    total DECIMAL(19,10),
     
     centro_costo_id INT,
     lugar VARCHAR(255),
@@ -1090,8 +1093,8 @@ CREATE TABLE ddocumento_pagar (
     unidad_medida VARCHAR(50),
     
     cantidad DECIMAL(12,2),      -- Cantidad facturada en ESTE documento
-    precio_unitario DECIMAL(18,6),
-    total DECIMAL(18,2)
+    precio_unitario DECIMAL(19,10),
+    total DECIMAL(19,10)
 );
 
 -- ======================================================
@@ -1134,12 +1137,105 @@ CREATE TABLE cuenta_contable (
     estado BIT DEFAULT 1
 );
 
+create table tipo_detraccion (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre varchar(255),
+    estado BIT,
+);
+
 create table detraccion (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    tipo varchar(255),
+    tipo_id INT,
     descripcion varchar(255),
-
+    porcentaje decimal(5,2),
+    importe_minimo decimal(18,2),
+    porcentaje_uit decimal(5,2) null,
+    estado bit default 1
 );
+
+-- 1. TABLA DE CONFIGURACIÓN (Siguiendo tu estilo)
+CREATE TABLE configuracion_general (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    clave VARCHAR(50) UNIQUE NOT NULL, -- Ej: 'UIT_VALOR'
+    valor VARCHAR(255) NOT NULL,
+    descripcion VARCHAR(255),
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+GO
+
+-- 2. TRIGGER PARA BALANCEO DE CARGA
+-- Automatiza el cálculo del importe_minimo basado en la UIT
+CREATE TRIGGER trg_ActualizarDetraccionesUIT
+ON configuracion_general
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Si se actualiza el valor de la UIT
+    IF EXISTS (SELECT 1 FROM inserted WHERE clave = 'UIT_VALOR')
+    BEGIN
+        DECLARE @ValorUIT DECIMAL(18,2);
+        SELECT @ValorUIT = CAST(valor AS DECIMAL(18,2)) FROM inserted WHERE clave = 'UIT_VALOR';
+
+        -- Actualizamos solo los que dependen de la UIT
+        UPDATE detraccion
+        SET importe_minimo = (@ValorUIT * porcentaje_uit / 100)
+        WHERE porcentaje_uit IS NOT NULL 
+          AND estado = 1;
+    END
+END;
+
+GO
+
+-- 1. Insertar Tipos de Detracción
+INSERT INTO tipo_detraccion (nombre, estado) VALUES ('BIENES', 1);    -- Generará ID 1
+INSERT INTO tipo_detraccion (nombre, estado) VALUES ('SERVICIOS', 1); -- Generará ID 2
+
+-- 2. Insertar Valor base de la UIT (Usando 5500 para coincidir con tu tabla de ejemplo)
+INSERT INTO configuracion_general (clave, valor, descripcion) 
+VALUES ('UIT_VALOR', '5500', 'Valor de la UIT base para el cálculo de detracciones');
+
+-- 3. Insertar Data Completa del Catálogo de Detracciones
+-- Lógica: Si depende de la UIT, ponemos el % en porcentaje_uit. 
+-- El Trigger calculará el importe_minimo automáticamente tras el insert o update de la UIT.
+
+-- BIENES (ID 1)
+INSERT INTO detraccion (tipo_id, descripcion, porcentaje, porcentaje_uit, importe_minimo) VALUES 
+(1, 'AZÚCAR Y MELAZA DE CAÑA', 10.00, 50.00, 2750.00),
+(1, 'ALCOHOL ETÍLICO', 10.00, 50.00, 2750.00),
+(1, 'MINERALES DE ORO Y CONCENTRADOS (GRAVADOS CON IGV)', 10.00, 50.00, 2750.00),
+(1, 'MINERALES METÁLICOS NO AURÍFEROS', 10.00, 50.00, 2750.00),
+(1, 'RECURSOS HIDROBIOLÓGICOS', 4.00, NULL, 700.00),
+(1, 'MAÍZ AMARILLO DURO', 4.00, NULL, 700.00),
+(1, 'CAÑA DE AZÚCAR', 10.00, NULL, 700.00),
+(1, 'ARENA Y PIEDRA', 10.00, NULL, 700.00),
+(1, 'RESIDUOS, SUBPRODUCTOS, DESECHOS Y DESPERDICIOS', 15.00, NULL, 700.00),
+(1, 'CARNES Y DESPOJOS COMESTIBLES', 4.00, NULL, 700.00),
+(1, 'HARINA, POLVO Y PELLETS DE PESCADO', 4.00, NULL, 700.00),
+(1, 'MADERA', 4.00, NULL, 700.00),
+(1, 'ACEITE DE PESCADO', 10.00, NULL, 700.00),
+(1, 'LECHE', 4.00, NULL, 700.00),
+(1, 'PÁPRIKA Y FRUTOS CAPSICUM / PIMIENTA', 10.00, NULL, 700.00),
+(1, 'PLOMO', 15.00, NULL, 700.00),
+(1, 'BIENES GRAVADOS POR RENUNCIA A EXONERACIÓN IGV', 10.00, NULL, 700.00),
+(1, 'BIENES EXONERADOS DEL IGV', 1.50, NULL, 700.00),
+(1, 'ORO Y MINERALES METÁLICOS EXONERADOS DEL IGV', 1.50, NULL, 700.00),
+(1, 'MINERALES NO METÁLICOS', 10.00, NULL, 700.00);
+
+-- SERVICIOS (ID 2)
+INSERT INTO detraccion (tipo_id, descripcion, porcentaje, porcentaje_uit, importe_minimo) VALUES 
+(2, 'INTERMEDIACIÓN LABORAL Y TERCERIZACIÓN', 12.00, NULL, 700.00),
+(2, 'ARRENDAMIENTO DE BIENES (MUEBLES E INMUEBLES)', 10.00, NULL, 700.00),
+(2, 'MANTENIMIENTO Y REPARACIÓN DE BIENES MUEBLES', 12.00, NULL, 700.00),
+(2, 'MOVIMIENTO DE CARGA', 10.00, NULL, 700.00),
+(2, 'OTROS SERVICIOS EMPRESARIALES', 12.00, NULL, 700.00),
+(2, 'COMISIÓN MERCANTIL', 10.00, NULL, 700.00),
+(2, 'FABRICACIÓN DE BIENES POR ENCARGO', 10.00, NULL, 700.00),
+(2, 'TRANSPORTE DE PERSONAS', 10.00, NULL, 700.00),
+(2, 'CONTRATOS DE CONSTRUCCIÓN', 4.00, NULL, 700.00),
+(2, 'DEMÁS SERVICIOS GRAVADOS CON IGV', 12.00, NULL, 700.00),
+(2, 'TRANSPORTE DE BIENES POR VÍA TERRESTRE', 4.00, NULL, 400.00);
 
 GO
 

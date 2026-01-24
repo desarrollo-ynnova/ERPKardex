@@ -34,13 +34,15 @@ namespace ERPKardex.Models
         public string? NumeroDocumento { get; set; }
         [Column("moneda_id")]
         public int? MonedaId { get; set; }
-        [Column("tipo_cambio")]
-        [Precision(12, 6)]
+        [Column("tipo_cambio", TypeName = "decimal(19,10)")]
         public decimal? TipoCambio { get; set; }
-        [Precision(19, 6)]
+        [Column("precio", TypeName = "decimal(19,10)")]
         public decimal? Precio { get; set; }
+        [Column("subtotal", TypeName = "decimal(19,10)")]
         public decimal? Subtotal { get; set; }
+        [Column("igv", TypeName = "decimal(19,10)")]
         public decimal? Igv { get; set; }
+        [Column("total", TypeName = "decimal(19,10)")]
         public decimal? Total { get; set; }
         [Column("centro_costo_id")]
         public int? CentroCostoId { get; set; }

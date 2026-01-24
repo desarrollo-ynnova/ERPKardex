@@ -27,14 +27,14 @@ namespace ERPKardex.Models
         [Column("cantidad_atendida")]
         public decimal? CantidadAtendida { get; set; }
 
-        [Column("precio_unitario")]
+        [Column("precio_unitario", TypeName = "decimal(19,10)")]
         public decimal? PrecioUnitario { get; set; }
 
-        [Column("valor_venta")]
+        [Column("valor_venta", TypeName = "decimal(19,10)")]
         public decimal? ValorVenta { get; set; }
-
+        [Column("impuesto", TypeName = "decimal(19,10)")]
         public decimal? Impuesto { get; set; }
-
+        [Column("total", TypeName = "decimal(19,10)")]
         public decimal? Total { get; set; }
 
         [Column("centro_costo_id")]

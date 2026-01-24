@@ -39,10 +39,10 @@ namespace ERPKardex.Models
         [Column("cantidad")]
         public decimal? Cantidad { get; set; }
 
-        [Column("precio_unitario")]
+        [Column("precio_unitario", TypeName = "decimal(19,10)")]
         public decimal? PrecioUnitario { get; set; }
 
-        [Column("total")]
+        [Column("total", TypeName = "decimal(19,10)")]
         public decimal? Total { get; set; }
     }
 }
