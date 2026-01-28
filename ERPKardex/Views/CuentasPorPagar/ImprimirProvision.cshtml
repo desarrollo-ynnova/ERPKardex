@@ -1,0 +1,214 @@
+﻿@model ERPKardex.Models.DocumentoPagar
+@{
+    Layout = null;
+
+    var empresa = ViewBag.Empresa as ERPKardex.Models.Empresa;
+    var proveedor = ViewBag.Proveedor as ERPKardex.Models.Proveedor;
+    var moneda = ViewBag.Moneda as ERPKardex.Models.Moneda;
+    // Usamos dynamic para los detalles
+    var detalles = ViewBag.Detalles as IEnumerable<dynamic>;
+    var estado = ViewBag.Estado as string;
+    var nombreDoc = ViewBag.NombreDocumento as string;
+
+    string simbolo = moneda?.Simbolo ?? "S/.";
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Provisión @Model.Serie-@Model.Numero</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11px;
+            color: #000;
+        }
+
+        .box-border {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid #000 !important;
+            padding: 4px;
+            vertical-align: middle;
+        }
+
+        .bg-header {
+            background-color: #eee;
+            font-weight: bold;
+        }
+
+        /* Ajustes para impresión */
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            .bg-header {
+                background-color: #eee !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .container {
+                max-width: 100%;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white">
+
+    <div class="container mt-3 mb-3 no-print text-right">
+        <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> Imprimir</button>
+        <button onclick="window.close()" class="btn btn-secondary"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+
+    <div class="container p-4">
+
+        <div class="row mb-4 align-items-center">
+            <div class="col-2 text-center">
+                <i class="fas fa-building fa-4x text-secondary"></i>
+            </div>
+            <div class="col-6">
+                <h4 class="font-weight-bold m-0">@empresa?.RazonSocial.ToUpper()</h4>
+                <div class="font-weight-bold">RUC: @empresa?.Ruc</div>
+                <div class="small">@empresa?.Direccion</div>
+            </div>
+            <div class="col-4">
+                <div class="box-border text-center bg-light">
+                    <h6 class="font-weight-bold mb-1">@nombreDoc</h6>
+                    <h4 class="font-weight-bold text-danger m-0">@Model.Serie - @Model.Numero</h4>
+
+                    <div class="mt-2 border-top border-secondary pt-1">
+                        <small class="text-muted d-block">ESTADO</small>
+                        <span class="font-weight-bold text-dark">@estado?.ToUpper()</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-12">
+                <div class="box-border">
+                    <div class="row">
+                        <div class="col-7 border-right">
+                            <h6 class="font-weight-bold text-decoration-underline mb-2">DATOS DEL PROVEEDOR</h6>
+                            <div class="row">
+                                <div class="col-3 font-weight-bold">RAZÓN SOCIAL:</div>
+                                <div class="col-9">@proveedor?.RazonSocial</div>
+
+                                <div class="col-3 font-weight-bold">RUC/DOC:</div>
+                                <div class="col-9">@proveedor?.NumeroDocumento</div>
+
+                                <div class="col-3 font-weight-bold">DIRECCIÓN:</div>
+                                <div class="col-9">@(proveedor?.Direccion ?? "-")</div>
+                            </div>
+                        </div>
+
+                        <div class="col-5">
+                            <h6 class="font-weight-bold text-decoration-underline mb-2">DATOS DE EMISIÓN</h6>
+                            <div class="row">
+                                <div class="col-5 font-weight-bold">FECHA EMISIÓN:</div>
+                                <div class="col-7">@Model.FechaEmision?.ToString("dd/MM/yyyy")</div>
+
+
+                                <div class="col-5 font-weight-bold">MONEDA:</div>
+                                <div class="col-7">@moneda?.Nombre.ToUpper()</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-2 border-top pt-2">
+                        <div class="col-12">
+                            <strong>GLOSA / OBSERVACIÓN:</strong>
+                            <span class="font-italic">@(string.IsNullOrEmpty(Model.Observacion) ? "---" : Model.Observacion)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <table class="table table-bordered table-sm mt-3">
+            <thead class="bg-header text-center">
+                <tr>
+                    <th style="width: 5%">ITEM</th>
+                    <th style="width: 10%">CANT.</th>
+                    <th style="width: 10%">UND.</th>
+                    <th style="width: 45%">DESCRIPCIÓN</th>
+                    <th style="width: 15%">P. UNITARIO</th>
+                    <th style="width: 15%">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (detalles != null)
+                {
+                    foreach (var item in detalles)
+                    {
+                        <tr>
+                            <td class="text-center">@item.Item</td>
+                            <td class="text-center font-weight-bold">@Convert.ToDecimal(item.Cantidad).ToString("N2")</td>
+                            <td class="text-center">@item.UnidadMedida</td>
+                            <td>@item.Descripcion</td>
+                            <td class="text-right">@simbolo @Convert.ToDecimal(item.PrecioUnitario).ToString("N2")</td>
+                            <td class="text-right font-weight-bold">@simbolo @Convert.ToDecimal(item.Total).ToString("N2")</td>
+                        </tr>
+                    }
+                }
+                @for (int i = 0; i < (8 - (detalles?.Count() ?? 0)); i++)
+                {
+                    <tr><td colspan="6" style="height: 25px;">&nbsp;</td></tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="row justify-content-end mb-4">
+            <div class="col-5">
+                <table class="table table-sm table-bordered mb-0">
+                    <tr>
+                        <td class="bg-light font-weight-bold text-right">SUBTOTAL:</td>
+                        <td class="text-right">@simbolo @((Model.SubTotal ).ToString("N2"))</td>
+                    </tr>
+                    <tr>
+                        <td class="bg-light font-weight-bold text-right">I.G.V. (18%):</td>
+                        <td class="text-right">@simbolo @((Model.MontoIgv ).ToString("N2"))</td>
+                    </tr>
+                    <tr>
+                        <td class="bg-light font-weight-bold text-right" style="font-size: 1.1em;">TOTAL:</td>
+                        <td class="text-right font-weight-bold" style="font-size: 1.1em;">
+                            @simbolo @((Model.Total ).ToString("N2"))
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bg-light font-weight-bold text-right text-danger">SALDO PENDIENTE:</td>
+                        <td class="text-right font-weight-bold text-danger">
+                            @simbolo @((Model.Saldo ?? 0).ToString("N2"))
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="fixed-bottom text-center small text-muted mb-2 no-print">
+            Impreso el @DateTime.Now.ToString("dd/MM/yyyy HH:mm") desde Sistema ERP
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            setTimeout(function(){ window.print(); }, 500);
+        }
+    </script>
+</body>
+</html>

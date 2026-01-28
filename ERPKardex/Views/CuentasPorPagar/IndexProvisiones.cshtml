@@ -60,6 +60,24 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalDetalleProvision" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Detalle de Provisión</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="cuerpoModal">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function() {
@@ -100,12 +118,107 @@
                             <td class="text-right font-weight-bold text-danger">${x.moneda} ${x.saldo.toFixed(2)}</td>
                             <td class="text-center"><span class="badge ${x.colorEstado}">${x.estado}</span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-info" title="Ver Detalle"><i class="fas fa-eye"></i></button>
+                                    <a href="/CuentasPorPagar/ImprimirProvision?id=${x.id}" target="_blank" class="btn btn-sm btn-secondary" title="Imprimir">
+                                      <i class="fas fa-print"></i>
+                                    </a>
+                                <button class="btn btn-sm btn-info" onclick="verDetalle(${x.id})"><i class="fas fa-eye"></i></button>
                             </td>
                         </tr>`;
                     });
                 } else { html = '<tr><td colspan="9" class="text-center">No se encontraron registros.</td></tr>'; }
                 $('#tbl_Provisiones tbody').html(html);
+            });
+        }
+        
+        
+        function verDetalle(id) {
+            // 1. Abrir modal y mostrar 'Cargando...'
+            $('#modalDetalleProvision').modal('show');
+            $('#cuerpoModal').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Cargando datos...</p></div>');
+
+            // 2. Petición AJAX al nuevo método JSON
+            $.get('/CuentasPorPagar/GetProvisionDetalleJson', { id: id }, function(res) {
+
+                if (!res.status) {
+                    $('#cuerpoModal').html('<div class="alert alert-danger">No se pudo cargar la información.</div>');
+                    return;
+                }
+
+                let cab = res.cabecera;
+                let det = res.detalles;
+
+                // 3. Construir HTML de la Cabecera
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <h5 class="text-primary font-weight-bold">${cab.proveedor}</h5>
+                            <p class="text-muted mb-0">RUC: ${cab.ruc}</p>
+                        </div>
+                        <div class="col-4 text-right">
+                            <h5 class="font-weight-bold">${cab.documento}</h5>
+                            <span class="badge badge-info">${cab.fecha}</span>
+                        </div>
+                    </div>
+                    <div class="row bg-light p-2 rounded mb-3 mx-0">
+                        <div class="col-6"><strong>Ref:</strong> ${cab.referencia}</div>
+                        <div class="col-6"><strong>Obs:</strong> ${cab.obs}</div>
+                    </div>
+                `;
+
+                // 4. Construir Tabla de Detalles
+                html += `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Descripción</th>
+                                    <th class="text-center">Und</th>
+                                    <th class="text-right">Cant</th>
+                                    <th class="text-right">P. Unit</th>
+                                    <th class="text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                if (det.length > 0) {
+                    det.forEach(d => {
+                        html += `
+                            <tr>
+                                <td>${d.item}</td>
+                                <td>${d.producto}</td>
+                                <td class="text-center">${d.unidad}</td>
+                                <td class="text-right">${d.cantidad.toFixed(2)}</td>
+                                <td class="text-right">${d.precio.toFixed(2)}</td>
+                                <td class="text-right font-weight-bold">${d.importe.toFixed(2)}</td>
+                            </tr>`;
+                    });
+                } else {
+                    html += `<tr><td colspan="6" class="text-center">Sin detalles</td></tr>`;
+                }
+
+                html += `</tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-right font-weight-bold">SubTotal:</td>
+                                <td class="text-right">${cab.moneda} ${cab.subTotal.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" class="text-right font-weight-bold">IGV:</td>
+                                <td class="text-right">${cab.moneda} ${cab.igv.toFixed(2)}</td>
+                            </tr>
+                            <tr class="bg-primary text-white">
+                                <td colspan="5" class="text-right font-weight-bold">TOTAL:</td>
+                                <td class="text-right font-weight-bold">${cab.moneda} ${cab.total.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+
+                // 5. Insertar el HTML construido
+                $('#cuerpoModal').html(html);
+            }).fail(function() {
+                $('#cuerpoModal').html('<div class="alert alert-danger">Error de servidor.</div>');
             });
         }
     </script>

@@ -75,6 +75,109 @@ namespace ERPKardex.Controllers
         }
 
         [HttpGet]
+        public IActionResult ImprimirProvision(int id)
+        {
+            // 1. Obtener el Documento Principal
+            var documento = _context.DocumentosPagar.FirstOrDefault(x => x.Id == id);
+            if (documento == null) return NotFound();
+
+            // 2. Obtener Datos Relacionados (Llenamos los ViewBag para la vista)
+
+            // Empresa (Asumiendo que tienes una forma de obtener la empresa del usuario actual)
+            // Si no tienes el ID en sesión, úsalo directo del documento si existe la relación
+            ViewBag.Empresa = _context.Empresas.FirstOrDefault(x => x.Id == documento.EmpresaId);
+
+            // Proveedor
+            ViewBag.Proveedor = _context.Proveedores.FirstOrDefault(x => x.Id == documento.ProveedorId);
+
+            // Moneda
+            ViewBag.Moneda = _context.Monedas.FirstOrDefault(x => x.Id == documento.MonedaId);
+
+            // Usuario (El que creó el documento o el actual)
+            ViewBag.Usuario = _context.Usuarios.FirstOrDefault(u => u.Nombre == User.Identity.Name); // O tu lógica de usuario
+
+            // Detalles (Items) - Usamos dynamic o la clase si la tienes mapeada
+            var detalles = (from d in _context.DDocumentosPagar
+                            where d.DocumentoPagarId == id
+                            select new
+                            {
+                                Item = d.Item,
+                                Cantidad = d.Cantidad,
+                                UnidadMedida = d.UnidadMedida,
+                                Descripcion = d.Descripcion,
+                                PrecioUnitario = d.PrecioUnitario,
+                                Total = d.Total
+                            }).ToList();
+
+            // Convertimos a lista de objetos dinámicos para que la vista no se queje
+            ViewBag.Detalles = detalles;
+
+            // Estado para mostrar en el sello
+            var estadoObj = _context.Estados.FirstOrDefault(e => e.Id == documento.EstadoId);
+            ViewBag.Estado = estadoObj != null ? estadoObj.Nombre : "";
+
+            // Tipos de documento para mostrar si es FACTURA, BOLETA, ETC.
+            var tipoDoc = _context.TiposDocumentoInterno.FirstOrDefault(t => t.Id == documento.TipoDocumentoInternoId);
+            ViewBag.NombreDocumento = tipoDoc != null ? tipoDoc.Descripcion.ToUpper() : "DOCUMENTO POR PAGAR";
+
+            return View(documento);
+        }
+
+        [HttpGet]
+        public JsonResult GetProvisionDetalleJson(int id)
+        {
+            try
+            {
+                // 1. Datos de Cabecera (Objeto Anónimo)
+                var cabecera = (from d in _context.DocumentosPagar
+                                join p in _context.Proveedores on d.ProveedorId equals p.Id
+                                join m in _context.Monedas on d.MonedaId equals m.Id
+                                join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
+                                // Joins para referencias (Opcionales)
+                                join oc in _context.OrdenCompras on d.OrdenCompraId equals oc.Id into ocG
+                                from oc in ocG.DefaultIfEmpty()
+                                join os in _context.OrdenServicios on d.OrdenServicioId equals os.Id into osG
+                                from os in osG.DefaultIfEmpty()
+                                where d.Id == id
+                                select new
+                                {
+                                    documento = t.Codigo + " " + d.Serie + "-" + d.Numero,
+                                    proveedor = p.RazonSocial,
+                                    ruc = p.NumeroDocumento,
+                                    fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                                    moneda = m.Simbolo,
+                                    subTotal = d.SubTotal ,
+                                    igv = d.MontoIgv ,
+                                    total = d.Total ,
+                                    obs = d.Observacion ?? "-",
+                                    referencia = oc != null ? "O/C: " + oc.Numero : (os != null ? "O/S: " + os.Numero : "-")
+                                }).FirstOrDefault();
+
+                if (cabecera == null) return Json(new { status = false, message = "No encontrado" });
+
+                // 2. Datos del Detalle (Lista Anónima)
+                // Asegúrate que _context.DetalleDocumentosPagar es el nombre correcto en tu DbContext
+                var detalles = (from det in _context.DDocumentosPagar
+                                where det.DocumentoPagarId == id
+                                select new
+                                {
+                                    item = det.Item,
+                                    producto = det.Descripcion,
+                                    unidad = det.UnidadMedida,
+                                    cantidad = det.Cantidad ?? 0,
+                                    precio = det.PrecioUnitario ?? 0,
+                                    importe = det.Total ?? 0
+                                }).ToList();
+
+                return Json(new { status = true, cabecera = cabecera, detalles = detalles });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
         public JsonResult GetAnticiposData(DateTime fechaInicio, DateTime fechaFin, int? proveedorId)
         {
             try
