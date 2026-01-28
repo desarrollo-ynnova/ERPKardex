@@ -280,6 +280,7 @@ namespace ERPKardex.Controllers
                     cabecera.EmpresaId = empresaId;
                     cabecera.EstadoId = estadoGenerado.Id;
                     cabecera.FechaRegistro = DateTime.Now;
+                    cabecera.FechaEmision = DateTime.Now;
 
                     // ----------------------------------------------------------------------
                     // 2. CÁLCULO CONTABLE (BASE + IGV)

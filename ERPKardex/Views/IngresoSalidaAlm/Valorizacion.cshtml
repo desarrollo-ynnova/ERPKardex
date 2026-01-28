@@ -1,0 +1,369 @@
+﻿@{
+    ViewData["Title"] = "Valorización de Existencias";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* Estilos para selección de filas */
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa; /* Gris muy suave */
+        cursor: pointer;
+    }
+
+    .selected-row {
+        background-color: #e3f2fd !important; /* Azul muy suave */
+        border-left: 5px solid #0d6efd;
+    }
+
+    .card-header {
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+    /* Botón ojito flotante o estético */
+    .btn-icon {
+        padding: 0.1rem 0.4rem;
+        font-size: 0.8rem;
+    }
+</style>
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-secondary m-0"><i class="fas fa-balance-scale"></i> Valorización de Entradas (Match)</h3>
+    </div>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span>1. Guías de Entrada (Pendientes)</span>
+                    <button class="btn btn-sm btn-light text-primary" onclick="CargarGuiasPendientes()"><i class="fas fa-sync"></i></button>
+                </div>
+                <div class="card-body p-0 table-responsive" style="height: 500px;">
+                    <table class="table table-bordered table-hover mb-0" id="tablaGuias">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 50px;">Ver</th>
+                                <th>Fecha</th>
+                                <th>Guía</th>
+                                <th>Proveedor</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    2. Comprobantes Disponibles
+                </div>
+                <div class="card-body p-0 table-responsive" style="height: 450px;">
+
+                    <div id="msgSeleccione" class="text-center p-5 text-muted h-100 d-flex flex-column justify-content-center align-items-center">
+                        <i class="fas fa-arrow-left fa-3x mb-3 text-primary opacity-50"></i>
+                        <h5>Seleccione una guía primero</h5>
+                        <p class="small">El sistema filtrará los comprobantes del proveedor correspondiente.</p>
+                    </div>
+
+                    <table class="table table-bordered table-hover mb-0 d-none" id="tablaFacturas">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 50px;">Ver</th>
+                                <th>Emisión</th>
+                                <th>Documento</th>
+                                <th>Moneda</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer text-end bg-white">
+                    <button id="btnValorizar" class="btn btn-lg btn-primary w-100" disabled>
+                        <i class="fas fa-link"></i> VINCULAR Y VALORIZAR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let _guiaIdSeleccionada = 0;
+        let _guiaNumero = ""; // Nuevo: Para el texto del alert
+
+        let _facturaIdSeleccionada = 0;
+        let _facturaNumero = ""; // Nuevo: Para el texto del alert
+
+        $(document).ready(function () {
+            CargarGuiasPendientes();
+        });
+
+        // ==========================================
+        // 1. CARGA DE DATOS (PANEL IZQUIERDO)
+        // ==========================================
+        function CargarGuiasPendientes() {
+            $("#tablaGuias tbody").html('<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+
+            $.get('/IngresoSalidaAlm/GetIngresosPendientesValorizacion', function (resp) {
+                if (resp.status) {
+                    let html = '';
+                    if (resp.data.length === 0) {
+                        html = '<tr><td colspan="5" class="text-center text-muted py-4">No hay guías pendientes de valorizar.</td></tr>';
+                    } else {
+                        $.each(resp.data, function (i, item) {
+                            // SE MODIFICA EL ONCLICK PARA PASAR EL NÚMERO DE GUÍA TAMBIÉN
+                            html += `<tr onclick="SeleccionarGuia(this, ${item.id}, ${item.proveedorId}, '${item.numero}')">
+                                        <td class="text-center">
+                                            <button class="btn btn-icon btn-outline-info rounded-circle"
+                                                    onclick="VerDetalleGuia(event, ${item.id}, '${item.numero}')"
+                                                    title="Ver items de la guía">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                        <td>${item.fecha}</td>
+                                        <td class="fw-bold text-primary">${item.numero}</td>
+                                        <td class="small text-truncate" style="max-width: 150px;">${item.proveedor || 'S/N'}</td>
+                                        <td class="text-center"><span class="badge bg-secondary">${item.items}</span></td>
+                                     </tr>`;
+                        });
+                    }
+                    $("#tablaGuias tbody").html(html);
+                } else {
+                    Swal.fire('Error', resp.message, 'error');
+                }
+            });
+        }
+
+        // ==========================================
+        // 2. LÓGICA DE SELECCIÓN
+        // ==========================================
+
+        // AHORA RECIBIMOS EL NÚMERO DE GUÍA (numGuia)
+        function SeleccionarGuia(tr, id, proveedorId, numGuia) {
+            $("#tablaGuias tbody tr").removeClass("selected-row");
+            $(tr).addClass("selected-row");
+
+            _guiaIdSeleccionada = id;
+            _guiaNumero = numGuia; // Guardamos el número visual
+
+            _facturaIdSeleccionada = 0;
+            _facturaNumero = "";
+            $("#btnValorizar").prop("disabled", true).html('<i class="fas fa-link"></i> VINCULAR Y VALORIZAR');
+
+            // === CORRECCIÓN VISUAL: OCULTAR EL MENSAJE INMEDIATAMENTE ===
+            $("#msgSeleccione").addClass("d-none");
+            $("#msgSeleccione").removeClass("d-flex");
+            $("#tablaFacturas").removeClass("d-none");
+
+            CargarFacturasDisponibles(proveedorId);
+        }
+
+        function CargarFacturasDisponibles(proveedorId) {
+            if (!proveedorId) {
+                Swal.fire('Aviso', 'Esta guía no tiene proveedor asignado. Corrija la guía primero.', 'warning');
+                return;
+            }
+
+            $("#tablaFacturas tbody").html('<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Buscando comprobantes...</td></tr>');
+
+            $.get('/IngresoSalidaAlm/BuscarFacturasPendientesIngreso?proveedorId=' + proveedorId, function (resp) {
+                if (resp.status) {
+                    let html = '';
+                    if (resp.data.length === 0) {
+                        html = '<tr><td colspan="5" class="text-center text-danger py-4">No hay comprobantes pendientes para este proveedor.</td></tr>';
+                    } else {
+                        $.each(resp.data, function (i, item) {
+                            // SE MODIFICA EL ONCLICK PARA PASAR EL NÚMERO DE FACTURA
+                            html += `<tr onclick="SeleccionarFactura(this, ${item.id}, '${item.numero}')">
+                                        <td class="text-center">
+                                            <button class="btn btn-icon btn-outline-success rounded-circle"
+                                                    onclick="VerDetalleFactura(event, ${item.id}, '${item.numero}')"
+                                                    title="Ver items del comprobante">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                        <td>${FormatearFecha(item.fecha)}</td>
+                                        <td class="fw-bold">${item.numero}</td>
+                                        <td class="text-center">${item.moneda}</td>
+                                        <td class="text-end fw-bold">${item.total}</td>
+                                     </tr>`;
+                        });
+                    }
+                    $("#tablaFacturas tbody").html(html);
+                } else {
+                    Swal.fire('Error', 'No se pudieron cargar los comprobantes: ' + resp.message, 'error');
+                }
+            });
+        }
+
+        // AHORA RECIBIMOS EL NÚMERO DE FACTURA (numDoc)
+        function SeleccionarFactura(tr, id, numDoc) {
+            $("#tablaFacturas tbody tr").removeClass("selected-row");
+            $(tr).addClass("selected-row");
+
+            _facturaIdSeleccionada = id;
+            _facturaNumero = numDoc; // Guardamos el número visual
+
+            // Habilitar botón de acción
+            if (_guiaIdSeleccionada > 0 && _facturaIdSeleccionada > 0) {
+                $("#btnValorizar").prop("disabled", false);
+            }
+        }
+
+        // ==========================================
+        // 3. DETALLES CON SWEETALERT (LOS OJITOS)
+        // ==========================================
+
+        function VerDetalleGuia(event, id, numeroGuia) {
+            event.stopPropagation();
+            $.get('/IngresoSalidaAlm/GetDetalleMovimiento?id=' + id, function (resp) {
+                if (resp.status) {
+                    let filas = '';
+                    $.each(resp.data, function(i, d) {
+                        filas += `<tr>
+                                    <td class="text-start small">${d.codigo} - ${d.producto}</td>
+                                    <td>${d.unidad}</td>
+                                    <td class="text-end fw-bold">${d.cantidad}</td>
+                                  </tr>`;
+                    });
+
+                    let tablaHtml = `
+                        <div class="table-responsive text-start">
+                            <table class="table table-sm table-striped table-bordered" style="font-size: 0.85rem;">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Producto</th><th>Und</th><th class="text-end">Cant.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${filas}</tbody>
+                            </table>
+                        </div>`;
+
+                    Swal.fire({
+                        title: 'Guía: ' + numeroGuia,
+                        html: tablaHtml,
+                        width: '600px',
+                        showCloseButton: true,
+                        confirmButtonText: 'Cerrar'
+                    });
+                }
+            });
+        }
+
+        function VerDetalleFactura(event, id, numeroFactura) {
+            event.stopPropagation();
+            $.get('/IngresoSalidaAlm/GetDetallesFacturaParaIngreso?facturaId=' + id, function (resp) {
+                if (resp.status) {
+                    let filas = '';
+                    $.each(resp.detalles, function(i, d) {
+                        filas += `<tr>
+                                    <td class="text-start small">${d.descripcion}</td>
+                                    <td class="text-end">${d.cantidad}</td>
+                                    <td class="text-end">${parseFloat(d.precio).toFixed(2)}</td>
+                                    <td class="text-end fw-bold">${(d.cantidad * d.precio).toFixed(2)}</td>
+                                  </tr>`;
+                    });
+
+                    let tablaHtml = `
+                        <div class="text-start mb-2 small">
+                            <strong>Emisión:</strong> ${resp.cabecera.fecha} |
+                            <strong>Moneda:</strong> ${(resp.cabecera.monedaId == 1 ? 'Soles' : 'Dólares')}
+                        </div>
+                        <div class="table-responsive text-start">
+                            <table class="table table-sm table-striped table-bordered" style="font-size: 0.85rem;">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>Producto</th><th class="text-end">Cant.</th><th class="text-end">Precio</th><th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${filas}</tbody>
+                            </table>
+                        </div>`;
+
+                    Swal.fire({
+                        title: 'Comprobante: ' + numeroFactura,
+                        html: tablaHtml,
+                        width: '700px',
+                        showCloseButton: true,
+                        confirmButtonText: 'Cerrar'
+                    });
+                }
+            });
+        }
+
+        // ==========================================
+        // 4. ACCIÓN PRINCIPAL (MATCH)
+        // ==========================================
+        $("#btnValorizar").click(function () {
+            if (_guiaIdSeleccionada === 0 || _facturaIdSeleccionada === 0) return;
+
+            // MENSAJE DE CONFIRMACIÓN MEJORADO
+            Swal.fire({
+                title: '¿Confirmar Vinculación?',
+                html: `Se valorizará el ingreso: <b class="text-primary">${_guiaNumero}</b> <br>
+                       con el Comprobante: <b class="text-success">${_facturaNumero}</b>
+                       <br><br><span class="small text-muted">Se actualizarán los costos de la guía con los precios del comprobante.</span>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, vincular',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    let btn = $("#btnValorizar");
+                    let originalText = btn.html();
+                    btn.html('<i class="fas fa-spinner fa-spin"></i> PROCESANDO...').prop("disabled", true);
+
+                    $.post('/IngresoSalidaAlm/ProcesarValorizacion', {
+                        ingresoId: _guiaIdSeleccionada,
+                        facturaId: _facturaIdSeleccionada
+                    }, function (resp) {
+                        if (resp.status) {
+                            Swal.fire('¡Éxito!', resp.message, 'success').then(() => {
+                                // Resetear todo
+                                _guiaIdSeleccionada = 0; _guiaNumero = "";
+                                _facturaIdSeleccionada = 0; _facturaNumero = "";
+
+                                // Ocultar tabla, mostrar mensaje (RESET VISUAL)
+                                $("#tablaFacturas").addClass("d-none");
+                                $("#msgSeleccione").removeClass("d-none");
+                                $("#msgSeleccione").addClass("d-flex");
+
+                                btn.html(originalText);
+                                CargarGuiasPendientes();
+                            });
+                        } else {
+                            Swal.fire('Error', resp.message, 'error');
+                            btn.html(originalText).prop("disabled", false);
+                        }
+                    }).fail(function() {
+                        Swal.fire('Error', 'Error de conexión.', 'error');
+                        btn.html(originalText).prop("disabled", false);
+                    });
+                }
+            });
+        });
+
+        function FormatearFecha(fechaStr) {
+            if(!fechaStr) return "-";
+            return fechaStr.split('T')[0];
+        }
+
+    </script>
+}

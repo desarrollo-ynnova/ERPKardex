@@ -527,11 +527,11 @@ SET @IdMovimiento1 = SCOPE_IDENTITY();
 
 -- Detalles Movimiento 1
 INSERT INTO dingresosalidaalm (ingresosalidaalm_id, item, producto_id, cod_producto, descripcion_producto, cod_unidad_medida, cantidad, tipo_documento_id, fecha_documento, serie_documento, numero_documento, moneda_id, tipo_cambio, precio, igv, subtotal, total, fecha_registro, empresa_id)
-SELECT @IdMovimiento1, '001', p.id, p.codigo, '2102010003 - LEONARDITA 56 % SL - 1000 LTR', 'NIU', 9.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010003' AND p.empresa_id = @EmpresaID
+SELECT @IdMovimiento1, '001', p.id, p.codigo, 'LEONARDITA 56 % SL - 1000 LTR', 'NIU', 9.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010003' AND p.empresa_id = @EmpresaID
 UNION ALL 
-SELECT @IdMovimiento1, '002', p.id, p.codigo, '2102010005 - LEONARDITA 56 % SP - 25 KG', 'NIU', 499.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID
+SELECT @IdMovimiento1, '002', p.id, p.codigo, 'LEONARDITA 56 % SP - 25 KG', 'NIU', 499.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID
 UNION ALL 
-SELECT @IdMovimiento1, '003', p.id, p.codigo, '2102010004 - LEONARDITA 56 % SL - 20 LTR', 'NIU', 50.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010004' AND p.empresa_id = @EmpresaID;
+SELECT @IdMovimiento1, '003', p.id, p.codigo, 'LEONARDITA 56 % SL - 20 LTR', 'NIU', 50.00, 9, '2025-12-06', 'T001', '00001', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:58:45', @EmpresaID FROM producto p WHERE p.codigo = '2102010004' AND p.empresa_id = @EmpresaID;
 
 
 -- B. MOVIMIENTO 2
@@ -558,7 +558,7 @@ SET @IdMovimiento2 = SCOPE_IDENTITY();
 
 -- Detalles Movimiento 2
 INSERT INTO dingresosalidaalm (ingresosalidaalm_id, item, producto_id, cod_producto, descripcion_producto, cod_unidad_medida, cantidad, tipo_documento_id, fecha_documento, serie_documento, numero_documento, moneda_id, tipo_cambio, precio, igv, subtotal, total, fecha_registro, empresa_id)
-SELECT @IdMovimiento2, '001', p.id, p.codigo, '2102010005 - LEONARDITA 56 % SP - 25 KG', 'NIU', 1000.00, 9, '2025-12-06', 'T001', '00002', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:59:21', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID;
+SELECT @IdMovimiento2, '001', p.id, p.codigo, 'LEONARDITA 56 % SP - 25 KG', 'NIU', 1000.00, 9, '2025-12-06', 'T001', '00002', NULL, 1.0, 0, 0, 0, 0, '2025-12-23 18:59:21', @EmpresaID FROM producto p WHERE p.codigo = '2102010005' AND p.empresa_id = @EmpresaID;
 
 -- Actualización Stock Terceros (Esto se mantiene igual)
 INSERT INTO stock_almacen (almacen_id, producto_id, stock_actual, ultima_actualizacion, empresa_id)

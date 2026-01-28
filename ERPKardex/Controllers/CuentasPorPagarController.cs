@@ -107,7 +107,8 @@ namespace ERPKardex.Controllers
                                 Saldo = d.Saldo,
                                 Estado = e.Nombre,
                                 ColorEstado = d.Saldo == 0 ? "badge-success" : "badge-warning", // Verde si ya se pagó
-                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-")
+                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-"),
+                                TotalOrden = oc.Total,
                             }).ToList();
 
                 return Json(new { status = true, data = data });
@@ -447,6 +448,7 @@ namespace ERPKardex.Controllers
                                 if (itemOrigen != null)
                                 {
                                     det.ProductoId = itemOrigen.ProductoId;       // CLAVE para Almacén
+                                    det.Descripcion = itemOrigen.Descripcion;
                                     det.UnidadMedida = itemOrigen.UnidadMedida;   // Mantenemos consistencia
                                     det.TablaReferencia = "DORDENCOMPRA";         // Para saber de dónde vino
                                 }
@@ -457,6 +459,7 @@ namespace ERPKardex.Controllers
                                 if (itemOrigen != null)
                                 {
                                     det.ProductoId = itemOrigen.ProductoId;
+                                    det.Descripcion = itemOrigen.Descripcion;
                                     det.UnidadMedida = itemOrigen.UnidadMedida;
                                     det.TablaReferencia = "DORDENSERVICIO";
                                 }

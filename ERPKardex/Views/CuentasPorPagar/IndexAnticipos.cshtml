@@ -30,8 +30,9 @@
                             <th>Documento</th>
                             <th>Proveedor</th>
                             <th>Orden Ref.</th>
-                            <th class="text-right">Monto Original</th>
-                            <th class="text-right text-success">Monto Usado</th>
+                            <th class="text-right">Total Orden</th>
+                            <th class="text-right">Monto del Anticipo</th>
+                            <th class="text-right text-success">Monto Aplicado</th>
                             <th class="text-right text-danger">Saldo por pagar</th>
                             <th class="text-center">Estado</th>
                         </tr>
@@ -66,13 +67,14 @@
                             <td class="font-weight-bold">${x.documento}</td>
                             <td>${x.proveedor}</td>
                             <td><small>${x.referencia}</small></td>
+                            <td class="text-right font-weight-bold">${x.moneda} ${x.totalOrden.toFixed(2)}</td>
                             <td class="text-right font-weight-bold">${x.moneda} ${x.total.toFixed(2)}</td>
                             <td class="text-right font-weight-bold text-success">${x.moneda} ${x.montoUsado.toFixed(2)}</td>
                             <td class="text-right font-weight-bold text-danger">${x.moneda} ${x.saldo.toFixed(2)}</td>
                             <td class="text-center"><span class="badge ${x.colorEstado}">${estadoTexto}</span></td>
                         </tr>`;
                     });
-                } else { html = '<tr><td colspan="7" class="text-center">No hay anticipos.</td></tr>'; }
+                } else { html = '<tr><td colspan="9" class="text-center">No hay anticipos.</td></tr>'; }
                 $('#tbl_Anticipos tbody').html(html);
             });
         }

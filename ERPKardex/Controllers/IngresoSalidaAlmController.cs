@@ -21,6 +21,7 @@ namespace ERPKardex.Controllers
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
         public IActionResult ReporteKardex() => View();
+        public IActionResult Valorizacion() => View();
         public IActionResult ObtenerVistaRegistroEntidad()
         {
             return PartialView("_RegistroEntidad");
@@ -123,6 +124,7 @@ namespace ERPKardex.Controllers
                 var facturas = (from d in _context.DocumentosPagar
                                 join t in _context.TiposDocumentoInterno on d.TipoDocumentoInternoId equals t.Id
                                 join est in _context.Estados on d.EstadoId equals est.Id
+                                join mon in _context.Monedas on d.MonedaId equals mon.Id
                                 where d.ProveedorId == proveedorId
                                    && d.EmpresaId == EmpresaUsuarioId
                                    && codigosValidos.Contains(t.Codigo)
@@ -132,7 +134,9 @@ namespace ERPKardex.Controllers
                                     d.Id,
                                     Tipo = t.Codigo,
                                     Numero = d.Serie + "-" + d.Numero,
-                                    Fecha = d.FechaEmision
+                                    Fecha = d.FechaEmision,
+                                    Moneda = mon.Simbolo,
+                                    Total = d.Total,
                                 }).ToList();
 
                 // 3. FILTRAR: Excluir las que YA TIENEN ingreso registrado
@@ -813,6 +817,168 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = "Error: " + ex.Message });
             }
         }
+        #endregion
+        #region VALORIZACION (Amarre Guía - Factura)
+        [HttpGet]
+        public JsonResult GetIngresosPendientesValorizacion()
+        {
+            try
+            {
+                // Buscamos: Entradas (TipoMov=1) Activas (Estado=Aprobado) y Sin Referencia (No valorizadas)
+                var estadoAprobado = _context.Estados.FirstOrDefault(e => e.Nombre == "Aprobado" && e.Tabla == "INGRESOSALIDAALM");
+
+                var data = (from i in _context.IngresoSalidaAlms
+                            join alm in _context.Almacenes on i.AlmacenId equals alm.Id
+                            join prov in _context.Proveedores on i.ProveedorId equals prov.Id // Join opcional si permites ingresos sin proveedor
+                            where i.EmpresaId == EmpresaUsuarioId
+                               && i.TipoMovimiento == true // Solo Entradas
+                               && i.EstadoId == estadoAprobado.Id
+                               && (i.TablaReferencia == null || i.TablaReferencia == "") // Lo vital: Que no tenga amarre
+                            orderby i.Fecha descending
+                            select new
+                            {
+                                i.Id,
+                                Fecha = i.Fecha.HasValue ? i.Fecha.Value.ToString("dd/MM/yyyy") : "-",
+                                Numero = i.Numero,
+                                Almacen = alm.Nombre,
+                                ProveedorId = i.ProveedorId,
+                                Proveedor = prov.RazonSocial,
+                                // Un indicador visual de cuántos items tiene
+                                Items = _context.DIngresoSalidaAlms.Count(d => d.IngresoSalidaAlmId == i.Id)
+                            }).ToList();
+
+                return Json(new { status = true, data = data });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = ex.Message });
+            }
+        }
+        [HttpPost]
+        public JsonResult ProcesarValorizacion(int ingresoId, int facturaId)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    // 1. VALIDAR PERTENENCIA A LA EMPRESA (SEGURIDAD)
+                    var guia = _context.IngresoSalidaAlms.FirstOrDefault(x => x.Id == ingresoId && x.EmpresaId == EmpresaUsuarioId);
+                    var factura = _context.DocumentosPagar.FirstOrDefault(x => x.Id == facturaId && x.EmpresaId == EmpresaUsuarioId);
+
+                    if (guia == null || factura == null)
+                        throw new Exception("Documentos no encontrados o no tienes permisos sobre ellos.");
+
+                    if (guia.TipoMovimiento == false)
+                        throw new Exception("Solo se pueden valorizar Entradas (Ingresos), no Salidas.");
+
+                    // 2. ACTUALIZAR CABECERA DE LA GUÍA (VINCULACIÓN)
+                    guia.IdReferencia = factura.Id;
+                    guia.TablaReferencia = "DOCUMENTO_PAGAR";
+                    guia.ProveedorId = factura.ProveedorId; // Forzamos que coincida el proveedor
+                    guia.MonedaId = factura.MonedaId;       // La guía adopta la moneda de la factura
+
+                    // Nota: Si quisieras sincronizar fechas, este es el momento, pero usualmente 
+                    // la fecha de ingreso es distinta a la fecha de emisión de factura.
+
+                    // 3. ACTUALIZAR DETALLES (EL MATCH DE PRECIOS)
+                    var detallesGuia = _context.DIngresoSalidaAlms.Where(x => x.IngresoSalidaAlmId == guia.Id).ToList();
+                    var detallesFactura = _context.DDocumentosPagar.Where(x => x.DocumentoPagarId == factura.Id).ToList();
+
+                    bool huboCoincidencia = false;
+
+                    foreach (var itemGuia in detallesGuia)
+                    {
+                        // BUSCAMOS EL PRODUCTO EN LA FACTURA
+                        // Usamos FirstOrDefault: Si en la factura hay 2 líneas del mismo producto, tomamos la primera.
+                        var itemFacturaMatch = detallesFactura.FirstOrDefault(x => x.ProductoId == itemGuia.ProductoId);
+
+                        if (itemFacturaMatch != null)
+                        {
+                            huboCoincidencia = true;
+
+                            // A. ACTUALIZAMOS DATOS FINANCIEROS
+                            itemGuia.Precio = itemFacturaMatch.PrecioUnitario; // Precio de la factura
+                            itemGuia.MonedaId = factura.MonedaId;              // Moneda de la factura
+                            itemGuia.TipoCambio = factura.TipoCambio;          // TC de la factura (Vital para Kardex valorizado)
+
+                            // B. RECALCULAMOS TOTALES (Usando la Cantidad REAL de la Guía)
+                            decimal cantidadReal = itemGuia.Cantidad ?? 0;
+                            decimal precioFactura = itemGuia.Precio ?? 0;
+
+                            itemGuia.Subtotal = cantidadReal * precioFactura;
+                        }
+                        else
+                        {
+                            // OPCIONAL: ¿Qué hacemos si el producto llegó pero NO está en la factura?
+                            // Opción A: Dejarlo con precio 0 (Coste cero).
+                            // Opción B: Lanzar error.
+                            // Por ahora, mantenemos el precio con el que se registró (probablemente 0) o no hacemos nada.
+                        }
+                    }
+
+                    if (!huboCoincidencia)
+                    {
+                        // Si no coincidió ningún producto, es probable que se hayan equivocado de factura
+                        throw new Exception("No se encontraron coincidencias de productos entre la Guía y la Factura seleccionada.");
+                    }
+
+                    // 4. GUARDAR CAMBIOS
+                    _context.SaveChanges();
+                    transaction.Commit();
+
+                    return Json(new { status = true, message = "Valorización aplicada correctamente. El Kardex ha sido actualizado." });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = "Error al valorizar: " + ex.Message });
+                }
+            }
+        }
+
+        [HttpPost]
+        public JsonResult EliminarValorizacion(int ingresoId)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    var guia = _context.IngresoSalidaAlms.FirstOrDefault(x => x.Id == ingresoId && x.EmpresaId == EmpresaUsuarioId);
+
+                    if (guia == null) throw new Exception("Guía no encontrada.");
+                    if (string.IsNullOrEmpty(guia.TablaReferencia)) throw new Exception("Esta guía no está valorizada.");
+
+                    // 1. DESVINCULAR CABECERA
+                    guia.IdReferencia = null;
+                    guia.TablaReferencia = null;
+
+                    // Opcional: ¿Regresar moneda a Soles por defecto? 
+                    // guia.MonedaId = 1; 
+
+                    // 2. LIMPIAR PRECIOS EN DETALLES (Volver a Costo Cero)
+                    var detalles = _context.DIngresoSalidaAlms.Where(x => x.IngresoSalidaAlmId == guia.Id).ToList();
+                    foreach (var det in detalles)
+                    {
+                        det.Precio = 0;
+                        det.Subtotal = 0;
+                        det.Igv = 0;
+                        det.Total = 0;
+                        det.TipoCambio = null; // Quitar TC para que no afecte promedios erróneamente
+                    }
+
+                    _context.SaveChanges();
+                    transaction.Commit();
+
+                    return Json(new { status = true, message = "Valorización eliminada (Guía desvinculada)." });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Json(new { status = false, message = ex.Message });
+                }
+            }
+        }
+
         #endregion
     }
 }

@@ -32,12 +32,6 @@ namespace ERPKardex.Models
         public decimal? Concentracion { get; set; }
         [Column("cod_formulacion_quimica")]
         public string? CodFormulacionQuimica { get; set; }
-        [Column("lote")]
-        public string? Lote { get; set; }
-        [Column("fecha_fabricacion")]
-        public DateTime? FechaFabricacion { get; set; }
-        [Column("fecha_vencimiento")]
-        public DateTime? FechaVencimiento { get; set; }
         [Column("cod_peligrosidad")]
         public string? CodPeligrosidad { get; set; }
         [Column("cod_unidad_medida")]
