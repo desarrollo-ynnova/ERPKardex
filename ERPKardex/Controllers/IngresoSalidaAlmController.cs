@@ -555,11 +555,22 @@ namespace ERPKardex.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetEntidades()
+        public JsonResult GetProveedores()
         {
-            // Entidades generalmente son globales o filtradas por empresa según tu lógica. Asumiré filtradas.
-            var data = _context.Proveedores.Where(a => a.Estado == true && a.EmpresaId == EmpresaUsuarioId).ToList(); // <--- CAMBIO AQUÍ
-            return Json(new { data = data, status = true });
+            var miEmpresaId = EmpresaUsuarioId;
+            var esGlobal = EsAdminGlobal;
+
+            var proveedores = (from p in _context.Proveedores
+                               join td in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals td.Id
+                               where p.Estado == true && (esGlobal || p.EmpresaId == miEmpresaId)
+                               select new
+                               {
+                                   p.Id,
+                                   TipoDocumentoIdentidad = td.Descripcion,
+                                   p.NumeroDocumento,
+                                   p.RazonSocial,
+                               }).ToList();
+            return Json(new { data = proveedores, status = true });
         }
         [HttpGet]
         public JsonResult GenerarKardexValorizado(DateTime fechaInicio, DateTime fechaFin, int almacenId, int productoId, string metodo)

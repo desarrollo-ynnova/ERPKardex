@@ -1,6 +1,5 @@
 ﻿@{
     ViewData["Title"] = "Registro de Ingreso/Salida de Almacén";
-
     var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
     int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
 }
@@ -43,8 +42,15 @@
                 <div class="card shadow mb-4 border-left-info" id="div_DocRef">
                     <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia (Guía Remisión)</h5></div>
                     <div class="card-body">
+                        <div class="row" id="div_ProveedorContainer">
+                            <div class="col-md-12 mb-3">
+                                <label class="font-weight-bold">Proveedor / Entidad</label>
+                                <select id="cbx_Proveedor" class="form-control select2-busqueda"></select>
+                            </div>
+                        </div>
+
                         <div class="row">
-                            <div class="col-md-3 mb-3"><label>Fecha Doc.</label><input type="date" id="dtp_FechaDoc" class="form-control"></div>
+                            <div class="col-md-3 mb-3"><label>Fecha Doc.</label><input type="date" id="dtp_FechaDoc" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")"></div>
                             <div class="col-md-9 mb-3"><label>Tipo Documento</label><select id="cbx_TipoDoc" class="form-control select2-busqueda"></select></div>
                         </div>
                         <div class="row">
@@ -53,65 +59,11 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="card shadow mb-4 border-left-danger" id="div_DocVal">
-                    <div class="card-header bg-danger text-white"><h5 class="mb-0">Documento de Valorización (Comprobante)</h5></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12 mb-3">
-                                <label class="font-weight-bold">Proveedor</label>
-                                <div class="input-group">
-                                    <select id="cbx_ProveedorVal" class="form-control select2-busqueda"></select>
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-danger" onclick="loadMediumModal('/IngresoSalidaAlm/ObtenerVistaRegistroEntidad', 'Nueva Entidad')">
-                                            <i class="bi bi-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <label class="small font-weight-bold text-danger">Fecha Valoriz.</label>
-                                <input type="date" id="dtp_FechaDocVal" class="form-control bg-light" readonly>
-                            </div>
-                            <div class="col-md-9 mb-3">
-                                <label class="small font-weight-bold text-danger">Tipo Doc.</label>
-                                <input type="text" id="txt_TipoDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto (Ej: FACTURA)">
-                                <input type="hidden" id="hdn_TipoDocValId">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="small font-weight-bold text-danger">Serie</label>
-                                <input type="text" id="txt_SerieDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="small font-weight-bold text-danger">Número</label>
-                                <input type="text" id="txt_NumeroDocVal" class="form-control bg-light font-weight-bold" readonly placeholder="Auto">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="small font-weight-bold text-danger">Moneda</label>
-                                <select id="cbx_MonedaCab" class="form-control select2-busqueda" disabled></select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 text-center">
-                                <small class="text-danger font-italic">* Use el botón "JALAR COMPROBANTE" para llenar estos datos.</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="card shadow mb-4">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Detalle de Productos</h5>
-
-                    <button id="btn_BuscarFactura" class="btn btn-light text-success font-weight-bold d-none shadow-sm" onclick="abrirModalFacturas()">
-                        <i class="fas fa-file-download"></i> JALAR COMPROBANTE
-                    </button>
                 </div>
 
                 <div class="card-body bg-light">
@@ -123,6 +75,7 @@
                             <div class="col-md-2 mb-3"><label>U.M.</label><input type="text" id="txt_DetUnidad" class="form-control bg-light" readonly></div>
                             <div class="col-md-3 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" value="0.00"></div>
                         </div>
+
                         <div class="row align-items-end">
                             <div class="col-md-4 mb-3" id="div_InputSalida_CC">
                                 <label>Centro de Costo</label><select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
@@ -166,34 +119,10 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalFacturasIngreso" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content border-success">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-file-invoice"></i> Seleccionar Comprobante Pendiente</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr><th>Acción</th><th>Tipo Doc.</th><th>Número</th><th>Fecha Emisión</th></tr>
-                        </thead>
-                        <tbody id="tbl_FacturasPendientes">
-                            <tr><td colspan="4" class="text-center py-4">Cargando...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
     var LISTA_DETALLE = [];
     var PRODUCTOS_TEMP = [];
     var MOTIVOS_FULL = [];
-    var g_IdFacturaSeleccionada = null;
 
     $(document).ready(function () {
         $('.select2-busqueda').select2({ theme: 'bootstrap4', allowClear: true });
@@ -205,8 +134,7 @@
             let tipo = $(this).val();
             if(LISTA_DETALLE.length > 0){
                 Swal.fire("Atención", "Al cambiar el tipo de movimiento se limpiará la lista actual.", "warning");
-                LISTA_DETALLE = []; g_IdFacturaSeleccionada = null; fct_RenderDetalle();
-                fct_LimpiarCabeceraValorizacion();
+                LISTA_DETALLE = []; fct_RenderDetalle();
             }
 
             let h = '<option value="">-- MOTIVO --</option>';
@@ -217,16 +145,24 @@
             }
             $('#cbx_Motivo').html(h).trigger('change');
 
-            if (tipo === "1") { // ENTRADA
-                $('#div_DocRef, #div_DocVal').removeClass('d-none');
-                $('#div_IngresoManual').addClass('d-none');
-                $('#btn_BuscarFactura').removeClass('d-none');
+            // CONFIGURACION VISUAL SEGUN TIPO
+            if (tipo === "1") { // ENTRADA (Ingreso)
+                $('#div_DocRef').removeClass('d-none'); // Muestra Guia y Proveedor
+                $('#div_ProveedorContainer').removeClass('d-none'); // Muestra Proveedor
+
+                // Ocultar columnas de costos (Entrada no lleva CC ni Actividad)
                 $('.col-salida').addClass('d-none');
-            } else { // SALIDA
-                $('#div_DocRef, #div_DocVal').addClass('d-none');
-                $('#div_IngresoManual').removeClass('d-none');
-                $('#btn_BuscarFactura').addClass('d-none');
+                $('#div_InputSalida_CC, #div_InputSalida_Act').addClass('d-none');
+
+            } else if (tipo === "0") { // SALIDA
+                $('#div_DocRef').addClass('d-none'); // Salida interna no suele llevar Guia de proveedor
+
+                // Mostrar columnas de costos
                 $('.col-salida').removeClass('d-none');
+                $('#div_InputSalida_CC, #div_InputSalida_Act').removeClass('d-none');
+            } else {
+                 // Si no selecciona nada
+                 $('.col-salida').removeClass('d-none');
             }
         });
 
@@ -253,55 +189,75 @@
         });
 
         $("#btn_AgregarDetalle").click(function () {
+            let tipoMov = $('#cbx_TipoMovimiento').val();
+            if(tipoMov === "") return toastr.warning("Seleccione primero el Tipo de Movimiento");
+
             let id = $("#cbx_ProductoBusqueda").val();
             let can = parseFloat($("#txt_DetCantidad").val());
-            if (!id || can <= 0) return toastr.warning("Producto y cantidad obligatorios");
+
+            if (!id || isNaN(can) || can <= 0) return toastr.warning("Producto y cantidad obligatorios");
 
             let prod = PRODUCTOS_TEMP.find(x => x.id == id);
             let ccId = $("#cbx_CentroCosto").val();
             let actId = $("#cbx_Actividad").val();
-            if(!ccId || !actId) return toastr.warning("CC y Actividad obligatorios para salida");
+
+            // VALIDACION: Solo pedimos CC y Actividad si es SALIDA (0)
+            let nombreCC = "";
+            let nombreAct = "";
+
+            if(tipoMov === "0") { // Salida
+                if(!ccId || !actId) return toastr.warning("Centro de Costo y Actividad son obligatorios para SALIDAS.");
+                nombreCC = $("#cbx_CentroCosto option:selected").text();
+                nombreAct = $("#cbx_Actividad option:selected").text();
+            } else {
+                // Entrada: Limpiamos por si acaso, no se guardan
+                ccId = null; actId = null;
+            }
 
             LISTA_DETALLE.push({
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
                 ProductoId: id, CodProducto: prod.codigo, DescripcionProducto: prod.descripcionComercial, CodUnidadMedida: $("#txt_DetUnidad").val(),
-                Cantidad: can, CentroCostoId: ccId, NombreCentroCosto: $("#cbx_CentroCosto option:selected").text(),
-                ActividadId: actId, NombreActividad: $("#cbx_Actividad option:selected").text(),
+                Cantidad: can,
+                CentroCostoId: ccId, NombreCentroCosto: nombreCC,
+                ActividadId: actId, NombreActividad: nombreAct,
                 IdReferencia: null, TablaReferencia: null
             });
             fct_RenderDetalle(); $("#txt_DetCantidad").val("0.00");
+            // Opcional: Limpiar producto para agilizar siguiente carga
+            // $("#cbx_ProductoBusqueda").val('').trigger('change');
         });
 
         $("#btn_GuardarTodo").click(function () {
-            if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío");
+            if (LISTA_DETALLE.length === 0) return toastr.error("Detalle vacío, agregue productos.");
             let tipoMov = $('#cbx_TipoMovimiento').val();
+            if(!tipoMov) return toastr.error("Seleccione tipo de movimiento");
 
             let cab = {
                 Fecha: $("#dtp_FechaMov").val(),
-                TipoMovimiento: (tipoMov === "1"),
+                TipoMovimiento: (tipoMov === "1"), // true = Entrada, false = Salida
                 SucursalId: parseInt($("#cbx_Sucursal").val()),
                 AlmacenId: parseInt($("#cbx_Almacen").val()),
                 MotivoId: $("#cbx_Motivo").val(),
-                ProveedorId: $("#cbx_ProveedorVal").val() ? parseInt($("#cbx_ProveedorVal").val()) : null,
+
+                // Proveedor ahora viene del combo en la sección de Guía
+                ProveedorId: $("#cbx_Proveedor").val() ? parseInt($("#cbx_Proveedor").val()) : null,
+
                 FechaDocumento: $("#dtp_FechaDoc").val(),
                 TipoDocumentoId: $("#cbx_TipoDoc").val(),
                 SerieDocumento: $("#txt_SerieDoc").val(),
                 NumeroDocumento: $("#txt_NumeroDoc").val(),
 
-                // // DATOS VALORIZACIÓN AUTOMÁTICOS
-                // FechaDocumentoValorizacion: $("#dtp_FechaDocVal").val(),
-
-                // // ENVIAMOS EL ID OCULTO
-                // TipoDocumentoValorizacionId: parseInt($("#hdn_TipoDocValId").val()),
-
-                // SerieDocumentoValorizacion: $("#txt_SerieDocVal").val(),
-                // NumeroDocumentoValorizacion: $("#txt_NumeroDocVal").val(),
-                MonedaId: parseInt($("#cbx_MonedaCab").val()),
-                IdReferencia: (tipoMov === "1") ? g_IdFacturaSeleccionada : null,
-                TablaReferencia: (tipoMov === "1") ? "DOCUMENTO_PAGAR" : null
+                // CAMPOS DE VALORIZACIÓN EN NULL (Se hará en otro módulo)
+                MonedaId: null, // Opcional, o puedes poner moneda base por defecto
+                IdReferencia: null,
+                TablaReferencia: null
             };
 
-            Swal.fire({ title: "¿Guardar Movimiento?", text: "Se actualizará el stock.", icon: "question", showCancelButton: true, confirmButtonText: "Sí, Guardar" })
+            // Validaciones básicas de cabecera
+            if(!cab.SucursalId || !cab.AlmacenId || !cab.MotivoId) return toastr.warning("Complete los datos de almacén y motivo.");
+            if(tipoMov === "1" && !cab.ProveedorId) return toastr.warning("Para ingresos, debe seleccionar el Proveedor.");
+
+            Swal.fire({ title: "¿Guardar Movimiento?", text: "Se actualizará el stock inmediatamente.", icon: "question", showCancelButton: true, confirmButtonText: "Sí, Guardar" })
             .then((result) => {
                 if (result.isConfirmed) {
                     $('#efec-cargando').removeClass('d-none');
@@ -320,74 +276,22 @@
         });
     });
 
-    function abrirModalFacturas() {
-        let provId = $('#cbx_ProveedorVal').val();
-        if(!provId) return toastr.warning("Seleccione primero un Proveedor.");
-        $('#modalFacturasIngreso').modal('show');
-        $('#tbl_FacturasPendientes').html('<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
-        $.get('/IngresoSalidaAlm/BuscarFacturasPendientesIngreso?proveedorId=' + provId, function(res) {
-            let html = '';
-            if(res.status && res.data.length > 0) {
-                res.data.forEach(f => {
-                    let fechaStr = f.fecha ? new Date(f.fecha).toLocaleDateString() : '--';
-                    html += `<tr><td class="text-center"><button class="btn btn-success btn-sm font-weight-bold" onclick="jalarFactura(${f.id}, '${f.numero}', '${f.tipo}')"><i class="fas fa-check"></i></button></td><td>${f.tipo}</td><td class="font-weight-bold">${f.numero}</td><td>${fechaStr}</td></tr>`;
-                });
-            } else { html = '<tr><td colspan="4" class="text-center text-muted">Sin comprobantes pendientes.</td></tr>'; }
-            $('#tbl_FacturasPendientes').html(html);
-        });
-    }
-
-    function jalarFactura(id, numero, tipo) {
-        g_IdFacturaSeleccionada = id;
-        $('#efec-cargando').removeClass('d-none');
-
-        $.get('/IngresoSalidaAlm/GetDetallesFacturaParaIngreso?facturaId=' + id, function(res) {
-            $('#efec-cargando').addClass('d-none');
-            if(res.status) {
-                // 1. LLENAR CABECERA (Campos Bloqueados)
-                if(res.cabecera) {
-                    $('#dtp_FechaDocVal').val(res.cabecera.fecha);
-
-                    // Llenar Texto y ID Oculto
-                    $('#txt_TipoDocVal').val(res.cabecera.tipoDocNombre);
-                    $('#hdn_TipoDocValId').val(res.cabecera.tipoDocId);
-
-                    $('#txt_SerieDocVal').val(res.cabecera.serie);
-                    $('#txt_NumeroDocVal').val(res.cabecera.numero);
-                    $('#cbx_MonedaCab').val(res.cabecera.monedaId).trigger('change');
-                }
-
-                // 2. DETALLES
-                LISTA_DETALLE = [];
-                res.detalles.forEach((d, i) => {
-                    LISTA_DETALLE.push({
-                        Item: (i+1).toString().padStart(3,'0'),
-                        ProductoId: d.productoId, CodProducto: d.codigo, DescripcionProducto: d.descripcion, CodUnidadMedida: d.unidad,
-                        Cantidad: d.cantidad, Precio: d.precio,
-                        IdReferencia: d.idReferenciaOrden, TablaReferencia: d.tablaReferenciaOrden,
-                        CentroCostoId: null, ActividadId: null
-                    });
-                });
-                fct_RenderDetalle();
-                $('#modalFacturasIngreso').modal('hide');
-                toastr.success(`Datos cargados del comprobante ${numero}`);
-            } else { toastr.error("Error al cargar datos."); }
-        });
-    }
-
-    function fct_LimpiarCabeceraValorizacion() {
-        $('#dtp_FechaDocVal, #txt_SerieDocVal, #txt_NumeroDocVal, #txt_TipoDocVal, #hdn_TipoDocValId').val('');
-        $('#cbx_MonedaCab').val('').trigger('change');
-    }
-
     function fct_RenderDetalle() {
         let h = "";
         let esEntrada = ($('#cbx_TipoMovimiento').val() === "1");
         LISTA_DETALLE.forEach((d, i) => {
             h += `<tr><td class="align-middle">${d.Item}</td><td class="align-middle">${d.CodProducto}</td><td class="align-middle text-left">${d.DescripcionProducto}</td>
-                <td class="align-middle"><input type="number" class="form-control form-control-sm text-center font-weight-bold ${esEntrada ? 'border-success' : ''}" value="${d.Cantidad}" min="0" step="0.01" onchange="actualizarCantidad(${i}, this.value)"></td>
+                <td class="align-middle"><input type="number" class="form-control form-control-sm text-center font-weight-bold ${esEntrada ? 'border-success' : 'border-primary'}" value="${d.Cantidad}" min="0" step="0.01" onchange="actualizarCantidad(${i}, this.value)"></td>
                 <td class="align-middle">${d.CodUnidadMedida}</td>`;
-            if (!esEntrada) { h += `<td class="align-middle">${d.NombreCentroCosto}</td><td class="align-middle">${d.NombreActividad}</td>`; } else { h += `<td class="d-none"></td><td class="d-none"></td>`; }
+
+            // Renderizado condicional de columnas CC y Actividad
+            if (!esEntrada) {
+                h += `<td class="align-middle">${d.NombreCentroCosto}</td><td class="align-middle">${d.NombreActividad}</td>`;
+            } else {
+                // Mantenemos las celdas ocultas para no romper la estructura de la tabla si el CSS falla
+                h += `<td class="d-none"></td><td class="d-none"></td>`;
+            }
+
             h += `<td class="align-middle"><button class="btn btn-outline-danger btn-sm" onclick="fct_QuitarDetalle(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
         });
         $("#tbl_DetalleMovimiento tbody").html(h);
@@ -397,13 +301,12 @@
     function fct_QuitarDetalle(i) { LISTA_DETALLE.splice(i, 1); LISTA_DETALLE.forEach((d, x) => d.Item = (x + 1).toString().padStart(3, '0')); fct_RenderDetalle(); }
 
     function fct_InitCombos() {
-        fct_FillCombo('/IngresoSalidaAlm/GetMonedaData', '#cbx_MonedaCab', 'id', 'nombre', '-- MONEDA --', 'id');
         fct_FillCombo('/IngresoSalidaAlm/GetTipoDocumentoData', '#cbx_TipoDoc', 'id', 'descripcion', '-- TIPO DOC --', 'codigo');
         $.getJSON('/IngresoSalidaAlm/GetMotivosData', function(res){ if(res.status){ MOTIVOS_FULL = res.data; } });
         fct_FillCombo('/IngresoSalidaAlm/GetCentrosCosto', '#cbx_CentroCosto', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         fct_FillCombo('/IngresoSalidaAlm/GetActividades', '#cbx_Actividad', 'id', 'nombre', '-- SELECCIONAR --', 'codigo');
         cargarComboEntidades();
     }
-    function cargarComboEntidades() { $.get('/IngresoSalidaAlm/GetEntidades', function (res) { let ops = '<option value="">-- Seleccione --</option>'; if(res.status) res.data.forEach(i => ops += `<option value="${i.id}">${i.tipoDocumentoIdentidad}: ${i.numeroDocumento} - ${i.razonSocial}</option>`); $('#cbx_ProveedorVal').html(ops); }); }
+    function cargarComboEntidades() { $.get('/IngresoSalidaAlm/GetProveedores', function (res) { let ops = '<option value="">-- Seleccione --</option>'; if(res.status) res.data.forEach(i => ops += `<option value="${i.id}">${i.tipoDocumentoIdentidad}: ${i.numeroDocumento} - ${i.razonSocial}</option>`); $('#cbx_Proveedor').html(ops); }); }
     function fct_FillCombo(url, id, val, txt, ph, extra) { $.getJSON(url, function (res) { let h = `<option value="">${ph}</option>`; if (res.status) res.data.forEach(i => h += `<option value="${i[val]}">${extra ? i[extra] + ' - ' : ''}${i[txt]}</option>`); $(id).html(h); }); }
 </script>

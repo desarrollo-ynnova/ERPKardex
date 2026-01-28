@@ -1822,65 +1822,73 @@ INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-13
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14',3.356,3.361,1);
 
 GO
-
--- 1. NODOS RAÍZ (Las Cabeceras o Menús Principales)
+-- 1. NODOS RAÍZ (Con los nombres exactos solicitados)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('MOD_MAESTROS', 'Módulo Registros Maestros', 'MAESTROS', NULL, 1),
-('MOD_ALMACEN', 'Módulo Control Almacén', 'ALMACEN', NULL, 2),
-('MOD_LOGISTICA', 'Módulo Logística Operativa', 'LOGISTICA', NULL, 3),
-('MOD_FINANZAS', 'Módulo Gestión Financiera', 'FINANZAS', NULL, 4),
-('MOD_ACTIVOS', 'Módulo Activos Fijos', 'ACTIVOS', NULL, 5),
-('MOD_SEGURIDAD', 'Módulo de Seguridad', 'SEGURIDAD', NULL, 6);
+('MOD_MAESTROS',    'MÓDULO MAESTROS',       'MAESTROS',    NULL, 1),
+('MOD_SUPPLY',      'MÓDULO SUPPLY',         'SUPPLY',      NULL, 2),
+('MOD_PROVISIONES', 'MÓDULO PROVISIONES',    'PROVISIONES', NULL, 3),
+('MOD_TESORERIA',   'MÓDULO TESORERÍA',      'TESORERIA',   NULL, 4),
+('MOD_ACTIVOS',     'MÓDULO ACTIVO FIJO',    'ACTIVOS',     NULL, 5),
+('MOD_SEGURIDAD',   'Módulo de Seguridad',   'SEGURIDAD',   NULL, 6);
 
--- Obtenemos los IDs generados para asignar los hijos
-DECLARE @ID_MAE INT = (SELECT id FROM permiso WHERE codigo = 'MOD_MAESTROS');
-DECLARE @ID_ALM INT = (SELECT id FROM permiso WHERE codigo = 'MOD_ALMACEN');
-DECLARE @ID_LOG INT = (SELECT id FROM permiso WHERE codigo = 'MOD_LOGISTICA');
-DECLARE @ID_FIN INT = (SELECT id FROM permiso WHERE codigo = 'MOD_FINANZAS');
-DECLARE @ID_ACT INT = (SELECT id FROM permiso WHERE codigo = 'MOD_ACTIVOS');
+-- Obtenemos los IDs
+DECLARE @ID_MAE INT  = (SELECT id FROM permiso WHERE codigo = 'MOD_MAESTROS');
+DECLARE @ID_SUP INT  = (SELECT id FROM permiso WHERE codigo = 'MOD_SUPPLY');
+DECLARE @ID_PROV INT = (SELECT id FROM permiso WHERE codigo = 'MOD_PROVISIONES');
+DECLARE @ID_TES INT  = (SELECT id FROM permiso WHERE codigo = 'MOD_TESORERIA');
+DECLARE @ID_ACT INT  = (SELECT id FROM permiso WHERE codigo = 'MOD_ACTIVOS');
 
 -- 2. SUB-MENÚS (Maestros)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('MAE_PROD_REG', 'Registrar Producto', 'MAESTROS', @ID_MAE, 1),
-('MAE_SERV_REG', 'Registrar Servicio', 'MAESTROS', @ID_MAE, 2),
-('MAE_PROV_VER', 'Ver Proveedores', 'MAESTROS', @ID_MAE, 3),
-('MAE_CLIE_VER', 'Ver Clientes', 'MAESTROS', @ID_MAE, 4);
+('MAE_PROD_REG', 'Nuevo Producto',       'MAESTROS', @ID_MAE, 1),
+('MAE_SERV_REG', 'Nuevo Servicio',       'MAESTROS', @ID_MAE, 2),
+('MAE_PROV_VER', 'Proveedores',          'MAESTROS', @ID_MAE, 3),
+('MAE_CLIE_VER', 'Clientes',             'MAESTROS', @ID_MAE, 4),
+('MAE_TC_VER',   'Tipo de Cambio',       'MAESTROS', @ID_MAE, 5),
+('MAE_CC_VER',   'Centros de Costo',     'MAESTROS', @ID_MAE, 6);
 
--- 3. SUB-MENÚS (Almacén)
+-- 3. SUB-MENÚS (Supply)
+-- Grupo Inventario
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('ALM_STOCK_VER', 'Ver Reporte Stock', 'ALMACEN', @ID_ALM, 1),
-('ALM_MOV_VER', 'Ver Ingresos/Salidas', 'ALMACEN', @ID_ALM, 2),
-('ALM_KARDEX_VER', 'Ver Reporte Kardex', 'ALMACEN', @ID_ALM, 3);
+('SUP_INV_MOV_VER',    'Ingresos y Salidas',   'SUPPLY', @ID_SUP, 1),
+('SUP_INV_STOCK_VER',  'Reporte de Stock',     'SUPPLY', @ID_SUP, 2),
+('SUP_INV_KARDEX_VER', 'Reporte Kardex',       'SUPPLY', @ID_SUP, 3);
 
--- 4. SUB-MENÚS (Logística)
+-- Grupo Logística (Reordenado para agrupar Compras y Servicios)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('LOG_DASH_VER', 'Ver Dashboard Logístico', 'LOGISTICA', @ID_LOG, 0), -- Nivel superior
-('LOG_REQ_COMPRA_VER', 'Ver Req. Compra', 'LOGISTICA', @ID_LOG, 1),
-('LOG_REQ_SERV_VER', 'Ver Req. Servicio', 'LOGISTICA', @ID_LOG, 2),
--- Grupo Proceso de Compras
-('LOG_PED_COMPRA_VER', 'Ver Pedidos Compra', 'LOGISTICA', @ID_LOG, 3),
-('LOG_PED_SERV_VER', 'Ver Pedidos Servicio', 'LOGISTICA', @ID_LOG, 4),
-('LOG_ORD_COMPRA_VER', 'Ver Órdenes Compra', 'LOGISTICA', @ID_LOG, 5),
-('LOG_ORD_SERV_VER', 'Ver Órdenes Servicio', 'LOGISTICA', @ID_LOG, 6);
+('SUP_LOG_DASH_VER',       'Dashboard Logístico', 'SUPPLY', @ID_SUP, 4),
+-- Compras
+('SUP_LOG_REQ_COMPRA_VER', 'Req. de Compra',      'SUPPLY', @ID_SUP, 5),
+('SUP_LOG_PED_COMPRA_VER', 'Pedido de Compra',    'SUPPLY', @ID_SUP, 6),
+('SUP_LOG_ORD_COMPRA_VER', 'Orden de Compra',     'SUPPLY', @ID_SUP, 7),
+-- Servicios
+('SUP_LOG_REQ_SERV_VER',   'Req. de Servicio',    'SUPPLY', @ID_SUP, 8),
+('SUP_LOG_PED_SERV_VER',   'Pedido de Servicio',  'SUPPLY', @ID_SUP, 9),
+('SUP_LOG_ORD_SERV_VER',   'Orden de Servicio',   'SUPPLY', @ID_SUP, 10);
 
--- 5. SUB-MENÚS (Finanzas)
+-- 4. SUB-MENÚS (Provisiones)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('FIN_CC_VER', 'Ver Centros de Costo', 'FINANZAS', @ID_FIN, 1),
-('FIN_PAGO_VER', 'Gestión de Pagos', 'FINANZAS', @ID_FIN, 2),
-('FIN_TC_VER', 'Ver Tipo de Cambio', 'FINANZAS', @ID_FIN, 3);
+('PROV_ANT_VER',  'Anticipos',             'PROVISIONES', @ID_PROV, 1),
+('PROV_REG_VER',  'Provisiones',           'PROVISIONES', @ID_PROV, 2),
+('PROV_NOTA_VER', 'Notas Crédito/Débito',  'PROVISIONES', @ID_PROV, 3),
+('PROV_APP_VER',  'Aplicación Anticipos',  'PROVISIONES', @ID_PROV, 4);
+
+-- 5. SUB-MENÚS (Tesorería)
+INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
+('TES_PAGO_VER', 'Gestión de Pagos', 'TESORERIA', @ID_TES, 1);
 
 -- 6. SUB-MENÚS (Activos)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('ACT_DASH_VER', 'Dashboard Activos', 'ACTIVOS', @ID_ACT, 1),
-('ACT_COMPUTO_VER', 'Activos Cómputo', 'ACTIVOS', @ID_ACT, 2),
-('ACT_FLOTA_VER', 'Flota Vehicular', 'ACTIVOS', @ID_ACT, 3);
+('ACT_DASH_VER',    'Dashboard Activos', 'ACTIVOS', @ID_ACT, 1),
+('ACT_COMPUTO_VER', 'Activos Cómputo',   'ACTIVOS', @ID_ACT, 2),
+('ACT_FLOTA_VER',   'Flota Vehicular',   'ACTIVOS', @ID_ACT, 3);
 
--- 7. ACCIONES ESPECÍFICAS (Botones de "Ojito", Aprobación, etc.)
--- Estos no salen en el menú, pero se configuran en el árbol
-DECLARE @ID_OC INT = (SELECT id FROM permiso WHERE codigo = 'LOG_ORD_COMPRA_VER');
-
+-- 7. ACCIONES ESPECÍFICAS
+DECLARE @ID_OC INT = (SELECT id FROM permiso WHERE codigo = 'SUP_LOG_ORD_COMPRA_VER');
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 
-('BTN_OC_VER_DETALLE', 'Botón: Ver Detalle (Ojito)', 'LOGISTICA', @ID_OC, 1),
-('BTN_OC_APROBAR', 'Botón: Aprobar Orden', 'LOGISTICA', @ID_OC, 2),
-('BTN_OC_ANULAR', 'Botón: Anular Orden', 'LOGISTICA', @ID_OC, 3);
+('BTN_OC_VER_DETALLE', 'Botón: Ver Detalle', 'SUPPLY', @ID_OC, 1),
+('BTN_OC_APROBAR',     'Botón: Aprobar',     'SUPPLY', @ID_OC, 2),
+('BTN_OC_ANULAR',      'Botón: Anular',      'SUPPLY', @ID_OC, 3);
 GO
+
+select * from empresa
