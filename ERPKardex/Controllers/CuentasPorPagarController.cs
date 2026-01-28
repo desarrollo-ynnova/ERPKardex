@@ -66,7 +66,8 @@ namespace ERPKardex.Controllers
                                 Estado = e.Nombre,
                                 ColorEstado = e.Nombre == "Cancelado" ? "badge-success" : (e.Nombre == "Anulado" ? "badge-danger" : "badge-warning"),
                                 // Referencia a la Orden
-                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-")
+                                Referencia = oc != null ? "OC: " + oc.Numero : (os != null ? "OS: " + os.Numero : "-"),
+                                TotalOrden = oc.Total,
                             }).ToList();
 
                 return Json(new { status = true, data = data });
@@ -146,9 +147,9 @@ namespace ERPKardex.Controllers
                                     ruc = p.NumeroDocumento,
                                     fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
                                     moneda = m.Simbolo,
-                                    subTotal = d.SubTotal ,
-                                    igv = d.MontoIgv ,
-                                    total = d.Total ,
+                                    subTotal = d.SubTotal,
+                                    igv = d.MontoIgv,
+                                    total = d.Total,
                                     obs = d.Observacion ?? "-",
                                     referencia = oc != null ? "O/C: " + oc.Numero : (os != null ? "O/S: " + os.Numero : "-")
                                 }).FirstOrDefault();
