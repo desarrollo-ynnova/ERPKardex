@@ -4377,10 +4377,11 @@ DROP TABLE #TempLoad;
 PRINT '>> MIGRACION COMPLETADA EXITOSAMENTE. ID DE INGRESO: ' + CAST(@IdIngreso AS VARCHAR);
 GO
 
+PRINT '>> MIGRACIÓN DE PROVEEDORES STALNO';
+
 DECLARE @STALNOID INT; 
 select @STALNOID = id from empresa where ruc = '20603727551';
 
-PRINT '>> MIGRACIÓN DE PROVEEDORES STALNO';
 INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614954320','HERNAN HERNANDEZ V. E.I.R.L.','CAL. PANAMERICANA NORTE NRO. 379 URB. SAN CARLOS ', 1, @STALNOID);
 INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20109072177','CENCOSUD RETAIL PERU S.A.','CAL. AUGUSTO ANGULO NRO. 130 URB. SAN ANTONIO ', 1, @STALNOID);
 INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @STALNOID);
@@ -4427,3 +4428,436 @@ INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_soci
 
 PRINT '>> MIGRACIÓN DE PROVEEDORES STALNO FINALIZADA';
 GO
+
+PRINT '>> MIGRACIÓN DE PROVEEDORES COMEXDI';
+
+DECLARE @COMEXDIID INT;
+select @COMEXDIID = id from empresa where ruc = '20609093561';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100123330','DELOSI S.A.','AV. JAVIER PRADO OESTE NRO. 1650 ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20414955020','RIMAC S.A. ENTIDAD PRESTADORA DE SALUD','CAL. EL PARQUE NRO. 149 URB. JARDIN (PISO 2) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20551348041','DELIVERY HERO PERU S.A.C.','AV. REDUCTO NRO. 1310 INT. 701 URB. LEURO ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605383549','CONSORCIO GASTRONOMICO ESCALANTE S.A.C.','CAL. LOS DULANTOS NRO. 158 URB. SANTA VICTORIA ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180844363','VERA MENDEZ ANTONIO ENRIQUE','-', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20521561492','PACIFIC CONTROL  S.A.C.','MZA. Q LOTE. 7-8 A.H. ASOCIACIÃ“N SANTA ROSA DE (KILOMETRO 23.5 PANAMERICANA SUR) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20347100316','ADIDAS PERU S.A.C','AV. 28 DE JULIO NRO. 1011 INT. 1001 URB. SAN ANTONIO ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600508548','SKECHERS PERU S.R.L.','AV. PASEO DE LA REPUBLICA NRO. 5895 INT. 901 URB. MIRAFLORES ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608300393','COMPAÑIA FOOD RETAIL S.A.C.','CAL. CESAR MORELLI NRO. 181 URB. SAN BORJA NORTE (PISO 3) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608430301','BOTICAS IP S.A.C.','AV. DEFENSORES DEL MORRO NRO. 1277 (.) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20536557858','HOMECENTERS PERUANOS S.A.','AV. AVIACION NRO. 2405 (PISO 5) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480029195','TURISMO SEÑOR DE LA HUMILDAD S.R.L.','CAL. SAN ISIDRO NRO. 142 URB. SAN LORENZO (PARQUE LOS MECANICOS) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609623544','DISTRIBUIDORA TAYLU E.I.R.L.','AV. VENEZUELA NRO. 2287 P.J. BARSALLO ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602787185','DISTRIBUCIONES DKARS E.I.R.L.','CAL. LOS ORFEBRES NRO. 245 ASC. LAS QUINTAS SC. UNO ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480516851','ESTACION DE SERVICIOS ROMAR SOCIEDAD ANONIMA CERRADA','AV. CHINCHAYSUYO NRO. 1485 (ALTURA COLEGIO SANTANGELA COSTADO BEIRUT) ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20101869947','ALERT DEL PERU S.A.C.','JR. BERNARDO ALCEDO NRO. 662 ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610877878','MAR & FUEGO FOOD AND SERVICES S.A.C.','CAL. LOS FAIQUES NRO. 299 URB. SANTA VICTORIA ', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10470166555','CRUZ ACOSTA JOSE JHON','-', 1, @COMEXDIID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20127765279','COESTI S.A.','AV. CIRCUNVALACION DEL CLUB G NRO. 134 URB. CLUB EL GOLF LOS INCAS (EDIFICIO PANORAMA TORRE A PISO 18) ', 1, @COMEXDIID);
+
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES DE AGROQUIMEX';
+
+DECLARE @AGROQUIMEXID INT;
+select @AGROQUIMEXID = id from empresa where ruc = '20612680842';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608300393','COMPAÑIA FOOD RETAIL S.A.C.','CAL. CESAR MORELLI NRO. 181 URB. SAN BORJA NORTE (PISO 3) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10425263337','CAMPOS VASQUEZ CESAR MIGUEL','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20551348041','DELIVERY HERO PERU S.A.C.','AV. REDUCTO NRO. 1310 INT. 701 URB. LEURO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604180512','ADVANGROW AGROSCIENCE PERU S.A.C.','AV. EMILIO CAVENECIA OFICINA NRO. 225 (ESQ. CON CAL.JOSE DEL LLANO ZAPATA NÂº240) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613512137','INVERSIONES GENERALES MANCHEGO JR E.I.R.L.','AV. GOTUZO NRO. 1102 OTR. DISTRITO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614189364','FABALB CORP S.A.C.','CAL. LOS PINOS NRO. 273 URB. SANTA VICTORIA (CERCA A LA IGLESIA LA CONSOLACION) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20508565934','HIPERMERCADOS TOTTUS S.A','AV. ANGAMOS ESTE NRO. 1805 INT. P10 (PISO 10 OF 5 Y PISO 11 OF 6A) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606968460','TREBOL SOLUTIONS S.A.C.','AV. CONSTRUCTORES MZA. B LOTE. 16 URB. SANTA TERESA (TERMINANDO LA AV CENTRAL A LA DERECHA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601149371','SABORES CRIOLLOS DEL PERU S.A.C.','LOTE. 14 URB. RINCONADA DE PURUHUAY ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20127765279','COESTI S.A.','AV. CIRCUNVALACION DEL CLUB G NRO. 134 URB. CLUB EL GOLF LOS INCAS (EDIFICIO PANORAMA TORRE A PISO 18) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20371826727','ESTACION DE SERVICIOS GRIFO MASTER SRL','AV. ALFREDO MENDIOLA MZA. E LOTE. 16 ASOC. RIO SANTA (KM 21 PANAMERICANA NORTE) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602139523','PROCESOS LOGISTICOS INTEGRALES E.I.R.L.','CAL. MANUEL SEOANE NRO. 916 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10167582309','CARDENAS ALVA JUAN ENRIQUE','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606716789','PROFESSIONAL BUSINESS PERU S.A.C.','JR. INCA RIPAC NRO. 255 DPTO. 401 URB. SN ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20523470761','SANITAS PERU S.A. - EPS','CAL. AMADOR MERINO REYNA NRO. 492 URB. JARDIN ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20414955020','RIMAC S.A. ENTIDAD PRESTADORA DE SALUD','CAL. EL PARQUE NRO. 149 URB. JARDIN (PISO 2) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20565275756','MULTISERVICIOS JD VENUS S.R.L.','AV. EL SOL MZA. E LOTE. 20B URB. SEMIRUSTICA CANTO GRANDE (AV. EL SOL CON AV. LOS ALAMOS MZ. 20B-20) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511465061','CONCESIONARIA VIAL DEL PERU S.A.','AV. JAVIER PRADO ESTE NRO. 4109 INT. 2,3 URB. SANTA CONSTANZA (FRENTE AL JOCKEY PLAZA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517207331','PROTECTA S.A. COMPAÑIA DE SEGUROS Y REASEGUROS','AV. DOMINGO ORUE NRO. 165 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20512528458','SHALOM EMPRESARIAL S.A.C.','AV. MEXICO NRO. 1187 URB. MATUTE ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20133605291','EMPRESA DE TRANSPORTES AVE FENIX S.A.C.','AV. TUPAC AMARU NRO. 185 URB. HUERTA GRANDE ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605108149','MR OLMOS S.A.C.','CAL. SEBASTIAN LORENTE NRO. 696 URB. LAS QUINTANAS ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10774381321','CAMERCOA FLORES LESLIE PAMELA','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614699893','SERVICIOS INTEGRALES CORAZON DE JESUS E.I.R.L.','CAL. RICARDO VELEZMORO MZA. C LOTE. 11 EX COP CAHUIDE ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602950086','CAMBIA SEGURO S.A.C.','CAL. MAYNAS NRO. 249 URB. LA PRIMAVERA (PISO 2) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10427160217','CHIRINOS SANCHEZ FIDELA','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605369139','LABORATORIO LINUS E.I.R.L.','CAL. MANUEL SEOANE NRO. 717 P.J. EL ROSARIO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20200372370','CHIFA FORTUNA SRL','AV. SESQUICENTENARIO NRO. 0605 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613039288','LA BUMANGUESA SABOR Y TRADICION S.A.C.','MZA. B LOTE. 11 URB. PUENTE BLANCO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10445672730','GONZALES GALARZA RICHARD NELSON','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20503840121','REPSOL COMERCIAL SAC','AV. VICTOR ANDRES BELAUNDE NRO. 147 VIA REAL 185, EDIFICIO RE (MESA DE PARTES SOTANO 1, CENT. EMP. REAL) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480175680','JACAMI E.I.R.L','CAL. MARISCAL CASTILLA NRO. 208 CERCADO (ESQUINA CON CRUZ DEL SUL) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20112273922','TIENDAS DEL MEJORAMIENTO DEL HOGAR S.A.','AV. ANGAMOS ESTE NRO. 1805 INT. 2 (OFICINA 2) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10481222180','DELGADO COPIA MILTON YORGIN','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20488016921','PERUVIAN GOLDEN RICE SOCIEDAD ANÃ“NIMA CERRADA','CAL. PIMENTEL NRO. 117 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602357351','NEXT SOLUCIONES & DISTRIBUCIONES E.I.R.L.','CAL. SAN JOSE NRO. 555 CERCADO DE CHICLAYO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100047218','BANCO DE CREDITO DEL PERU','JR. CENTENARIO NRO. 156 URB. LADERAS DE MELGAREJO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20270382551','GRIFO SAN ANTONIO E.I.R.LTDA.','CAR. CHICLAYO-LAMBAYEQUE NRO. 3 (AL COSTADO DE PJ L.ALBERTO SANCHEZ) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20521542943','CONCESION VALLE DEL ZAÃ‘A S.A.','AV. EMILIO CAVENECIA NRO. 151 INT. 402 URB. CHACARILLA SANTA CRUZ - S ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20538492028','INDUSTRIAS BASA SOCIEDAD ANONIMA CERRADA-INDUBASA S.A.C.','AV. NUGGET NRO. 165 FND. PUENTE (COSTADO DEL PEAJE CARRETERA CENTRAL) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180844363','VERA MENDEZ ANTONIO ENRIQUE','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606777257','ALMACENES FORWARDER S.A.C.','AV. CORONEL NESTOR GAMBETTA NRO. 4783 KM. 47 HAC. HACIENDA SAN AGUSTIN ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561380644','TOSTAO CAFE PASTELERIA S.A.C.','CAL. LAS JACARANDAS NRO. 250 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614433109','INVERSIONES LA NEGRA CONCHA S.A.C.','CAL. SANTA ROSA NRO. 420 URB. URB LAS DELICIAS ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20535103292','GRUPO HUARANGO  GRILL SOCIEDAD COMERCIAL DE RESPONSABILIDAD LIMITADA','AV. ABRAHAM VALDELOMAR NRO. 611 (URB. STA ROSA DEL PALMAR-FTE C.H. FONAVI) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20487637310','REPSERGEN E.I.R.L.','AV. ELVIRA GARCIA Y GARCIA NRO. 900 P.J. 9 DE OCTUBRE ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600791959','EMPANADAS TORETTO S GRILL S.R.L','CAL. LOSDULANTOS NRO. 119 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611621621','CENTRO CAMPESTRE EL TAMBO S.A.C.','VIA. SECTOR EL TRANSITO NRO. SN C.P. LARAM (COSTADO C. TURIST. EL ROSAL 500 MTS CRUC) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10166523643','UCHOFEN ÑAÑEZ BERTHA AMALIA','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10729615477','GAMONAL PEREZ YERSON YERALDO','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606828226','WICOM E.I.R.L.','AV. PACHACUTEC YUPANQUI NRO. 999 CERCADO DE PARCONA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608280333','COMPAÑIA HARD DISCOUNT S.A.C.','CAL. CESAR MORELLI NRO. 139 URB. SAN BORJA NORTE (PISO 3) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604823910','LA QUE MANDA ES LA SAZON E.I.R.L.','AV. LAS NIEVES NRO. 203 C.P. LA TINGUIÃ‘A ZN. B ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10806799578','ERAZO CALLE OSCAR ELIAS','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10708106831','GUERRERO RODRIGO MARLON YOSHIMAR','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100049181','TAI LOY S.A.','JR. MARIANO ODICIO NRO. 153 URB. MIRAFLORES (MZ L, LOTE 144, SUB LOTE A) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20337564373','TIENDAS POR DEPARTAMENTO RIPLEY S.A.C.','AV. LAS BEGONIAS NRO. 545 URB. JARDIN ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614484111','CHICHARRONERIA DON COCHE E.I.R.L.','CAR. PANAMERICANA  NORTE  005 NRO. SN ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613378384','FULL FOOD & GRILL EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA','AV. CORONEL FRANCISCO BOLOGNE NRO. 1052 CERCADO DE CHICLAYO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608751239','BG SERVICIOS Y ALIMENTOS S.A.C.','CAL. LOS PINOS NRO. 322 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20544622804','PAPACHOS RESTAURANTES S.A.C.','AV. LARCO NRO. 1232 (PISO 2 INTERIOR 107) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20551770312','CORPORACION HEYSEN S.A.C.','AV. JUAN DE ARONA NRO. 755 INT. 401 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600775368','FELDECON E.I.R.L.','MZA. O LOTE. 12A A.H. VICTOR RAUL HAYA DE LA TO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20514680401','ANTICUCHOS DEL PERU S.A.C.','CAL. 2 DE MAYO NRO. 298 (ALT CDRA 51 AV AREQUIPA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180966884','RUBIO BERNUY DAVID ALEJANDRO','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20398057407','SERVICENTRO Y MULTISERVICIOS SAN PEDRO S.A.C.','PROLONG. RAIMONDI NRO. S/N (VIA DE EVITAMIENTO ESNTRADA SUR) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20481465380','INVERSIONES Y SERVICIOS MULTIPLES LOS PATOS S.A.C.','CAR. PANAMERICANA KM. 712 A.H. SANTA CECILIA (LOS PATOS) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10192590073','CARRASCO ZAPATA LUISA','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20109072177','CENCOSUD RETAIL PERU S.A.','CAL. AUGUSTO ANGULO NRO. 130 URB. SAN ANTONIO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20543722309','CINDEL S.A.','AV. JAVIER PRADO OESTE NRO. 1650 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20488142802','INVERSIONES ADVENTISTAS B-A E.I.R.L.','CAL. SICUANI NRO. 140 P.J. AMPLIACION TUPAC AMARU ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20467534026','AMERICA MOVIL PERU S.A.C.','AV. NICOLAS ARRIOLA NRO. 480 URB. SANTA CATALINA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20607778338','CONTROL SCIENCE DEL PERU S.A.C.','JR. FAUSTINO SANCHEZ CARRION NRO. 157 DPTO. 506 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611332051','NEXUS CENTRO DE NEGOCIOS SOCIEDAD ANONIMA CERRADA','AV. JOSE BALTA NRO. 506 CERCADO DE CHICLAYO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480823355','CATAPA SOCIEDAD ANONIMA CERRADA','AV. LOS INCAS NRO. 136 URB. LA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604941882','MI WARIQUE RESTAURANT-POLLOS-PARRILLAS EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA','CAL. BOLIVAR NRO. 600 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614861089','EL ENCANTO ZAÑERO S.A.C.','AV. VICTOR RAUL HAYA DE LA TO NRO. 202 URB. SANTIAGO DE MIRAFLORES ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20535079057','INVERSIONES ROJAS EXPRESS E.I.R.L.','AV. PACHACUTEC YUPANQUI NRO. 101 CERCADO DE PARCONA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602097251','NUTRIGAS S.A.C.','MZA. B LOTE. 15 PARCELACIÃ“N SEMI RUSTICA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10747268024','LICLA OCHOA CHRISTIAN MOISES ALEXANDER','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20603940181','LA CEREZA DEL PASTEL SOCIEDAD ANONIMA CERRADA','CAL. INDEPENDENCIA NRO. 264 DPTO. 301 URB. SURQUILLO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609088339','GRUPO BALETTI S.A.C.','AV. MIGUEL GRAU NRO. 1050 URB. SANTA VICTORIA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609275988','RAMGA GROUP S.A.C.','PRO. LIBERTAD S/N MZ T LOTE 4, KM. 0 DPTO. 0 INT. 0 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20104347691','INVERSIONES EN TURISMO S.A.','AV. LA ANGOSTURA NRO. 400 URB. LA ANGOSTURA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605178775','CHICKEN GRILL AND DRINKS E.I.R.L.','AV. MIGUEL GRAU NRO. 1090 URB. VILLA EL SALVADOR ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10288548850','ESPILLCO SALAZAR IVAN','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10403810318','QUISPE COLLADO EDWARD','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20386303003','CORPORACION HOTELERA METOR S.A.','AV. GENERAL FELIPE SANTIAGO S NRO. 2599 URB. SAN FELIPE (ESQUINA CON AVENIDA PERSHING) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10459785065','MALDONADO LUJAN ROSELVA MIRTHA','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10454564311','AQUINO QUIÑONES CHRISTIAN MAHIRSON','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561183067','CORPORACION MERU CHICLAYO E.I.R.L','CAL. LOS PINOS NRO. 300 URB. SANTA VICTORIA (FRENTE IGLESIA DE LA CONSOLACION) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601544513','RESTAURANT TURISTICO EL ALAMO E.I.R.L.','CAR. PANAMERICANA SUR KM. 300 RES. LA ANGOSTURA (FRENTE A ELECTRO DUNAS S.A.A.) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601878179','INVERSIONES LA CANTERA FOOD S.A.C.','PJ. SANTA ROSA MZA. T3 LOTE. 1A C.P. PARCONA (ESQ. RAUL PORRAS Y PASAJE SANTA ROSA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601355761','LIDERMAN SERVICIOS S.A.C.','AV. DEFENSORES DEL MORRO DEMO LOTE. 17 INT. C URB. URB. DEL FUNDO VILLA (1620 DEFENSORES DEL MORRO EX-AV HUAYLAS) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20556626902','BGG COSTA S.A.C.','JR. TOMAS RAMSEY NRO. 114 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613754831','INVERSIONES ALEGRIA & DE LA VEGA SOCIEDAD ANONIMA CERRADA','AV. LOS MAESTROS NRO. 422 (COSTADO DEL HOTEL REAL ICA) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20513706279','INVERSIONES CHARRUA S.A.C.','AV. JAVIER PRADO ESTE NRO. 5898 URB. LA FONTANA ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601258383','INVERSIONES BALDIVIEZO SCHIANTARELLI S.A.C. - INVERSIONES BASCHI S.A.C.','CAL. ENRIQUE PALACIOS NRO. 1072 URB. SANTA CRUZ ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20615292827','PERIKO´S FERREÑAFANO RESTAURANT. S.A.C.','CAL. AMA LLULLA NRO. 146 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20504292968','AUTOSAFE S.A.C.','AV. JOSE PARDO NRO. 434 INT. 1301 ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20219774207','EMP CAPLINA TRANSP TURISTIC INTERNAC SRL','AV. PASEO DE LA REPUBLICA NRO. 627 (1 CDRA. ANTES DEL ESTADIO NACIONAL) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602046932','HOSTAL REAL LA MOLINA SOCIEDAD ANONIMA CERRADA - HOSTAL REAL LA MOLINA S.A.C.','AV. LA MOLINA NRO. 688 URB. MONTERRICO ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20552614314','INVERSIONES PCH CORPORATION S.A.C.','AV. DE LOS CONSTRUCTORES NRO. 169 (NUMERO 165 - 169) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10746495884','DONAYRE EURIBE DE RAMIREZ KEREN SALOME','-', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÃšBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613309773','GRUPO MAKER EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA','AV. LISBOA NRO. 382 C.P. LA TINGUIÃ‘A ZN. C ', 1, @AGROQUIMEXID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20172425632','GRIFOS MORI SOCIEDAD ANONIMA CERRADA','CAR. PANAMERICANA NORTE KM. 783 SECTOR MOCCE ', 1, @AGROQUIMEXID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES DE AGROQUIMEX FINALIZADA';
+
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES METQUIM';
+
+DECLARE @METQUIMID INT;
+select @METQUIMID = id from empresa where ruc = '20614551853';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10030992917','DOMINGUEZ UMBO ALIPIO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600729986','SERVICENTRO CASMA S.A.C.','DEL EJERCITO NRO. 1023 DPTO. 101 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511465061','CONCESIONARIA VIAL DEL PERU S.A.','AV. JAVIER PRADO ESTE NRO. 4109 INT. 2,3 URB. SANTA CONSTANZA (FRENTE AL JOCKEY PLAZA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20127765279','COESTI S.A.','AV. CIRCUNVALACION DEL CLUB G NRO. 134 URB. CLUB EL GOLF LOS INCAS (EDIFICIO PANORAMA TORRE A PISO 18) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20523621212','LIMA EXPRESA S.A.C.','AV. EL DERBY NRO. 250 (URB.EL DERBY DE MONTERRICO-OFC.1701 1801) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20505377142','RED VIAL 5 S.A.','AV. PETIT THOUARS NRO. 4957 URB. BARBONCITO (AL FRENTE DE PLAZA VEA MIRAFLORES) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÚBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÚBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10409480301','LOZADA MORALES VICTOR RAFAEL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20133605291','EMPRESA DE TRANSPORTES AVE FENIX S.A.C.','AV. TUPAC AMARU NRO. 185 URB. HUERTA GRANDE ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608802763','METAL.NISSI E.I.R.L.','CAL. ALFONSO UGARTE MZA. B LOTE. 08 SEC. SECTOR LOS ANGELES ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20477524428','FACTORIA SANTILLAN S.R.L.','MZA. W LOTE. 5 INT. 4A URB. SEMIRUSTICA EL BOSQUE (COSTADO MUSEO DE ARTE GERARDO CHAVEZ) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10189018288','ALVA CRUZ MIRNA ELGA','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10030992917','DOMINGUEZ UMBO ALIPIO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10803431774','MAQUI CALDERON HIPOLITO MARTIN','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600171128','LA CASA DEL PERNO INDUSTRIAL E.I.R.L.','CAR. PANAMERICANA NORTE KM. 517 SEC. CHANQUIN (AL COSTADO DEL RESTAURANTE LA GENEROSA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613310224','COMERCIO INDUSTRIAL YAHWEH S.A.C.','AV. SANTA ROSA MZA. Z-1 LOTE. 6 URB. EL PRISMA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10181617662','CIUDAD REVILLA CARLOS DANIEL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611993642','NUMERO G & C E.I.R.L.','AV. VIRU NRO. 120 C.P. AV VIRU 120 (FRENTE A COMISARIA DE VIRU) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20482409505','GRIFO Y ESTACION DE SERVICIOS VIRU S.A.C.','AV. LOS LAURELES KM. 515 SEC. CHANQUIN (EN EL GRIFO VIRU) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10028762122','CALERO LOPEZ MIGUEL ANGEL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604178704','COMPAÑIA PERUANA DE PETROLEO GAS Y GASOLINA S.A.C.','MZA. O LOTE. 10 URB. COVICORTI - NATASHA ALTA (EDIFICIO ABC - CUARTO PISO) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601437989','PETRO CRYSMAR S.A.C.','CAL. SAN MARTIN MZA. 10 LOTE. 21 CPMEN. EL MILAGRO (MUY CERA AL MERCADO) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20214969794','INVERSIONES AGROPECUARIAS Y ANEXOS SRL','CAR. PANAMERICANA NORTE KM. 545 P.J. PUENTE VIRU ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600964268','GHO STEELS S.A.C.','PRO. CESAR VALLEJO MZA. 03 LOTE. 02 URB. LA RINCONADA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20220724809','GRIFOS KAMT S.A.C','CAR. PANAMERICANA NORTE KM. 782 (MOCCE) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20127765279','COESTI S.A.','AV. CIRCUNVALACION DEL CLUB G NRO. 134 URB. CLUB EL GOLF LOS INCAS (EDIFICIO PANORAMA TORRE A PISO 18) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20112273922','TIENDAS DEL MEJORAMIENTO DEL HOGAR S.A.','AV. ANGAMOS ESTE NRO. 1805 INT. 2 (OFICINA 2) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20360815031','CISAR S.A.C.','AV. ENRIQUE MEIGGS NRO. 2230 FLORIDA ALTA (FRENTE A IGLESIA SAN MARTIN) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20543416011','MUCASA IMPORTACIONES PERU S.A.C','AV. ARGENTINA NRO. 523 INT. E-30 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10485033934','RIQUELME SUAREZ JOSEPH','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20538971856','CORPORACION CARPE DIEM S.A.C.','AV. JOSE BALTA NRO. 512 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606233206','SOLUCIONES HIDRAULICAS G & E E.I.R.L','MZA. I LOTE. 5 ASC. LOS ANGELES ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10026561464','LALUPU ESPINOZA ALFREDO VIDAL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611410256','ESTACION DE SERVICIOS SANTO TOMAS DE LIMA S.A.C.','AV. VENEZUELA CON RIVA AGUERO NRO. S/N (FRENTE UNIVERSIDAD SAN MARCOS) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511497184','VIPETROS S.A.C','AV. JAIME BAUSATE Y MEZA NRO. 564 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20382072023','AIR PRODUCTS PERU S.A.','AV. JORGE BASADRE NRO. 233 INT. 302 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10404640106','MOSCOL CASTILLO LIZBETH KARINA','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20482465596','T & S TELECABLE SILVESTRE E.I.R.L.','CAL. JOSE OLAYA NRO. 290 PBLO. VIRU (MEDIA CDRA DEL COLEGIO PERPETUO SOCORRO) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609014017','DG INDUSTRIAL SERVICES COMPANY S.A.C.','CAL. SAN ANDRES NRO. 749 SEC. ALTO MOCHE ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20559747212','MULTISERVICIOS YEERIK S.A.C.','AV. VIRU NRO. S/N C.P. CENTRO POBLADO MENOR DE P (AL COSTADO DE ESTRUCTURAS METALICAS MEZA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20523470761','SANITAS PERU S.A. - EPS','CAL. AMADOR MERINO REYNA NRO. 492 URB. JARDIN ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20275873480','SERVICENTRO RAMIREZ S.A.C.','AV. NICOLAS DE PIEROLA NRO. 1390 URB. MOCHICA ET. 2 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20481400920','GRIFO MULTICENTRO CHEPEN E.I.R.L','CAR. PANAMERICANA KM. 697 URB. CHEPEN ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20512528458','SHALOM EMPRESARIAL S.A.C.','AV. MEXICO NRO. 1187 URB. MATUTE ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517207331','PROTECTA S.A. COMPAÑIA DE SEGUROS Y REASEGUROS','AV. DOMINGO ORUE NRO. 165 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20483998270','INTERAMERICANA NORTE S.A.C.','MZA. 240 LOTE. 02 INT. . Z.I. ANTIGUA DE PIURA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561154474','PARRILLADAS KLG E.I.R.L.','CAL. ELVIRA GARCIA Y GARCIA NRO. 438 URB. LOS PARQUES ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10488458146','ALVINO CAJAS YEFERZON REMIGIO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10094773267','OBREGON TIMOTEO VICTORIANO RAFAEL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602227775','N & F RODAMIENTOS E IMPORTACIONES S.A.C.','AV. CESAR VALLEJO NRO. 1071 URB. ARANJUEZ ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180431379','FLORES BRICEÑO LUCIANO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605649778','RESTAURANT POLLOS Y PARRILLAS PICO DE ORO S.A.C.','MZA. C LOTE. 09 URB. MIRAFLORES ET. UNO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20607125598','GRUPO FENIX EXPRESS S.A.C.','JR. AMAZONAS NRO. 470 URB. EL MOLINO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605008365','RUTA DIEZ DEL NORTE S.A.C.','MZA. 70 LOTE. 19 URB. LA RINCONADA TERCERA ETAP ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611584068','PETROLCIX E.I.R.L.','CAR. CARRETERA PANAMERICANA NO MZA. 789 (INTERSECCION CON AV. VENEZUELA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10722036471','CABEZA SEBASTIAN ANGEL RUBEN','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10733843859','QUINTANA ROJAS ABEL JESUS','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20270382551','GRIFO SAN ANTONIO E.I.R.LTDA.','CAR. CHICLAYO-LAMBAYEQUE NRO. 3 (AL COSTADO DE PJ L.ALBERTO SANCHEZ) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606193328','EE.SS MOCUPE S.A.C.','CAL. LOS ORFEBRES NRO. 260 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20506717044','MEMORY KINGS PERU S.A.C.','AV. SANTA CRUZ NRO. 330 URB. CHACARILLA SANTA CRUZ EL ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614132117','C & M PINTURAS MATIZADOS Y FERRETERIA EN GENERAL E.I.R.L.','AV. GRAU NRO. 406 URB. CERCADO DE CASTILLA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614750635','DIBRAPE SOLUCIONES INDUSTRIALES E.I.R.L.','OTR. MANZANA U NRO. 26 BAR. 5A (CERCA A POLI PAOLO GUERRERO) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20483835648','TALLER DE SERVICIOS ORDINOLA E.I.R.L.','AV. GRAU NRO. 408 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20481601666','NEPESA S.A.C.','AV. PROL. V.A. BELAUNDE MZA. D LOTE. 01 URB. SANTO DOMINGUITO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10181840191','PEREZ TORRES RONAL','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20603426780','CORPORACION SUDAMERICANA DE ACEROS ESPECIALES S.A.C. - CORPSAE S.A.C.','AV. MARISCAL OSCAR R. BENAVID NRO. 1244 URB. LIMA INDUSTRIAL ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10429794540','CASTILLO RUIZ JOSELITO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606269812','TRUJILLO BOOKSHOP E.I.R.L.','JR. AYACUCHO NRO. 538 TRUJILLO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511004251','CONCESIONARIA IIRSA NORTE S.A.','AV. VICTOR ANDRES BELAUNDE NRO. 280 INT. 502 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20603151004','ESTACION DE SERVICIOS RIO VIEJO II S.R.L.','MZA. K1 LOTE. 11B URB. LOS COCOS DEL CHIPE (CERCA A COLEGIO MARIA MONTESSORI) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10418829074','DIAZ MORALES CYNTHIA LUCIANA','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180474574','BLAS REYES TOMAS FRANCISCO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20131609290','COMERCIAL RC S.A.C.','AV. TEODORO VALCARCEL NRO. 1093 URB. SANTA LEONOR ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480645741','SERVICIOS TURISTICOS LA CONCORDIA SRL','CAL. SIETE DE ENERO SUR NRO. 235 URB. SAN EDUARDO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20565643496','GLOBAL FUEL SOCIEDAD ANONIMA','AV. REPUBLICA DE PANAMA NRO. 3591 INT. 401 URB. LIMATAMBO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20612310476','ACEROS LA RESERVA S.A.C.','MZA. S LOTE. 20 DPTO. 201 URB. LAS TERRAZAS DE CARAPONGU ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600566815','FERRETERIA JASH S.A.C.','CAL. SUCRE NRO. SN PBLO. VIRU ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600849019','METALMARK S.A.','CAL. EL BOULEVARD NRO. 182 DPTO. 402 URB. HOGARES DE MONTERRICO CHI ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10479404114','MARILLO GAMARRA ALFREDO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20521542943','CONCESION VALLE DEL ZAÑA S.A.','AV. EMILIO CAVENECIA NRO. 151 INT. 402 URB. CHACARILLA SANTA CRUZ - S ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520998897','FMS ESTRATEGICA S.A.C','AV. SERGIO BERNALES NRO. 528 BAR. BARRIO MEDICO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614637855','GRUPO GASTONOMICO PRATO E.I.R.L.','MZA. Y LOTE. 1 RES. SAN CARLOS ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20452751918','RESTAURANTE LA ESTACION E.I.R.L.','CAR. PANAMERICANA SUR KM. 307 ESTAC D SERV LA PRIMAVERA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20536557858','HOMECENTERS PERUANOS S.A.','AV. AVIACION NRO. 2405 (PISO 5) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100227461','TRANSPORTES CRUZ DEL SUR S.A.C.','AV. FRANCISCO BOLOGNESI NRO. 495 ZONA INDUSTRIAL (ESPALDA CENTRO BANCARIO STA. ANITA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480882289','PETROCENTRO ESTACION N° 1 SAC','AV. LOS LAURELES KM. 520 SEC. SAN IDELFONSO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20101066992','DAVALOS IMPORT S A','AV. JAVIER PRADO ESTE NRO. 635 ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20261239923','SEDISA S.A.C.','AV. CIRCUNVALACION CLUB GOLF NRO. 154 INT. 904 URB. GOLF LOS INKAS (EDIFICIO CAPITAL GOLF) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20479872962','CRM GAS SAC','AV. EL MAESTRO NRO. 1061 VILLA RICA ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10180836239','CRUZ SOLES CESAR ENRIQUE','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10167970252','ARROYO SOPLOPUCO ARMANDO','-', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20482193570','COSTOS S.A.C.','AV. LOS LAURELES NRO. S/N CHANQUIN (COSTADO DE LA CAPILLA) ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610755462','PALITO VERDE RESTAURANT S.A.C.','NRO. S/N OTR. SUB LOTE 1-A, PREDIO VALL ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614856255','DON JUAN & LA YOYA S.A.C.','CAL. PANAMERICANA NORTE KM 422 KM. 422 OTR. PUENTE VIRU ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20607014753','NIU NIU EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA','AV. JOSE BALTA NRO. 249 CHICLAYO ', 1, @METQUIMID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100080932','YOHERSA YOSHIMOTO HERMANOS S.A.C.','AV. AV MEXICO NRO. 1830 URB. URB SAN GERMAN (FRENTE AL LOCAL DE COMISARIA DE APOLO) ', 1, @METQUIMID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES METQUIM FINALIZADA';
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES MAQSA';
+
+DECLARE @MAQSAID INT;
+select @MAQSAID = id from empresa where ruc = '20613898167';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517930998','PROSEGUR ACTIVA PERU S.A.','AV. REPUBLICA DE PANAMA NRO. 3890 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10485033934','RIQUELME SUAREZ JOSEPH','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÚBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20565643496','GLOBAL FUEL SOCIEDAD ANONIMA','AV. REPUBLICA DE PANAMA NRO. 3591 INT. 401 URB. LIMATAMBO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604051151','SOLUCIONES MILLA S.A.C.','SEC. III  BARR. 3 MZA. T12 LOTE. 25 URB. MCAL CACERES ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611859211','REPRESENTACIONES SOSTENIBLES AGRO INDUSTRIA PERU S.A.C.','CAL. VEINTIUNO MZA. T LOTE. 23 URB. TUPAC AMARU ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20133605291','EMPRESA DE TRANSPORTES AVE FENIX S.A.C.','AV. TUPAC AMARU NRO. 185 URB. HUERTA GRANDE ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605108149','MR OLMOS S.A.C.','CAL. SEBASTIAN LORENTE NRO. 696 URB. LAS QUINTANAS ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20512528458','SHALOM EMPRESARIAL S.A.C.','AV. MEXICO NRO. 1187 URB. MATUTE ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606753137','AGROMAQUINARIAS Y RECAMBIOS S.A.C.','MZA. N LOTE. 55 URB. LA ENSENADA (SEGUNDA ETAPA) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20612375136','GRUPO SALAZAR BURGA S.A.C.','CAR. CARRETERA CHONGOYAPE NRO. 0 DPTO. 0 INT. 0 OTR. PAMPA LA VICTORIA ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613084992','INNOVACIONES BRA S.R.L.','CAL. SAN ISIDRO NRO. 240 URB. SAN LORENZO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480645741','SERVICIOS TURISTICOS LA CONCORDIA SRL','CAL. SIETE DE ENERO SUR NRO. 235 URB. SAN EDUARDO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20360815031','CISAR S.A.C.','AV. ENRIQUE MEIGGS NRO. 2230 FLORIDA ALTA (FRENTE A IGLESIA SAN MARTIN) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602720676','IMPORT WILLY M & W E.I.R.L.','JR. AMERICA NRO. 401 INT. 114 (415 INT 114) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20388853752','MULTI TOP S.A.C.','AV. IQUITOS NRO. 619 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20565909275','IMPORTADORA ACONCAGUA SOCIEDAD ANONIMA CERRADA - IMPORTADORA ACONCAGUA S.A.C.','AV. JULIO CESAR TELLO NRO. 693 INT. 201 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20479898091','ESTACION DE SERVICIOS SAN ROQUE SOCIEDAD ANONIMA CERRADA','CAR. PANAMERICANA KM. 780 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20502630378','VID AGRO S.A.C.','AV. INGENIEROS NORTE NRO. 251 URB. LA MERCED (FTE COL LA MERCED) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20337511172','SERVIS PIURA S.A.','AV. 28 DE JULIO NRO. 1178 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20508074281','EXPRESO GRAEL SOCIEDAD ANONIMA CERRADA','AV. PROLONGACION ANDAHUAYLAS NRO. 699 INT. A ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20563529378','TIENDAS TAMBO S.A.C.','AV. JAVIER PRADO ESTE NRO. 6210 INT. 1201 URB. RIVERA DE MONTERRICO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20607293415','MANGUERAS Y CONEXIONES INDUSTRIALES R & S S.A.C.','AV. REPUBLICA DE ARGENTINA NRO. 327 URB. LIMA INDUSTRIAL ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10075230228','GUILLEN HUAMAN JUAN ISIDORO','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10406058498','GARCIA GINEZ GIOVANNA DEL SOCORRO','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20508196475','PETROCENTRO YULIA S.A.C.','AV. DE LA MARINA NRO. 2789 URB. MARANGA 1RA ET. (CRUCE CON AV.ESCARDO) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100041953','RIMAC SEGUROS Y REASEGUROS','CAL. EL PARQUE NRO. 149 INT. PIS2 URB. JARDIN ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10179239782','ANTICONA AGUILAR MANUEL ROSARIO','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600695771','NUBEFACT S.A.','CAL. LIBERTAD NRO. 176 INT. 212 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20505377142','RED VIAL 5 S.A.','AV. PETIT THOUARS NRO. 4957 URB. BARBONCITO (AL FRENTE DE PLAZA VEA MIRAFLORES) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10707458629','LOAYZA MONTEZA DANTE JUNIOR','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606193328','EE.SS MOCUPE S.A.C.','CAL. LOS ORFEBRES NRO. 260 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600729986','SERVICENTRO CASMA S.A.C.','DEL EJERCITO NRO. 1023 DPTO. 101 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20523470761','SANITAS PERU S.A. - EPS','CAL. AMADOR MERINO REYNA NRO. 492 URB. JARDIN ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517207331','PROTECTA S.A. COMPAÑIA DE SEGUROS Y REASEGUROS','AV. DOMINGO ORUE NRO. 165 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20458378747','AERO GAS DEL NORTE SOCIEDAD ANONIMA CERRADA - AERO GAS DEL NORTE SAC','CAL. LOS CALIBRADORES MZA. 01 LOTE. 5, 7 Z.I. PARQUE INDUSTRIAL ACOMPIA (ALT. BALANZA Y TOLERACIA CERO - ANCON) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10167752255','AGUILAR RIOJAS MERY ELIZABETH','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20132272418','INTERNACIONAL DE TRANSPORTE TURISTICO Y SERVICIOS SRL','AV. TUPAC AMARU NRO. 1198 URB. SANTA LEONOR ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20612433918','FAME RESIDENCES','AV. ALMIRANTE MIGUEL GRAU NRO. 1505 ASC. LAS QUINTAS SC. UNO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20498189637','AREQUIPA EXPRESO MARVISUR EIRL','CAL. GARCI CARBAJAL NRO. 511 URB. IV CENTENARIO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613859692','ESTACION DE SERVICIOS LA LIMONERA CT E.I.R.L.','OTR. PREDIO PARALES, SECTOR PA NRO. S/N OTR. PREDIO PARALES ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10099535062','MENDEZ TABACO MARIO ALBERTO','-', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601632358','HOUSE TIRES S.A.C.','JR. CENTENARIO NRO. 482 DPTO. B104 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20109072177','CENCOSUD RETAIL PERU S.A.','CAL. AUGUSTO ANGULO NRO. 130 URB. SAN ANTONIO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20504292968','AUTOSAFE S.A.C.','AV. JOSE PARDO NRO. 434 INT. 1301 ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613118757','PROBINSE IMPORT S.A.C.','AV. AMERICA SUR NRO. 694 URB. PALERMO ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602634346','INVERSIONES Y COMERCIALIZADORA EL ZURDO S.A.C.','PQ. IND MZA. U LOTE. 8 Z.I. 3 ETAPA (LADO DE LA UNIVERSIDAD) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613312715','ALFACO PERU E.I.R.L.','CAL. JUDA MZA. K LOTE. 5 URB. MIRAFLORES ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20341841357','LATAM AIRLINES PERU S.A.','AV. SANTA CRUZ NRO. 381 (PISO 6 OFICINAS CORPORATIVAS) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20526394764','RESTAURANT MARINO MIXTURA E.I.R.L.','MZA. LL´ LOTE. 01 URB. MIRAFLORES 2 ETAPA (COSTADO DE ACADEMIA PEDRO PAULLET) ', 1, @MAQSAID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10470166555','CRUZ ACOSTA JOSE JHON','-', 1, @MAQSAID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES MAQSA FINALIZADA';
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES TRUST';
+
+DECLARE @TRUSTID INT;
+select @TRUSTID = id from empresa where ruc = '20614993198';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480645741','SERVICIOS TURISTICOS LA CONCORDIA SRL','CAL. SIETE DE ENERO SUR NRO. 235 URB. SAN EDUARDO ', 1, @TRUSTID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613580329','INVERSIONES MIDAVI E.I.R.L.','AV. LIBERTAD NRO. 449 URB. SANTA VICTORIA ', 1, @TRUSTID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20549879277','RUDANI INVERSIONES S.A.C.','CAL. ALEJANDRO DEUSTUA NRO. 209 INT. 02 P URB. LA AURORA ', 1, @TRUSTID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601799317','MARAKOS GRILL CONCESIONES E.I.R.L.','AV. ELVIRA GARCIA Y GARCIA NRO. 696 URB. LOS PARQUES ', 1, @TRUSTID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100049181','TAI LOY S.A.','JR. MARIANO ODICIO NRO. 153 URB. MIRAFLORES (MZ L, LOTE 144, SUB LOTE A) ', 1, @TRUSTID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES TRUST FINALIZADA';
+
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES SUPPLY';
+
+DECLARE @SUPPLYID INT;
+select @SUPPLYID = id from empresa where ruc = '20615184153';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480645741','SERVICIOS TURISTICOS LA CONCORDIA SRL','CAL. SIETE DE ENERO SUR NRO. 235 URB. SAN EDUARDO ', 1, @SUPPLYID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613580329','INVERSIONES MIDAVI E.I.R.L.','AV. LIBERTAD NRO. 449 URB. SANTA VICTORIA ', 1, @SUPPLYID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10738829480','CUBAS PAUCAR JUNIOR ANDREE','-', 1, @SUPPLYID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610085661','RESTAURANT EL POTRERO CALLANCA','AV. SANTA VICTORIA NRO. 619 URB. SANTA VICTORIA ', 1, @SUPPLYID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20551348041','DELIVERY HERO PERU S.A.C.','AV. REDUCTO NRO. 1310 INT. 701 URB. LEURO ', 1, @SUPPLYID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20132272418','INTERNACIONAL DE TRANSPORTE TURISTICO Y SERVICIOS SRL','AV. TUPAC AMARU NRO. 1198 URB. SANTA LEONOR ', 1, @SUPPLYID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES SUPPLY FINALIZADA';
+
+GO
+
+PRINT 'MIGRACIÓN DE PROVEEDORES INIGDE';
+
+DECLARE @INIGDEID INT;
+select @INIGDEID = id from empresa where ruc = '20605353721';
+
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10445951850','TERAN AREVALO MARCO ANTONIO','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613772066','INVERSIONES SABOR Y TRADICION S.A.C.','CAL. CAJAMARCA NORTE NRO. 351 URB. LA PRIMAVERA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605178775','CHICKEN GRILL AND DRINKS E.I.R.L.','AV. MIGUEL GRAU NRO. 1090 URB. VILLA EL SALVADOR ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601888671','DI LIMON S.A.C.','MZA. M LOTE. 05 URB. CASTILLA DE ORO ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613236831','RESTAURANT FAMILIA GOURMET S.A.C.','AV. AVENIDA PROLONGACIÓN BOLO NRO. SN URB. LAS BRISAS (INTERSECCIÓN CON AV. PEDRO CIEZA DE LEON) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609439824','EL PANZA VERDE E.I.R.L.','AV. EL MAESTRO NRO. 1175 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20605758500','GRUPO GASTRONOMICO CORTEZ S.A.C.','AV. RIVERA NAVARRETE NRO. 395 URB. SAN ISIDRO ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10803846630','MONTJOY AURICH JESHKO CARLOS','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609606283','COCINA ERRANTE E.I.R.L.','AV. GRAU NRO. 850 INT. LC08 URB. ANA DE LOS ANGELES ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20352730425','NEGOCIOS TURISTICOS DEL NORTE S.A.C','AV. REDUCTO NRO. 1278 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10722819131','MURGA PINZON GRACE KELLY','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20395012445','ESTACION DE SERVICIOS PECOLINE SRL','AV. V RAUL HAYA DE LA TORRE NRO. 2600 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602778518','DECOR MI CASA E.I.R.L.','CAR. PANAMERICANA NORTE KM. 424 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10166369911','RIVERA OLIVOS ELIZABETH DEL PILAR','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20481465380','INVERSIONES Y SERVICIOS MULTIPLES LOS PATOS S.A.C.','CAR. PANAMERICANA KM. 712 A.H. SANTA CECILIA (LOS PATOS) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20530820689','M & R REY COMBUSTIBLES SRL','CAR. PANAMERICANA NORTE KM. 167 (KM 167 MÁS 400 METROS-FTE.FUNDO SONIA) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10409286602','FLORES COTRINA ANSELMO','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20479898091','ESTACION DE SERVICIOS SAN ROQUE SOCIEDAD ANONIMA CERRADA','CAR. PANAMERICANA KM. 780 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20479361798','GRIFO MARIA DEL PILAR EIRL','CARRET. PAN.NORTE NRO. K757 (A 200M DEL CRUCE DE ETEN) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20603677979','SUKHA SOCIEDAD ANONIMA CERRADA','CAL. GENERAL NECOCHEA NRO. 107 URB. SANTA VICTORIA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10102790877','LEE CHU FELIPE KUONG-HOI','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601634288','COMBUSTIBLES Y LUBRICANTES SANTO TOMAS E.I.R.L.','PJ. LOS ALHELIES NRO. 194 URB. SANTA VICTORIA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606193328','EE.SS MOCUPE S.A.C.','CAL. LOS ORFEBRES NRO. 260 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561154474','PARRILLADAS KLG E.I.R.L.','CAL. ELVIRA GARCIA Y GARCIA NRO. 438 URB. LOS PARQUES ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20398057407','SERVICENTRO Y MULTISERVICIOS SAN PEDRO S.A.C.','PROLONG. RAIMONDI NRO. S/N (VIA DE EVITAMIENTO ESNTRADA SUR) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604854912','INVERSIONES MIGUEL ANGELO E.I.R.L.','NRO. SN SECTOR QUEFE (KILOMETRO 5 CARRETERA CHICLAYO FERREÑAFE) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20606666927','CORPORACION DON SHALO E.I.R.L.','CAL. LOS CIPRECES NRO. 190 URB. LOS PARQUES ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480838468','DISTRIBUCIONES LUBRICAR´S SRL.','CAL. LOS ORFEBRES NRO. 245 ASC. LAS QUINTAS SC. UNO ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20609938367','INVERSIONES CASERIO S.A.C.','AV. GRAU NRO. 823 URB. SANTA VICTORIA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601751403','CORPORACION HOTELERA MSJ S.A.C.','AV. RIVERA NAVARRETE NRO. 2868 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601994462','INVERSIONES Y NEGOCIOS HS S.A.C','NRO. SN SEC. CARLINI (ALTURA KM 9 SALIDA A LIMA GRIFO REPSOL) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561111741','GRUPO VISTA ALEGRE SAC','CAL. GRAN CHIMU NRO. 653 CPM EL BOSQUE (PRIMERA ETAPA) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600739175','ESTACIONES Y SERVICIOS MHT EIRL','AV. JORGE BASADRE NRO. 607 DPTO. 423 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480823355','CATAPA SOCIEDAD ANONIMA CERRADA','AV. LOS INCAS NRO. 136 URB. LA VICTORIA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20559962881','GRIFO EL CAMPANARIO E.I.R.L.','CAR. PANAMERICANA  NORTE KM. 574 EL MILAGRO (A LADO DE GRIFO CRISMAR - PETRO PERU) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604705721','SERVICELIB S.A.C.','AV. GONZALO UGAS NRO. 29 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20104625500','SERVICENTRO LAS AMERICAS S.A.C.','CAL. MARIANO DE LOS SANTOS NRO. 141 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20510069251','DH EMPRESAS PERU S.A.','AV. MANUEL OLGUIN NRO. 211 INT. 504 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600593685','LUCHA PARTNERS S.A.C.','JR. MANUEL GONZALES PRADA NRO. 500 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480200382','ENERGY GASS SRL','CAL. LORETO NRO. 215 URB. PATAZCA - ZONA INDUSTRIAL ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517767396','ESCOH SOCIEDAD ANONIMA CERRADA - ESCOH SAC','AV. ALFREDO BENAVIDES NRO. 1555 INT. 604 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611078197','BOVINOS E.I.R.L.','AV. JOSE BALTA NRO. 1149 CERCADO DE CHICLAYO ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20604875235','CAX PETROL E.I.R.L.','CAL. CAJAMARCA NRO. 9 C.P. PROGRESIVA LA CIUDADELA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20231843460','COSTA DEL SOL S A','AV. SALAVERRY NRO. 3060 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20270106014','SORRENTO S.R.LTDA.','CAL. COLON NRO. 264 CERCADO (FRENTE AL COLEGIO POLITECNICO LABARTHE) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511465061','CONCESIONARIA VIAL DEL PERU S.A.','AV. JAVIER PRADO ESTE NRO. 4109 INT. 2,3 URB. SANTA CONSTANZA (FRENTE AL JOCKEY PLAZA) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20220724809','GRIFOS KAMT S.A.C','CAR. PANAMERICANA NORTE KM. 782 (MOCCE) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20505377142','RED VIAL 5 S.A.','AV. PETIT THOUARS NRO. 4957 URB. BARBONCITO (AL FRENTE DE PLAZA VEA MIRAFLORES) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20270382551','GRIFO SAN ANTONIO E.I.R.LTDA.','CAR. CHICLAYO-LAMBAYEQUE NRO. 3 (AL COSTADO DE PJ L.ALBERTO SANCHEZ) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20523621212','LIMA EXPRESA S.A.C.','AV. EL DERBY NRO. 250 (URB.EL DERBY DE MONTERRICO-OFC.1701 1801) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20550372640','RUTAS DE LIMA S.A.C EN LIQUIDACION','AV. PRIMAVERA NRO. 1796 INT. 801 URB. MONTERRICO , CENTRO COMER ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20458378747','AERO GAS DEL NORTE SOCIEDAD ANONIMA CERRADA - AERO GAS DEL NORTE SAC','CAL. LOS CALIBRADORES MZA. 01 LOTE. 5, 7 Z.I. PARQUE INDUSTRIAL ACOMPIA (ALT. BALANZA Y TOLERACIA CERO - ANCON) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20511230935','ESTACION DE SERVICIOS PASO DE LOS ANDES SAC','CAR. PANAMERICANA NORTE KM. 36.5 (ALT. GRIFO SAMM) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20397561454','MANNUCCI DIESEL SAC','AV. MANSICHE NRO. 480 URB. LAS QUINTANAS (OVALO MANSICHE) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20127765279','COESTI S.A.','AV. CIRCUNVALACION DEL CLUB G NRO. 134 URB. CLUB EL GOLF LOS INCAS (EDIFICIO PANORAMA TORRE A PISO 18) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÚBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20503840121','REPSOL COMERCIAL SAC','AV. VICTOR ANDRES BELAUNDE NRO. 147 VIA REAL 185, EDIFICIO RE (MESA DE PARTES SOTANO 1, CENT. EMP. REAL) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517711412','REPRESENTACIONES EL FAROLITO S.A.C.','PROLONGACION IQUITOS NRO. 1500 (FRENTE A BATERIAS CAPSA) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20557644416','CONCESIONARIA VIAL SIERRA NORTE S.A.','CAL. CORONEL ANDRES REYES NRO. 437 INT. 301 URB. JARDIN ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100047218','BANCO DE CREDITO DEL PERU','JR. CENTENARIO NRO. 156 URB. LADERAS DE MELGAREJO ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20493020618','TIENDAS PERUANAS SA','AV. AVIACION NRO. 2405 URB. SAN BORJA (PISO 7) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10407054551','MIO OLAZABAL KELLY YANET','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602950086','CAMBIA SEGURO S.A.C.','CAL. MAYNAS NRO. 249 URB. LA PRIMAVERA (PISO 2) ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20521542943','CONCESION VALLE DEL ZAÑA S.A.','AV. EMILIO CAVENECIA NRO. 151 INT. 402 URB. CHACARILLA SANTA CRUZ - S ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20538971856','CORPORACION CARPE DIEM S.A.C.','AV. JOSE BALTA NRO. 512 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611681161','OVERO´S REPRESENTACIONES TURISTICAS Y GASTRONOMICAS S.A.C.','AV. INCAHUASI NRO. S/N LA TRAPOSA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608956728','AMSA AUTO DETAILING S.A.C.','CAL. CHINCHAYSUYO NRO. 1209 CENTRO LA VICTORIA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20504126367','S.RODRIGUEZ BANDA S.A.C.','PANAMERICANA SUR KM. 23.5 ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10104901951','VALDIVIA DEXTRE PEDRO ABRAHAM','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20570793471','SERVICIOS GENERALES CASTOPE MANTILLA S.R.L.','JR. LA ALAMEDA LA CHONTA NRO. 237 BAL. BAÑOS DEL INCA ', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10000269706','WATANABE NOJI JULIETA HIROKO','-', 1, @INIGDEID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20603381697','INVERSIONES URBANISTICAS OPERADORA S.A.','CAL. DEAN VALDIVIA NRO. 148 INT. 1401 URB. JARDIN (EDIFICIO PLATINUM) ', 1, @INIGDEID);
+
+PRINT 'MIGRACIÓN DE PROVEEDORES INIGDE FINALIZADA';
+
+GO
+
+
+SELECT E.nombre AS EMPRESA, E.razon_social AS RAZON_SOCIAL, COUNT(p.id) AS TOTAL_PROVEEDORES
+FROM PROVEEDOR p
+INNER JOIN EMPRESA E ON P.empresa_id = E.id
+GROUP BY E.nombre, E.razon_social

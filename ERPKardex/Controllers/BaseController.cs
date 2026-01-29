@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace ERPKardex.Controllers
 {
+    [Authorize]
     public class BaseController : Controller
     {
         // Propiedad para obtener el ID de empresa del usuario logueado
