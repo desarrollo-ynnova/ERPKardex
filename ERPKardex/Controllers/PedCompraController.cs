@@ -289,7 +289,7 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioRegistro = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.EstadoId = estGeneradoPED.Id;
-                    cabecera.FechaEmision = DateTime.Now;
+                    //cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now;
 
                     _context.PedCompras.Add(cabecera);

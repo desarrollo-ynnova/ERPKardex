@@ -215,6 +215,7 @@ namespace ERPKardex.Controllers
                     cabecera.EmpresaId = EmpresaUsuarioId;
                     cabecera.UsuarioId = UsuarioActualId;
                     cabecera.FechaRegistro = DateTime.Now;
+                    //cabecera.Fecha = DateTime.Now;
 
                     string codigoDoc = (cabecera.TipoMovimiento == true) ? "IALM" : "SALM";
 

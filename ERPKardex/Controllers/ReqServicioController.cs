@@ -176,7 +176,7 @@ namespace ERPKardex.Controllers
                     cabecera.UsuarioRegistro = usuarioId;
                     cabecera.FechaRegistro = DateTime.Now;
                     cabecera.EstadoId = estadoPendienteREQ.Id;
-                    cabecera.FechaEmision = DateTime.Now;
+                    //cabecera.FechaEmision = DateTime.Now;
                     if (cabecera.FechaNecesaria == DateTime.MinValue) cabecera.FechaNecesaria = DateTime.Now.AddDays(1);
 
                     _context.ReqServicios.Add(cabecera);
