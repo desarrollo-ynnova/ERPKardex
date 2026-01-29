@@ -4376,3 +4376,54 @@ WHERE sa.almacen_id = @AlmacenPrincipalID AND sa.empresa_id = @EmpresaID;
 DROP TABLE #TempLoad;
 PRINT '>> MIGRACION COMPLETADA EXITOSAMENTE. ID DE INGRESO: ' + CAST(@IdIngreso AS VARCHAR);
 GO
+
+DECLARE @STALNOID INT; 
+select @STALNOID = id from empresa where ruc = '20603727551';
+
+PRINT '>> MIGRACIÓN DE PROVEEDORES STALNO';
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614954320','HERNAN HERNANDEZ V. E.I.R.L.','CAL. PANAMERICANA NORTE NRO. 379 URB. SAN CARLOS ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20109072177','CENCOSUD RETAIL PERU S.A.','CAL. AUGUSTO ANGULO NRO. 130 URB. SAN ANTONIO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20522547957','CONCESIONARIA VIAL DEL SOL S.A. - COVISOL S.A.','CAL. JUAN MANUEL ITURREGUI NRO. 484 URB. CHICLAYO (JUAN M ITURREGUI 484-488 ANTES PATAZCA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20520929658','AUTOPISTA DEL NORTE S.A.C.','AV. REPÃšBLICA DE COLOMBIA NRO. 791 (PISO 9, OFICINA 902) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614856255','DON JUAN & LA YOYA S.A.C.','CAL. PANAMERICANA NORTE KM 422 KM. 422 OTR. PUENTE VIRU ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20565643496','GLOBAL FUEL SOCIEDAD ANONIMA','AV. REPUBLICA DE PANAMA NRO. 3591 INT. 401 URB. LIMATAMBO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10179238115','MERINO CASTILLO VICTOR RODOLFO','-', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20482527966','ESTACION DE SERVICIOS  SEBASTIAN S.A.C.','MZA. B LOTE. 04 SEC. LOS CEDROS (FRENTE DE RADIOPATRULLA PAIJAN) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610239804','CE & JP E.I.R.L.','CAL. ANDRES RAZURI NRO. 243 OTR. PACASMAYO (ULTIMA CUADRA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613084992','INNOVACIONES BRA S.R.L.','CAL. SAN ISIDRO NRO. 240 URB. SAN LORENZO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480882289','PETROCENTRO ESTACION N° 1 SAC','AV. LOS LAURELES KM. 520 SEC. SAN IDELFONSO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20561292435','HOSTAL BRIYOS E.I.R.L.','CAL. SIETE DE ENERO SUR NRO. 216 URB. SAN EDUARDO (FRETE A POLLERIA CAMPOS) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610208691','NEW A & D COMPANY E.I.R.L.','CAL. IZAGA NRO. 356 ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20378890161','RASH PERU S.R.L','AV. SALAVERRY NRO. 3310 (A DOS CDRAS. AV. EJERCITO) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20611078197','BOVINOS E.I.R.L.','AV. JOSE BALTA NRO. 1149 CERCADO DE CHICLAYO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20512528458','SHALOM EMPRESARIAL S.A.C.','AV. MEXICO NRO. 1187 URB. MATUTE ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601840422','ESTACION DE SERVICIOS EL TRANSPORTISTA II E.I.R.L.','CAR. PANAMERICANA NORTE KM. 613 C.P. SINTUCO (COSTADO PARADERO SINTUCO) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20614615436','DCHOTA GASTRONOMIA E.I.R.L.','CAL. CONTRALMIRANTE VILLAR NRO. 100 URB. SANTA VICTORIA (COSTADO FARMACIA INKAFARMA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20487637310','REPSERGEN E.I.R.L.','AV. ELVIRA GARCIA Y GARCIA NRO. 900 P.J. 9 DE OCTUBRE ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20559938077','GRIFO CRYSMAR S.A.C.','CAL. SAN MARTIN MZA. 10 LOTE. 21 C.P. EL MILAGRO (CERCA AL MERCADO SANTA ROSA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20607550400','ONIX PROFESSIONAL E.I.R.L.','AV. JOSE EUFENIO LORA Y LORA NRO. 638 ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601437989','PETRO CRYSMAR S.A.C.','CAL. SAN MARTIN MZA. 10 LOTE. 21 CPMEN. EL MILAGRO (MUY CERA AL MERCADO) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20479966355','PRODUCTOS LAMOSA S.A.C.','CAL. PIURA NORTE NRO. 458 P.J. TUPAC AMRARU ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20480099215','LUBRICANTES EL REY EIRL','AV. FERNANDO BELAUNDE NRO. 1085 P.J. SANTA ROSA ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20608300393','COMPAÑÍA FOOD RETAIL S.A.C.','CAL. CESAR MORELLI NRO. 181 URB. SAN BORJA NORTE (PISO 3) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601514843','GASOLINERAS PIURA S.R.L.','CAR. PIURA - CHULUCANAS KM. 21 SEC. CASTILLA (ANTES DEL CRUCE A TAMBOGRANDE) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20477372491','ESTACION VALLE CHICAMA S.A.C.','CAR. PANAMERICANA NRO. 590 PBLO. CHICAMA ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20540087751','MAKSERVICES TRUJILLO S.A.C.','AV. AMERICA SUR NRO. 1160 URB. PALERMO ET. 3 ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20133605291','EMPRESA DE TRANSPORTES AVE FENIX S.A.C.','AV. TUPAC AMARU NRO. 185 URB. HUERTA GRANDE ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20438863398','FULL MAQUINARIAS S.A.','MZA. Ã‘ LOTE. 8B URB. SEMIRUSTICA EL BOSQUE (MEDIA CUAD. RIC. PALMA CON HON. DELGADO) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20100047218','BANCO DE CREDITO DEL PERU','JR. CENTENARIO NRO. 156 URB. LADERAS DE MELGAREJO ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20106076635','EMPRESA DE TRANSPORTES PERU BUS S.A.','AV. MEXICO NRO. 333 P.J. MATUTE ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'10099595812','SANTA CRUZ VERA SEGUNDO ALFREDO','-', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20514586641','GLENIMAR SAC','AV. REPUBLICA DE CHILE NRO. 295 INT. 501 URB. SANTA BEATRIZ (ALT. CUADRA 2 DE LA AV.AREQUIPA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20324936298','HOTEL EL HUARANGO E.I.R.L.','CAL. EL MEDANO NRO. MZ Y INT. LT05 RES. LA ANGOSTURA ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20112273922','TIENDAS DEL MEJORAMIENTO DEL HOGAR S.A.','AV. ANGAMOS ESTE NRO. 1805 INT. 2 (OFICINA 2) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20610372407','PUNTO ASADO S.R.L.','AV. LA ANGOSTURA MZA. M LOTE. 3 ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20613312715','ALFACO PERU E.I.R.L.','CAL. JUDA MZA. K LOTE. 5 URB. MIRAFLORES ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20600628357','PANACA UNIDA S.A.C.','AV. CAMINO REAL NRO. 390 (UNICO RESTAURANT DENTRO DE BODEGA TACAMA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20602599273','INVERSIONES LOS MANGOS S.A.C.','CAL. LAS ORQUIDEAS NRO. 460 URB. JARDIN ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20517711412','REPRESENTACIONES EL FAROLITO S.A.C.','PROLONGACION IQUITOS NRO. 1500 (FRENTE A BATERIAS CAPSA) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20386303003','CORPORACION HOTELERA METOR S.A.','AV. GENERAL FELIPE SANTIAGO S NRO. 2599 URB. SAN FELIPE (ESQUINA CON AVENIDA PERSHING) ', 1, @STALNOID);
+INSERT INTO PROVEEDOR (tipo_documento_identidad_id, numero_documento, razon_social, direccion, estado, empresa_id) VALUES (1,'20601670187','GASTRONSERVICES ARAMBURU S.A.C.','AV. ARAMBURU NRO. 986 ', 1, @STALNOID);
+
+PRINT '>> MIGRACIÓN DE PROVEEDORES STALNO FINALIZADA';
+GO

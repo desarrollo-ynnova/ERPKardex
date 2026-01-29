@@ -430,7 +430,7 @@ namespace ERPKardex.Controllers
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     doc.FechaRegistro = DateTime.Now;
-                    doc.FechaEmision = DateTime.Now; // Fecha del sistema o la que elija el usuario
+                    //doc.FechaEmision = DateTime.Now; // Fecha del sistema o la que elija el usuario
 
                     // 1. Configurar Estados y Tipo
                     var estPorPagar = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Por Pagar");
@@ -524,7 +524,7 @@ namespace ERPKardex.Controllers
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     doc.FechaRegistro = DateTime.Now;
-                    doc.FechaEmision = DateTime.Now;
+                    //doc.FechaEmision = DateTime.Now;
                     doc.EstadoId = estadoInicial.Id;
                     doc.Saldo = doc.Total;
                     doc.TipoDocumentoInternoId = _context.TiposDocumentoInterno.First(x => x.Codigo == codigoTipoDoc).Id;
@@ -772,6 +772,7 @@ namespace ERPKardex.Controllers
                 {
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
+                    //doc.FechaEmision = DateTime.Now;
                     doc.FechaRegistro = DateTime.Now;
 
                     var estFin = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Cancelado");
