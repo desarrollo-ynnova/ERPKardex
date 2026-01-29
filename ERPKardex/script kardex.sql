@@ -486,6 +486,9 @@ create table producto (
 	marca_id INT,
 	modelo_id INT,
 	serie varchar(255),
+    lote varchar(255),
+	fecha_fabricacion date,
+	fecha_vencimiento date,
 	es_activo_fijo BIT,
 	estado BIT, -- 1: activo 0: inactivo
 	empresa_id INT,

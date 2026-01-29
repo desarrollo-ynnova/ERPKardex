@@ -840,6 +840,7 @@ namespace ERPKardex.Controllers
                                 i.Id,
                                 Fecha = i.Fecha.HasValue ? i.Fecha.Value.ToString("dd/MM/yyyy") : "-",
                                 Numero = i.Numero,
+                                Documento = i.SerieDocumento + "-" + i.NumeroDocumento,
                                 Almacen = alm.Nombre,
                                 ProveedorId = i.ProveedorId,
                                 Proveedor = prov.RazonSocial,

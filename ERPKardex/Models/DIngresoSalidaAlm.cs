@@ -48,12 +48,12 @@ namespace ERPKardex.Models
         public int? CentroCostoId { get; set; }
         [Column("actividad_id")]
         public int? ActividadId { get; set; }
-        //[Column("lote")]
-        //public string? Lote { get; set; }
-        //[Column("fecha_fabricacion")]
-        //public DateTime? FechaFabricacion { get; set; }
-        //[Column("fecha_vencimiento")]
-        //public DateTime? FechaVencimiento { get; set; }
+        [Column("lote")]
+        public string? Lote { get; set; }
+        [Column("fecha_fabricacion")]
+        public DateTime? FechaFabricacion { get; set; }
+        [Column("fecha_vencimiento")]
+        public DateTime? FechaVencimiento { get; set; }
         [Column("fecha_documento")]
         public DateTime? FechaDocumento { get; set; }
         [Column("usuario_id")]

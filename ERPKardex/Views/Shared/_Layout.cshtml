@@ -274,6 +274,14 @@
                                             </a>
                                         </li>
                                     }
+                                    @if (await _permisos.TienePermiso("SUP_INV_MOV_VALORIZAR"))
+                                    {
+                                        <li class="nav-item">
+                                            <a href="/IngresoSalidaAlm/Valorizacion" class="nav-link @(controllerName == "IngresoSalidaAlm" && actionName == "Valorizacion" ? "active" : "")">
+                                                <i class="fas fa-file-invoice-dollar nav-icon"></i><p>Valorizar movimiento</p>
+                                            </a>
+                                        </li>
+                                    }
                                     @if (await _permisos.TienePermiso("SUP_INV_STOCK_VER"))
                                     {
                                         <li class="nav-item">

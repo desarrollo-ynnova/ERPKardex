@@ -41,6 +41,12 @@ namespace ERPKardex.Models
         [Column("modelo_id")]
         public int? ModeloId { get; set; }
         public string? Serie { get; set; }
+        [Column("lote")]
+        public string? Lote { get; set; }
+        [Column("fecha_fabricacion")]
+        public DateTime? FechaFabricacion { get; set; }
+        [Column("fecha_vencimiento")]
+        public DateTime? FechaVencimiento { get; set; }
         [Column("es_activo_fijo")]
         public bool? EsActivoFijo { get; set; }
         [Column("estado")]

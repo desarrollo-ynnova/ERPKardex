@@ -47,6 +47,7 @@
                             <tr>
                                 <th style="width: 50px;">Ver</th>
                                 <th>Fecha</th>
+                                <th>Nota de ingreso</th>
                                 <th>Guía</th>
                                 <th>Proveedor</th>
                                 <th>Items</th>
@@ -116,26 +117,27 @@
         // 1. CARGA DE DATOS (PANEL IZQUIERDO)
         // ==========================================
         function CargarGuiasPendientes() {
-            $("#tablaGuias tbody").html('<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            $("#tablaGuias tbody").html('<tr><td colspan="6" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>');
 
             $.get('/IngresoSalidaAlm/GetIngresosPendientesValorizacion', function (resp) {
                 if (resp.status) {
                     let html = '';
                     if (resp.data.length === 0) {
-                        html = '<tr><td colspan="5" class="text-center text-muted py-4">No hay guías pendientes de valorizar.</td></tr>';
+                        html = '<tr><td colspan="6" class="text-center text-muted py-4">No hay guías pendientes de valorizar.</td></tr>';
                     } else {
                         $.each(resp.data, function (i, item) {
                             // SE MODIFICA EL ONCLICK PARA PASAR EL NÚMERO DE GUÍA TAMBIÉN
                             html += `<tr onclick="SeleccionarGuia(this, ${item.id}, ${item.proveedorId}, '${item.numero}')">
                                         <td class="text-center">
                                             <button class="btn btn-icon btn-outline-info rounded-circle"
-                                                    onclick="VerDetalleGuia(event, ${item.id}, '${item.numero}')"
+                                                    onclick="VerDetalleGuia(event, ${item.id}, '${item.documento}')"
                                                     title="Ver items de la guía">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         </td>
                                         <td>${item.fecha}</td>
                                         <td class="fw-bold text-primary">${item.numero}</td>
+                                        <td class="fw-bold text-primary">${item.documento}</td>
                                         <td class="small text-truncate" style="max-width: 150px;">${item.proveedor || 'S/N'}</td>
                                         <td class="text-center"><span class="badge bg-secondary">${item.items}</span></td>
                                      </tr>`;

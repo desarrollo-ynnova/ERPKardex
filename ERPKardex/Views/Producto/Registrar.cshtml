@@ -36,16 +36,6 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="txt_DescripcionProducto">Nombre / Descripción del Producto</label>
-                            <input type="text" id="txt_DescripcionProducto" class="form-control" placeholder="Nombre completo del artículo">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="txt_DescripcionProducto">Descripción comercial</label>
-                            <input type="text" id="txt_DescripcionComercialProducto" class="form-control" placeholder="Descripción comercial completa">
-                        </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="cbx_Grupo">Grupo</label>
                             <div class="input-group">
@@ -79,6 +69,16 @@
                                     </button>
                                 </div> *@
                             </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="txt_DescripcionProducto">Nombre / Descripción del Producto</label>
+                            <input type="text" id="txt_DescripcionProducto" class="form-control" placeholder="Nombre completo del artículo">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="txt_DescripcionProducto">Descripción comercial</label>
+                            <input type="text" id="txt_DescripcionComercialProducto" class="form-control" placeholder="Descripción comercial completa">
                         </div>
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                     <h5 class="mb-0">Logística y Control</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    @* <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="txt_Lote">Lote</label>
                             <input type="text" id="txt_Lote" class="form-control" placeholder="Código de lote">
@@ -215,7 +215,7 @@
                             <label for="dtp_FechaVencimiento">Fecha Vencimiento</label>
                             <input type="date" id="dtp_FechaVencimiento" class="form-control">
                         </div>
-                    </div>
+                    </div> *@
 
                     <div class="row mt-3">
                         <div class="col-md-6 mb-3">
@@ -322,9 +322,9 @@
                     Concentracion: parseFloat($("#txt_Concentracion").val()),
                     CodUnidadMedida: $('#cbx_UnidadMedida').val(),
                     CodFormulacionQuimica: $("#cbx_Formulacion").val(),
-                    Lote: $("#txt_Lote").val().trim(),
-                    FechaFabricacion: $("#dtp_FechaFabricacion").val(),
-                    FechaVencimiento: $("#dtp_FechaVencimiento").val(),
+                    // Lote: $("#txt_Lote").val().trim(),
+                    // FechaFabricacion: $("#dtp_FechaFabricacion").val(),
+                    // FechaVencimiento: $("#dtp_FechaVencimiento").val(),
                     CodPeligrosidad: $("#cbx_Peligrosidad").val(),
                     MarcaId: $("#cbx_Marca").val() ? parseInt($("#cbx_Marca").val()) : null,
                     ModeloId: $("#cbx_Modelo").val() ? parseInt($("#cbx_Modelo").val()) : null,
