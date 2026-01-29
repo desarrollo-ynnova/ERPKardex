@@ -4857,7 +4857,8 @@ PRINT 'MIGRACIÓN DE PROVEEDORES INIGDE FINALIZADA';
 GO
 
 
-SELECT E.nombre AS EMPRESA, E.razon_social AS RAZON_SOCIAL, COUNT(p.id) AS TOTAL_PROVEEDORES
-FROM PROVEEDOR p
-INNER JOIN EMPRESA E ON P.empresa_id = E.id
-GROUP BY E.nombre, E.razon_social
+SELECT e.nombre as empresa, e.razon_social as razon_social, ISNULL(count(p.id), 0) as total_proveedores
+FROM EMPRESA E
+LEFT JOIN PROVEEDOR P ON E.id = P.empresa_id
+GROUP BY e.nombre, e.razon_social
+ORDER BY 3 DESC, 1 ASC
