@@ -49,6 +49,10 @@ namespace ERPKardex.Models
         public DateTime? FechaVencimiento { get; set; }
         [Column("es_activo_fijo")]
         public bool? EsActivoFijo { get; set; }
+        [Column("tipo_insumo_id")]
+        public int? TipoInsumoId { get; set; }
+        [Column("numero_cas")]
+        public string? NumeroCas { get; set; }
         [Column("estado")]
         public bool? Estado { get; set; }
         [Column("fecha_registro")]

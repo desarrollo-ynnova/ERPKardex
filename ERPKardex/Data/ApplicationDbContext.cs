@@ -26,6 +26,7 @@ namespace ERPKardex.Data
         public DbSet<IngredienteActivo> IngredientesActivos { get; set; }
         public DbSet<Marca> Marcas { get; set; }
         public DbSet<Modelo> Modelos { get; set; }
+        public DbSet<TipoInsumo> TipoInsumos { get; set; }
         public DbSet<Producto> Productos { get; set; }
         public DbSet<DetalleIngredienteActivo> DetallesIngredientesActivos { get; set; }
         public DbSet<Sucursal> Sucursales { get; set; }

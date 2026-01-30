@@ -264,7 +264,20 @@ namespace ERPKardex.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { data = (object)null, message = ex.Message, status = false });
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
+            }
+        }
+
+        public JsonResult GetTipoInsumoData()
+        {
+            try
+            {
+                var data = _context.TipoInsumos.Where(i => i.Estado.Value).ToList();
+                return Json(new { data = data, status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
             }
         }
 

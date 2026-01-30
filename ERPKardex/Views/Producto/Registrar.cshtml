@@ -1,5 +1,13 @@
-﻿@{
+﻿@using ERPKardex.Data
+@inject ApplicationDbContext _context
+@{
     ViewData["Title"] = "Registro de Producto";
+    var empresaIdClaim = User.FindFirst("EmpresaId")?.Value;
+    int empresaId = !string.IsNullOrEmpty(empresaIdClaim) ? int.Parse(empresaIdClaim) : 0;
+
+    // CONTROL, AGROQUIMEX, COMEXDI
+    var idsEmpresasQuimicos = _context.Empresas.Where(e => new[] { "20607778338", "20612680842", "20609093561" }.Contains(e.Ruc)).Select(e => e.Id).ToList();
+    string classDnone = !idsEmpresasQuimicos.Contains(empresaId) ? "d-none" : "";
 }
 
 <div class="container-fluid py-4">
@@ -74,11 +82,91 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="txt_DescripcionProducto">Nombre / Descripción del Producto</label>
-                            <input type="text" id="txt_DescripcionProducto" class="form-control" placeholder="Nombre completo del artículo">
+                            <input type="text" id="txt_DescripcionProducto" class="form-control" placeholder="Nombre completo del artículo" oninput="this.value = this.value.toUpperCase();">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="txt_DescripcionProducto">Descripción comercial</label>
-                            <input type="text" id="txt_DescripcionComercialProducto" class="form-control" placeholder="Descripción comercial completa">
+                            <input type="text" id="txt_DescripcionComercialProducto" class="form-control" placeholder="Descripción comercial completa" oninput="this.value = this.value.toUpperCase();">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Especificaciones Técnicas y Químicas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_Marca">Marca</label>
+                            <div class="input-group">
+                                <select id="cbx_Marca" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button id="btn_NuevaMarca" type="button" class="btn btn-info"
+                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroMarca', 'Nueva Marca')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_Modelo">Modelo</label>
+                            <div class="input-group">
+                                <select id="cbx_Modelo" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button id="btn_NuevoModelo" type="button" class="btn btn-info"
+                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroModelo', 'Nuevo Modelo')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="txt_Serie">Serie</label>
+                            <input type="text" id="txt_Serie" class="form-control" placeholder="Nro de serie">
+                        </div>
+                    </div>
+                    <div class="row @classDnone">
+                        <div class="col-md-4 mb-3">
+                            <label for="txt_Concentracion">Concentración (%)</label>
+                            <input type="number" step="0.01" id="txt_Concentracion" class="form-control" placeholder="0.00">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_Formulacion">Formulación</label>
+                            <div class="input-group">
+                                <select id="cbx_Formulacion" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button id="btn_NuevaFormulacion" type="button" class="btn btn-info"
+                                            onclick="loadMediumModal('/Producto/ObtenerVistaRegistroFormulacion', 'Nueva Formulación')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_Peligrosidad">Peligrosidad</label>
+                            <div class="input-group">
+                                <select id="cbx_Peligrosidad" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button id="btn_NuevaPeligrosidad" type="button" class="btn btn-info"
+                                            onclick="loadMediumModal('/Producto/ObtenerVistaRegistroPeligrosidad', 'Nueva Peligrosidad')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="txt_Concentracion">Tipo de Insumo</label>
+                            <select id="cbx_TipoInsumo" class="form-control"></select>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label for="cbx_Formulacion">Número CAS</label>
+                            <div class="input-group">
+                                <input type="text" id="txt_NumeroCas" class="form-control" placeholder="Número CAS">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,81 +216,12 @@
                 </div>
             </div>
 
-            <div class="card shadow mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Especificaciones Técnicas y Químicas</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="txt_Concentracion">Concentración (%)</label>
-                            <input type="number" step="0.01" id="txt_Concentracion" class="form-control" placeholder="0.00">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="cbx_Formulacion">Formulación</label>
-                            <div class="input-group">
-                                <select id="cbx_Formulacion" class="form-control"></select>
-                                @* <div class="input-group-append">
-                                    <button id="btn_NuevaFormulacion" type="button" class="btn btn-info"
-                                            onclick="loadMediumModal('/Producto/ObtenerVistaRegistroFormulacion', 'Nueva Formulación')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div> *@
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="cbx_Peligrosidad">Peligrosidad</label>
-                            <div class="input-group">
-                                <select id="cbx_Peligrosidad" class="form-control"></select>
-                                @* <div class="input-group-append">
-                                    <button id="btn_NuevaPeligrosidad" type="button" class="btn btn-info"
-                                            onclick="loadMediumModal('/Producto/ObtenerVistaRegistroPeligrosidad', 'Nueva Peligrosidad')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div> *@
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="cbx_Marca">Marca</label>
-                            <div class="input-group">
-                                <select id="cbx_Marca" class="form-control"></select>
-                                @* <div class="input-group-append">
-                                    <button id="btn_NuevaMarca" type="button" class="btn btn-info"
-                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroMarca', 'Nueva Marca')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div> *@
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="cbx_Modelo">Modelo</label>
-                            <div class="input-group">
-                                <select id="cbx_Modelo" class="form-control"></select>
-                                @* <div class="input-group-append">
-                                    <button id="btn_NuevoModelo" type="button" class="btn btn-info"
-                                            onclick="loadShortModal('/Producto/ObtenerVistaRegistroModelo', 'Nuevo Modelo')">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div> *@
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="txt_Serie">Serie</label>
-                            <input type="text" id="txt_Serie" class="form-control" placeholder="Nro de serie">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card shadow mb-4">
+            <div class="card shadow mb-4 d-none">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">Logística y Control</h5>
                 </div>
                 <div class="card-body">
-                    @* <div class="row">
+                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="txt_Lote">Lote</label>
                             <input type="text" id="txt_Lote" class="form-control" placeholder="Código de lote">
@@ -215,7 +234,7 @@
                             <label for="dtp_FechaVencimiento">Fecha Vencimiento</label>
                             <input type="date" id="dtp_FechaVencimiento" class="form-control">
                         </div>
-                    </div> *@
+                    </div>
 
                     <div class="row mt-3">
                         <div class="col-md-6 mb-3">
@@ -249,6 +268,26 @@
     var LISTA_DETALLE_IA = [];
 
     $(document).ready(function () {
+
+        let comercialModificado = false; // Bandera de control
+        // 1. Si el usuario escribe en el campo COMERCIAL, activamos la bandera
+        $('#txt_DescripcionComercialProducto').on('input', function() {
+            // Si el campo está vacío, permitimos que se vuelva a sincronizar
+            if ($(this).val() === '') {
+                comercialModificado = false;
+            } else {
+                comercialModificado = true;
+            }
+        });
+
+        // 2. Lógica de copiado desde PRODUCTO
+        $('#txt_DescripcionProducto').on('input', function() {
+            // Solo copiamos si el usuario NO ha personalizado el campo comercial
+            if (!comercialModificado) {
+                $('#txt_DescripcionComercialProducto').val($(this).val());
+            }
+        });
+
         fct_InitAllCombos();
 
         // --- ENLACE GRUPO -> SUBGRUPO ---
@@ -330,6 +369,8 @@
                     ModeloId: $("#cbx_Modelo").val() ? parseInt($("#cbx_Modelo").val()) : null,
                     Serie: $("#txt_Serie").val().trim(),
                     EsActivoFijo: $("#chk_EsActivoFijo").is(":checked"),
+                    TipoInsumoId: $("#cbx_TipoInsumo").val(),
+                    NumeroCas: $('#txt_NumeroCas').val().trim(),
                     Estado: $("#cbx_Estado").val() === "1",
                     // EmpresaId: 1 ? 1 : null // Empresa 1 por ahora, tiempo de desarrollo
                 };
@@ -393,6 +434,7 @@
         fct_FillCombo('/Producto/GetUMedidaData', '#cbx_UnidadMedida', 'codigo', 'descripcion', '-- SELECCIONAR U. MEDIDA --', 'codigo');
         fct_FillCombo('/Producto/GetFQData', '#cbx_Formulacion', 'codigo', 'nombre', '-- SELECCIONAR FORMULACIÓN --', 'codigo');
         fct_FillCombo('/Producto/GetPeligrosidadData', '#cbx_Peligrosidad', 'codigo', 'descripcion', '-- SELECCIONAR PELIGROSIDAD --', 'codigo');
+        fct_FillCombo('/Producto/GetTipoInsumoData', '#cbx_TipoInsumo', 'id', 'nombre', '-- SELECCIONAR TIPO DE INSUMO --', 'id');
 
         // 2. Inicializar hijos vacíos
         $('#cbx_Grupo').html('<option value="">-- SELECCIONAR GRUPO --</option>');

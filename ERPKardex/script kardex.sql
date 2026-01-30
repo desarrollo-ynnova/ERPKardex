@@ -23,6 +23,7 @@ drop table if exists cuenta;
 drop table if exists unidad_medida;
 drop table if exists formulacion_quimica;
 drop table if exists peligrosidad;
+drop table if exists tipo_insumo;
 drop table if exists producto;
 drop table if exists ingrediente_activo;
 drop table if exists detalle_ingrediente_activo;
@@ -468,6 +469,12 @@ create table modelo (
 	empresa_id INT
 );
 
+create table tipo_insumo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre varchar(255),
+    estado BIT,
+);
+
 create table producto (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	codigo varchar(255),
@@ -490,6 +497,8 @@ create table producto (
 	fecha_fabricacion date,
 	fecha_vencimiento date,
 	es_activo_fijo BIT,
+    tipo_insumo_id INT,
+    numero_cas VARCHAR(255),
 	estado BIT, -- 1: activo 0: inactivo
 	empresa_id INT,
     fecha_registro DATETIME DEFAULT GETDATE()
@@ -1259,6 +1268,9 @@ INSERT INTO tipo_documento (codigo, descripcion, estado) VALUES ('10','Recibo po
 
 GO
 
+INSERT INTO tipo_insumo (nombre, estado) VALUES ('SÓLIDO', 1);
+INSERT INTO tipo_insumo (nombre, estado) VALUES ('LÍQUIDO', 1);
+
 INSERT INTO tipo_documento_interno (codigo, descripcion, ultimo_correlativo) VALUES 
 ('IALM', 'NOTA DE INGRESO ALMACEN', 0),
 ('SALM', 'NOTA DE SALIDA ALMACEN', 0),
@@ -1815,20 +1827,71 @@ INSERT INTO tipo_persona (nombre, estado) VALUES
 
 GO
 
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-01',3.358,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-02',3.358,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-03',3.358,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-04',3.358,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-05',3.358,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-06',3.356,3.372,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-07',3.357,3.366,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-08',3.359,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-09',3.359,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-10',3.358,3.365,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-11',3.358,3.365,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-12',3.358,3.365,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-13',3.355,3.368,1);
-INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14',3.356,3.361,1);
+-- DICIEMBRE 2025
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES
+('2025-12-01', 3.357, 3.368, 1),
+('2025-12-02', 3.362, 3.377, 1),
+('2025-12-03', 3.365, 3.374, 1),
+('2025-12-04', 3.361, 3.370, 1),
+('2025-12-05', 3.356, 3.363, 1),
+('2025-12-06', 3.363, 3.369, 1),
+('2025-12-07', 3.363, 3.369, 1),
+('2025-12-08', 3.363, 3.369, 1),
+('2025-12-09', 3.363, 3.369, 1),
+('2025-12-10', 3.363, 3.369, 1),
+('2025-12-11', 3.364, 3.378, 1),
+('2025-12-12', 3.362, 3.370, 1),
+('2025-12-13', 3.363, 3.373, 1),
+('2025-12-14', 3.363, 3.373, 1),
+('2025-12-15', 3.363, 3.373, 1),
+('2025-12-16', 3.365, 3.375, 1),
+('2025-12-17', 3.366, 3.374, 1),
+('2025-12-18', 3.365, 3.372, 1),
+('2025-12-19', 3.363, 3.371, 1),
+('2025-12-20', 3.362, 3.372, 1),
+('2025-12-21', 3.362, 3.372, 1),
+('2025-12-22', 3.362, 3.372, 1),
+('2025-12-23', 3.360, 3.372, 1),
+('2025-12-24', 3.362, 3.371, 1),
+('2025-12-25', 3.359, 3.369, 1),
+('2025-12-26', 3.359, 3.369, 1),
+('2025-12-27', 3.359, 3.369, 1),
+('2025-12-29', 3.359, 3.369, 1),
+('2025-12-30', 3.361, 3.372, 1),
+('2025-12-31', 3.360, 3.369, 1);
+
+-- ENERO 2026
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES
+('2026-01-01', 3.358, 3.368, 1),
+('2026-01-02', 3.358, 3.368, 1),
+('2026-01-03', 3.358, 3.368, 1),
+('2026-01-04', 3.358, 3.368, 1),
+('2026-01-05', 3.358, 3.368, 1),
+('2026-01-06', 3.356, 3.372, 1),
+('2026-01-07', 3.357, 3.366, 1),
+('2026-01-08', 3.359, 3.368, 1),
+('2026-01-09', 3.359, 3.368, 1),
+('2026-01-10', 3.358, 3.365, 1),
+('2026-01-11', 3.358, 3.365, 1),
+('2026-01-12', 3.358, 3.365, 1),
+('2026-01-13', 3.355, 3.368, 1),
+('2026-01-14', 3.356, 3.361, 1),
+('2026-01-15', 3.354, 3.367, 1),
+('2026-01-16', 3.357, 3.366, 1),
+('2026-01-17', 3.354, 3.363, 1),
+('2026-01-18', 3.354, 3.363, 1),
+('2026-01-19', 3.354, 3.363, 1),
+('2026-01-20', 3.353, 3.366, 1),
+('2026-01-21', 3.353, 3.363, 1),
+('2026-01-22', 3.353, 3.359, 1),
+('2026-01-23', 3.352, 3.360, 1),
+('2026-01-24', 3.349, 3.359, 1),
+('2026-01-25', 3.349, 3.359, 1),
+('2026-01-26', 3.349, 3.359, 1),
+('2026-01-27', 3.346, 3.356, 1),
+('2026-01-28', 3.345, 3.352, 1),
+('2026-01-29', 3.340, 3.345, 1),
+('2026-01-30', 3.340, 3.345, 1);
 
 GO
 -- 1. NODOS RAÍZ (Con los nombres exactos solicitados)
