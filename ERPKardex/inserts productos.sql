@@ -369,15 +369,15 @@ FROM #TempLoad t
 INNER JOIN producto p ON p.codigo = t.p_code AND p.empresa_id = @EmpresaID
 WHERE NOT EXISTS (SELECT 1 FROM stock_almacen sa WHERE sa.producto_id = p.id AND sa.almacen_id = @AlmacenPrincipalID AND sa.empresa_id = @EmpresaID)
 AND p.codigo NOT IN ('2102010003', '2102010005', '2102010004');
-
 -- D. Insertar DETALLE INGREDIENTES
 PRINT '>> Insertando Detalles de Ingredientes...'
-INSERT INTO detalle_ingrediente_activo (cod_producto, ingrediente_activo_id, porcentaje)
-SELECT t.p_code, i.id, ISNULL(t.conc, 0)
+INSERT INTO detalle_ingrediente_activo (producto_id, ingrediente_activo_id, porcentaje)
+SELECT p.id, i.id, ISNULL(t.conc, 0)
 FROM #TempLoad t
 JOIN ingrediente_activo i ON i.descripcion = t.ingrediente AND i.empresa_id = @EmpresaID
+JOIN producto p ON p.codigo = t.p_code AND p.empresa_id = @EmpresaID
 WHERE t.ingrediente IS NOT NULL
-AND NOT EXISTS (SELECT 1 FROM detalle_ingrediente_activo d WHERE d.cod_producto = t.p_code);
+AND NOT EXISTS (SELECT 1 FROM detalle_ingrediente_activo d WHERE d.producto_id = p.id);
 
 DROP TABLE #TempLoad;
 

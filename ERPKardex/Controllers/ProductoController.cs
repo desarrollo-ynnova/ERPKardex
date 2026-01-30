@@ -564,7 +564,7 @@ namespace ERPKardex.Controllers
                         foreach (var detalle in listaDetalles)
                         {
                             detalle.Id = 0;
-                            detalle.CodProducto = producto.Codigo;
+                            detalle.ProductoId = producto.Id;
                             _context.DetallesIngredientesActivos.Add(detalle);
                         }
                         _context.SaveChanges();

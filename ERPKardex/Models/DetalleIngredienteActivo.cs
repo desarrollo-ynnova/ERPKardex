@@ -6,8 +6,8 @@ namespace ERPKardex.Models
     public class DetalleIngredienteActivo
     {
         public int Id { get; set; }
-        [Column("cod_producto")]
-        public string? CodProducto { get; set; }
+        [Column("producto_id")]
+        public int? ProductoId { get; set; }
 
         [Column("ingrediente_activo_id")]
         public int? IngredienteActivoId { get; set; }

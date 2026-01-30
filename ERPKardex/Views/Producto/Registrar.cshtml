@@ -127,7 +127,18 @@
                             <input type="text" id="txt_Serie" class="form-control" placeholder="Nro de serie">
                         </div>
                     </div>
-                    <div class="row @classDnone">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cbx_IA_Individual">Ingrediente Activo</label>
+                            <div class="input-group">
+                                <select id="cbx_IA_Individual" class="form-control"></select>
+                                @* <div class="input-group-append">
+                                    <button type="button" class="btn btn-dark" onclick="loadShortModal('/Producto/ObtenerVistaRegistroIA', 'Nuevo Ingrediente')">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div> *@
+                            </div>
+                        </div>
                         <div class="col-md-4 mb-3">
                             <label for="txt_Concentracion">Concentración (%)</label>
                             <input type="number" step="0.01" id="txt_Concentracion" class="form-control" placeholder="0.00">
@@ -144,7 +155,7 @@
                                 </div> *@
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 d-none">
                             <label for="cbx_Peligrosidad">Peligrosidad</label>
                             <div class="input-group">
                                 <select id="cbx_Peligrosidad" class="form-control"></select>
@@ -172,7 +183,7 @@
                 </div>
             </div>
 
-            <div class="card shadow mb-4">
+            <div class="card shadow mb-4 d-none">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">Composición / Ingredientes Activos</h5>
                 </div>
@@ -375,6 +386,11 @@
                     // EmpresaId: 1 ? 1 : null // Empresa 1 por ahora, tiempo de desarrollo
                 };
 
+                LISTA_DETALLE_IA.push({
+                    IngredienteActivoId: Number($('#cbx_IA_Individual').val()),
+                    Porcentaje: null // Ahora es numérico
+                });
+
                 // 2. Validaciones mínimas
                 if (!producto.DescripcionProducto) {
                     toastr.warning("La descripción es obligatoria", "SISTEMA");
@@ -430,7 +446,8 @@
         // 1. Cargar datos inicialmente
         fct_FillCombo('/Producto/GetGrupos', '#cbx_Grupo', 'id', 'descripcion', '-- SELECCIONAR GRUPO --', 'codigo');
         fct_FillCombo('/Producto/GetMarcaData', '#cbx_Marca', 'id', 'nombre', '-- SELECCIONAR MARCA --', 'id');
-        fct_FillCombo('/Producto/GetIngredienteActivoData', '#cbx_IA_Busqueda', 'id', 'descripcion', '-- SELECCIONAR INGREDIENTE --', 'id');
+        fct_FillCombo('/Producto/GetIngredienteActivoData', '#cbx_IA_Individual', 'id', 'descripcion', '-- SELECCIONAR INGREDIENTE --', 'id');
+        // fct_FillCombo('/Producto/GetIngredienteActivoData', '#cbx_IA_Busqueda', 'id', 'descripcion', '-- SELECCIONAR INGREDIENTE --', 'id');
         fct_FillCombo('/Producto/GetUMedidaData', '#cbx_UnidadMedida', 'codigo', 'descripcion', '-- SELECCIONAR U. MEDIDA --', 'codigo');
         fct_FillCombo('/Producto/GetFQData', '#cbx_Formulacion', 'codigo', 'nombre', '-- SELECCIONAR FORMULACIÓN --', 'codigo');
         fct_FillCombo('/Producto/GetPeligrosidadData', '#cbx_Peligrosidad', 'codigo', 'descripcion', '-- SELECCIONAR PELIGROSIDAD --', 'codigo');

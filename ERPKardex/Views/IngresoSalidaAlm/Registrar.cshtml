@@ -76,6 +76,21 @@
                             <div class="col-md-3 mb-3"><label>Cantidad</label><input type="number" id="txt_DetCantidad" class="form-control font-weight-bold" value="0.00"></div>
                         </div>
 
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label>Lote</label>
+                                <input type="text" id="txt_Lote" class="form-control" placeholder="Código de lote">
+                            </div>
+                            <div class="col-md-4 mb-3 div-fechas-entrada">
+                                <label>Fecha Fabricación</label>
+                                <input type="date" id="dtp_FechaFabricacion" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3 div-fechas-entrada">
+                                <label>Fecha Vencimiento</label>
+                                <input type="date" id="dtp_FechaVencimiento" class="form-control">
+                            </div>
+                        </div>
+
                         <div class="row align-items-end">
                             <div class="col-md-4 mb-3" id="div_InputSalida_CC">
                                 <label>Centro de Costo</label><select id="cbx_CentroCosto" class="form-control select2-busqueda"></select>
@@ -98,6 +113,9 @@
                                     <th>Item</th>
                                     <th>Código</th>
                                     <th>Producto</th>
+                                    <th>Lote</th>
+                                    <th class="col-fechas-entrada">F. Fab</th>
+                                    <th class="col-fechas-entrada">F. Ven</th>
                                     <th width="15%" class="bg-warning text-dark">Cantidad Real</th>
                                     <th>U.M.</th>
                                     <th class="col-salida">Centro Costo</th>
@@ -149,6 +167,8 @@
             if (tipo === "1") { // ENTRADA (Ingreso)
                 $('#div_DocRef').removeClass('d-none'); // Muestra Guia y Proveedor
                 $('#div_ProveedorContainer').removeClass('d-none'); // Muestra Proveedor
+                $('.div-fechas-entrada').removeClass('d-none');
+                $('.col-fechas-entrada').removeClass('d-none');
 
                 // Ocultar columnas de costos (Entrada no lleva CC ni Actividad)
                 $('.col-salida').addClass('d-none');
@@ -156,6 +176,8 @@
 
             } else if (tipo === "0") { // SALIDA
                 $('#div_DocRef').addClass('d-none'); // Salida interna no suele llevar Guia de proveedor
+                $('.div-fechas-entrada').addClass('d-none');
+                $('.col-fechas-entrada').addClass('d-none'); // Ocultar columna en tabla también
 
                 // Mostrar columnas de costos
                 $('.col-salida').removeClass('d-none');
@@ -201,6 +223,10 @@
             let ccId = $("#cbx_CentroCosto").val();
             let actId = $("#cbx_Actividad").val();
 
+            let lote = $("#txt_Lote").val();
+            let fFab = $("#dtp_FechaFabricacion").val();
+            let fVen = $("#dtp_FechaVencimiento").val();
+
             // VALIDACION: Solo pedimos CC y Actividad si es SALIDA (0)
             let nombreCC = "";
             let nombreAct = "";
@@ -218,13 +244,19 @@
                 Item: (LISTA_DETALLE.length + 1).toString().padStart(3, '0'),
                 ProductoId: id, CodProducto: prod.codigo, DescripcionProducto: prod.descripcionComercial, CodUnidadMedida: $("#txt_DetUnidad").val(),
                 Cantidad: can,
+                Lote: lote,
+                FechaFabricacion: fFab,
+                FechaVencimiento: fVen,
                 CentroCostoId: ccId, NombreCentroCosto: nombreCC,
                 ActividadId: actId, NombreActividad: nombreAct,
                 IdReferencia: null, TablaReferencia: null
             });
             fct_RenderDetalle(); $("#txt_DetCantidad").val("0.00");
+            $("#txt_Lote").val("");
+            $("#dtp_FechaFabricacion").val("");
+            $("#dtp_FechaVencimiento").val("");
             // Opcional: Limpiar producto para agilizar siguiente carga
-            // $("#cbx_ProductoBusqueda").val('').trigger('change');
+            $("#cbx_ProductoBusqueda").val('').trigger('change');
         });
 
         $("#btn_GuardarTodo").click(function () {
@@ -280,9 +312,15 @@
         let h = "";
         let esEntrada = ($('#cbx_TipoMovimiento').val() === "1");
         LISTA_DETALLE.forEach((d, i) => {
-            h += `<tr><td class="align-middle">${d.Item}</td><td class="align-middle">${d.CodProducto}</td><td class="align-middle text-left">${d.DescripcionProducto}</td>
-                <td class="align-middle"><input type="number" class="form-control form-control-sm text-center font-weight-bold ${esEntrada ? 'border-success' : 'border-primary'}" value="${d.Cantidad}" min="0" step="0.01" onchange="actualizarCantidad(${i}, this.value)"></td>
-                <td class="align-middle">${d.CodUnidadMedida}</td>`;
+            h += `<tr>
+                    <td class="align-middle">${d.Item}</td>
+                    <td class="align-middle">${d.CodProducto}</td>
+                    <td class="align-middle text-left">${d.DescripcionProducto}</td>
+                    <td class="align-middle">${d.Lote || '-'}</td>
+                    <td class="align-middle ${esEntrada ? '' : 'd-none'}">${d.FechaFabricacion || ''}</td>
+                    <td class="align-middle ${esEntrada ? '' : 'd-none'}">${d.FechaVencimiento || ''}</td>
+                    <td class="align-middle"><input type="number" class="form-control form-control-sm text-center font-weight-bold ${esEntrada ? 'border-success' : 'border-primary'}" value="${d.Cantidad}" min="0" step="0.01" onchange="actualizarCantidad(${i}, this.value)"></td>
+                    <td class="align-middle">${d.CodUnidadMedida}</td>`;
 
             // Renderizado condicional de columnas CC y Actividad
             if (!esEntrada) {
