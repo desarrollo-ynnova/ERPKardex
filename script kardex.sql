@@ -1648,6 +1648,8 @@ INSERT INTO actividad (codigo, nombre, estado, empresa_id) VALUES
 ('006', 'DESPACHO', 1, 1),
 ('007', 'GESTIÓN OPERATIVA', 1, 1);
 
+INSERT INTO ACTIVIDAD (codigo, nombre, estado, empresa_id) VALUES ('001', 'VENTA DE MATERIALES', 1, 2);
+
 PRINT '>> Insertando Roles...';
 INSERT INTO tipo_usuario (nombre, estado, es_administrador) VALUES ('ADMINISTRADOR DEL SISTEMA', 1, 1); -- ID 1
 INSERT INTO tipo_usuario (nombre, estado, es_administrador) VALUES ('USUARIO', 1, 0);       -- ID 4
