@@ -509,7 +509,7 @@ create table ingrediente_activo (
 
 create table detalle_ingrediente_activo (
 	id INT IDENTITY(1,1) PRIMARY KEY,
-	cod_producto varchar(255),
+	producto_id int,
 	ingrediente_activo_id int,
 	porcentaje decimal(12,2)
 );
