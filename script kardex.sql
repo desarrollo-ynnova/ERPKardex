@@ -71,8 +71,15 @@ drop table if exists documento_pagar;
 drop table if exists tipo_detraccion;
 drop table if exists detraccion;
 drop table if exists cuenta_contable;
+drop table if exists tipo_insumo;
 
 GO
+
+CREATE TABLE tipo_insumo (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre varchar(255),
+    estado BIT,
+);
 
 CREATE TABLE tipo_documento_interno (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -486,6 +493,8 @@ create table producto (
 	marca_id INT,
 	modelo_id INT,
 	serie varchar(255),
+    tipo_insumo_id INT,
+    numero_cas VARCHAR(255),
 	es_activo_fijo BIT,
 	estado BIT, -- 1: activo 0: inactivo
 	empresa_id INT,
@@ -1892,5 +1901,3 @@ INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES
 ('BTN_OC_APROBAR',     'Botón: Aprobar',     'SUPPLY', @ID_OC, 2),
 ('BTN_OC_ANULAR',      'Botón: Anular',      'SUPPLY', @ID_OC, 3);
 GO
-
-select * from empresa

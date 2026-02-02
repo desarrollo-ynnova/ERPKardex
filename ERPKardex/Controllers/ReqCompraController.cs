@@ -102,10 +102,9 @@ namespace ERPKardex.Controllers
             try
             {
                 var miEmpresaId = EmpresaUsuarioId;
-                var esGlobal = EsAdminGlobal;
 
                 var data = await _context.Productos
-                    .Where(x => (esGlobal || x.EmpresaId == miEmpresaId) && x.Estado == true && !x.Codigo.StartsWith("6"))
+                    .Where(x => (x.EmpresaId == miEmpresaId) && x.Estado == true && !x.Codigo.StartsWith("6"))
                     .Select(x => new { x.Id, x.Codigo, x.DescripcionProducto, x.DescripcionComercial, x.CodUnidadMedida })
                     .ToListAsync();
 
