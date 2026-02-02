@@ -76,8 +76,9 @@
                             <input type="date" id="txt_Fecha" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="buscarTC()">
                         </div>
                         <div class="col-md-4">
-                            <label class="small font-weight-bold">Tipo de Cambio</label>
-                            <input type="number" id="txt_TC" class="form-control bg-light text-center" readonly>
+                            <label class="small font-weight-bold">Tipo de Cambio (Ref)</label>
+                            <input type="text" id="txtTCRef" class="form-control bg-warning text-dark font-weight-bold text-center border-0" readonly placeholder="---">
+                            <small class="text-muted d-block mt-1" id="msgTC">Del día seleccionado</small>
                         </div>
                         <div class="col-md-4">
                             <label class="font-weight-bold text-danger" style="font-size: 1.1em;">Monto del Anticipo</label>
@@ -195,10 +196,14 @@
 
         // 3. TIPO DE CAMBIO
         function buscarTC() {
-            let f = $('#txt_Fecha').val();
-            if(f) $.get('/TipoCambio/GetTcPorFecha?fecha='+f, function(res) {
-                if(res.status) $('#txt_TC').val(res.valor.toFixed(3));
-                else $('#txt_TC').val((res.ultimoConocido || 0).toFixed(3));
+            $.get('/TipoCambio/GetTcPorFecha?fecha=' + $('#txt_Fecha').val(), function(res) {
+                if (res.status) {
+                    $('#txtTCRef').val(res.valor.toFixed(3));
+                    $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
+                } else {
+                    $('#txtTCRef').val('0.000');
+                    $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
+                }
             });
         }
 
@@ -220,7 +225,7 @@
                 OrdenServicioId: ($('input[name="optOrigen"]:checked').val() === 'OS') ? parseInt(ordenId) : null,
 
                 FechaEmision: $('#txt_Fecha').val(),
-                TipoCambio: parseFloat($('#txt_TC').val()),
+                TipoCambio: parseFloat($('#txtTCRef').val()),
                 Total: monto,
 
                 // Anticipo siempre nace con la deuda en el Saldo (como Saldo a Favor)

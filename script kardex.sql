@@ -1832,6 +1832,26 @@ INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-12
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-13',3.355,3.368,1);
 INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta, estado) VALUES ('2026-01-14',3.356,3.361,1);
 
+INSERT INTO tipo_cambio (fecha, tc_compra, tc_venta)
+VALUES 
+('2026-01-15', 3.354, 3.367),
+('2026-01-16', 3.357, 3.366),
+('2026-01-17', 3.354, 3.363),
+('2026-01-18', 3.354, 3.363),
+('2026-01-19', 3.354, 3.363),
+('2026-01-20', 3.353, 3.366),
+('2026-01-21', 3.353, 3.363),
+('2026-01-22', 3.353, 3.359),
+('2026-01-23', 3.352, 3.360),
+('2026-01-24', 3.349, 3.359),
+('2026-01-25', 3.349, 3.359),
+('2026-01-26', 3.349, 3.359),
+('2026-01-27', 3.346, 3.356),
+('2026-01-28', 3.345, 3.352),
+('2026-01-29', 3.340, 3.345),
+('2026-01-30', 3.340, 3.345),
+('2026-01-31', 3.350, 3.355);
+
 GO
 -- 1. NODOS RAÍZ (Con los nombres exactos solicitados)
 INSERT INTO permiso (codigo, descripcion, modulo, padre_id, orden) VALUES 

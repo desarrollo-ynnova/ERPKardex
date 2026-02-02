@@ -226,6 +226,8 @@
     let IGV_TASA = 0.18;
 
     $(document).ready(function() {
+        buscarTipoCambio();
+
         $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' });
         initCombos();
 
@@ -236,7 +238,13 @@
         });
 
         // 1. Consultar TC
-        $.get('/TipoCambio/GetTcPorFecha?fecha=' + '@DateTime.Now.ToString("yyyy-MM-dd")', function(res) {
+        $('#txt_FechaEmision').on('change', function (){
+            buscarTipoCambio();
+        });
+    });
+
+    function buscarTipoCambio() {
+        $.get('/TipoCambio/GetTcPorFecha?fecha=' + $('#txt_FechaEmision').val(), function(res) {
             if (res.status) {
                 $('#txtTCRef').val(res.valor.toFixed(3));
                 $('#msgTC').html('<i class="fas fa-check text-success"></i> T.C. encontrado').removeClass('text-danger').addClass('text-success');
@@ -245,7 +253,7 @@
                 $('#msgTC').html('<i class="fas fa-exclamation-triangle"></i> ' + res.message).removeClass('text-muted').addClass('text-danger font-weight-bold');
             }
         });
-    });
+    }
 
     function initCombos() {
         $.get('/PedCompra/GetEmpresaData', function(res) {
