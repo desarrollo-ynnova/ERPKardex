@@ -543,7 +543,8 @@
                     type: 'POST',
                     data: {
                         cabecera: cabecera,
-                        detallesJson: JSON.stringify(detalles)
+                        detallesJson: JSON.stringify(detalles),
+                        igvTasa: IGV_TASA,
                     },
                     success: function(res) {
                         $('#efec-cargando').addClass('d-none');

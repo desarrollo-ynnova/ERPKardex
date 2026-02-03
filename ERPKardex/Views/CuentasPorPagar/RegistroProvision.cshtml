@@ -34,7 +34,7 @@
                     </div>
 
                     <div class="row mb-2">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="font-weight-bold">Tipo Comprobante</label>
                             <select id="cbx_TipoDocumento" class="form-control font-weight-bold">
                                 <option value="FAC">FACTURA</option>
@@ -44,12 +44,16 @@
                         </div>
                         <div class="col-md-3"><label class="font-weight-bold">Serie</label><input type="text" id="txt_Serie" class="form-control text-uppercase" maxlength="10"></div>
                         <div class="col-md-3"><label class="font-weight-bold">Número</label><input type="text" id="txt_Numero" class="form-control" maxlength="20"></div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="font-weight-bold">Moneda</label>
                             <select id="cbx_Moneda" class="form-control bg-light font-weight-bold" disabled>
                                 <option value="1">SOLES (S/.)</option>
                                 <option value="2">DÓLARES ($)</option>
                             </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>IGV</label>
+                            <input type="number" id="txt_TASA_IGV" class="form-control" value="0.18" step="0.01" min="0">
                         </div>
                     </div>
 
@@ -104,7 +108,7 @@
                                         <input type="text" id="txt_SubTotal" class="form-control text-right" readonly value="0.00">
                                     </div>
                                     <div class="input-group input-group-sm mb-1">
-                                        <div class="input-group-prepend"><span class="input-group-text font-weight-bold" style="width: 100px;">IGV (18%)</span></div>
+                                        <div class="input-group-prepend"><span class="input-group-text font-weight-bold" style="width: 100px;">IGV</span></div>
                                         <input type="text" id="txt_Igv" class="form-control text-right" readonly value="0.00">
                                     </div>
                                     <div class="input-group">
@@ -149,8 +153,15 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        let TASA_IGV = 0.18;
+
         $(document).ready(function() { 
-            buscarTipoCambio(); 
+            buscarTipoCambio();
+
+            $('#txt_TASA_IGV').on('change', function (){
+                TASA_IGV = Number($(this).val());
+                recalcularTotal();
+            });
         });
         
         function buscarTipoCambio() {
@@ -258,7 +269,7 @@
             let subtotal = 0;
             $('.txt-subtotal').each(function() { subtotal += parseFloat($(this).text()); });
             let tipo = $('#cbx_TipoDocumento').val();
-            let tasaIGV = (tipo === 'RH') ? 0 : 0.18;
+            let tasaIGV = (tipo === 'RH') ? 0 : TASA_IGV;
             let igv = subtotal * tasaIGV;
             let total = subtotal + igv;
             $('#txt_SubTotal').val(subtotal.toFixed(2));

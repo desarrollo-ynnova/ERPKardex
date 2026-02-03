@@ -248,7 +248,7 @@ namespace ERPKardex.Controllers
         #region 4. GUARDAR Y APROBAR
 
         [HttpPost]
-        public JsonResult Guardar(OrdenServicio cabecera, string detallesJson)
+        public JsonResult Guardar(OrdenServicio cabecera, string detallesJson, decimal igvTasa)
         {
             using (var transaction = _context.Database.BeginTransaction())
             {
@@ -295,8 +295,6 @@ namespace ERPKardex.Controllers
                     {
                         sumaBases += (det.Cantidad ?? 0) * (det.PrecioUnitario ?? 0);
                     }
-
-                    decimal igvTasa = 0.18m;
 
                     if (cabecera.IncluyeIgv == true)
                     {
