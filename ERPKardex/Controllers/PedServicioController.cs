@@ -54,10 +54,11 @@ namespace ERPKardex.Controllers
                             };
 
                 // Filtro Seguridad
-                if (!esGlobal)
-                {
-                    query = query.Where(x => x.EmpresaId == miEmpresaId);
-                }
+                query = query.Where(x => x.EmpresaId == miEmpresaId);
+                //if (!esGlobal)
+                //{
+                //    query = query.Where(x => x.EmpresaId == miEmpresaId);
+                //}
 
                 var listaRaw = await query.OrderByDescending(x => x.Numero).ToListAsync();
 
@@ -118,6 +119,8 @@ namespace ERPKardex.Controllers
                 var miEmpresaId = EmpresaUsuarioId;
                 var esGlobal = EsAdminGlobal;
                 int idParaFiltrar = esGlobal ? (empresaDestinoId ?? 0) : miEmpresaId;
+                // POR AHORA
+                idParaFiltrar = miEmpresaId;
 
                 if (idParaFiltrar == 0) return Json(new { status = false, message = "Seleccione una empresa." });
 

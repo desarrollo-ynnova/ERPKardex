@@ -38,7 +38,7 @@ namespace ERPKardex.Controllers
                             join est in _context.Estados on r.EstadoId equals est.Id
                             join emp in _context.Empresas on r.EmpresaId equals emp.Id
                             // LÓGICA LIMPIA: Si soy global veo todo, si no, solo lo mío
-                            where (esGlobal || r.EmpresaId == miEmpresaId)
+                            where (r.EmpresaId == miEmpresaId)
                             orderby r.Id descending
                             select new
                             {

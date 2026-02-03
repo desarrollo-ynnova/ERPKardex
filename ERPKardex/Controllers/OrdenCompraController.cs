@@ -57,10 +57,11 @@ namespace ERPKardex.Controllers
                             };
 
                 // Filtro Base
-                if (!esGlobal)
-                {
-                    query = query.Where(x => x.EmpresaId == miEmpresaId);
-                }
+                //if (!esGlobal)
+                //{
+                //    query = query.Where(x => x.EmpresaId == miEmpresaId);
+                //}
+                query = query.Where(x => x.EmpresaId == miEmpresaId);
 
                 var listado = await query.ToListAsync();
                 return Json(new { status = true, data = listado });
@@ -138,6 +139,8 @@ namespace ERPKardex.Controllers
                 var miEmpresaId = EmpresaUsuarioId;
                 var esGlobal = EsAdminGlobal;
                 int idEmpresa = esGlobal ? (empresaFiltroId ?? 0) : miEmpresaId;
+                // POR AHORA
+                idEmpresa = miEmpresaId;
 
                 var estadosValidos = _context.Estados
                     .Where(e => (e.Nombre == "Generado" || e.Nombre == "Atendido Parcial") && e.Tabla == "PED") // Agregué "Atendido Parcial"
