@@ -567,7 +567,7 @@ namespace ERPKardex.Controllers
 
             var proveedores = (from p in _context.Proveedores
                                join td in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals td.Id
-                               where p.Estado == true && (esGlobal || p.EmpresaId == miEmpresaId)
+                               where p.Estado == true && (p.EmpresaId == miEmpresaId)
                                select new
                                {
                                    p.Id,
