@@ -335,23 +335,23 @@ namespace ERPKardex.Controllers
 
                         stock.UltimaActualizacion = DateTime.Now;
 
-                        // C. Actualizar ÍTEM de la Orden (DORDEN)
-                        if (cabecera.TipoMovimiento == true && det.IdReferencia != null && det.TablaReferencia == "DORDENCOMPRA")
-                        {
-                            var dOrden = _context.DOrdenCompras.Find(det.IdReferencia);
-                            if (dOrden != null)
-                            {
-                                // Guardamos el ID de la cabecera para actualizarla al final
-                                if (idOrdenCompraPadre == null) idOrdenCompraPadre = dOrden.OrdenCompraId;
+                        //// C. Actualizar ÍTEM de la Orden (DORDEN)
+                        //if (cabecera.TipoMovimiento == true && det.IdReferencia != null && det.TablaReferencia == "DORDENCOMPRA")
+                        //{
+                        //    var dOrden = _context.DOrdenCompras.Find(det.IdReferencia);
+                        //    if (dOrden != null)
+                        //    {
+                        //        // Guardamos el ID de la cabecera para actualizarla al final
+                        //        if (idOrdenCompraPadre == null) idOrdenCompraPadre = dOrden.OrdenCompraId;
 
-                                // Actualizar atendido
-                                dOrden.CantidadAtendida = (dOrden.CantidadAtendida ?? 0) + (det.Cantidad ?? 0);
+                        //        // Actualizar atendido
+                        //        dOrden.CantidadAtendida = (dOrden.CantidadAtendida ?? 0) + (det.Cantidad ?? 0);
 
-                                // Actualizar estado del ítem (Tabla: DORDEN)
-                                if (dOrden.CantidadAtendida >= dOrden.Cantidad) dOrden.EstadoId = estItemTotal.Id;
-                                else dOrden.EstadoId = estItemParcial.Id;
-                            }
-                        }
+                        //        // Actualizar estado del ítem (Tabla: DORDEN)
+                        //        if (dOrden.CantidadAtendida >= dOrden.Cantidad) dOrden.EstadoId = estItemTotal.Id;
+                        //        else dOrden.EstadoId = estItemParcial.Id;
+                        //    }
+                        //}
                     }
 
                     _context.SaveChanges();
@@ -360,36 +360,36 @@ namespace ERPKardex.Controllers
                     // 5. ACTUALIZACIÓN CABECERA DE ORDEN (TABLA: ORDEN)
                     // =================================================================================
 
-                    if (idOrdenCompraPadre != null)
-                    {
-                        var ordenCompra = _context.OrdenCompras.Find(idOrdenCompraPadre);
-                        if (ordenCompra != null)
-                        {
-                            // Estados para CABECERA (ORDEN)
-                            var estOrdenParcial = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Parcial");
-                            var estOrdenTotal = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Total");
+                    //if (idOrdenCompraPadre != null)
+                    //{
+                    //    var ordenCompra = _context.OrdenCompras.Find(idOrdenCompraPadre);
+                    //    if (ordenCompra != null)
+                    //    {
+                    //        // Estados para CABECERA (ORDEN)
+                    //        var estOrdenParcial = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Parcial");
+                    //        var estOrdenTotal = _context.Estados.FirstOrDefault(x => x.Tabla == "ORDEN" && x.Nombre == "Atendido Total");
 
-                            if (estOrdenParcial != null && estOrdenTotal != null)
-                            {
-                                // Verificar TODOS los ítems de esa orden
-                                var itemsOrden = _context.DOrdenCompras.Where(x => x.OrdenCompraId == idOrdenCompraPadre).ToList();
+                    //        if (estOrdenParcial != null && estOrdenTotal != null)
+                    //        {
+                    //            // Verificar TODOS los ítems de esa orden
+                    //            var itemsOrden = _context.DOrdenCompras.Where(x => x.OrdenCompraId == idOrdenCompraPadre).ToList();
 
-                                bool todoAtendido = itemsOrden.All(x => (x.CantidadAtendida ?? 0) >= x.Cantidad);
-                                bool algoAtendido = itemsOrden.Any(x => (x.CantidadAtendida ?? 0) > 0);
+                    //            bool todoAtendido = itemsOrden.All(x => (x.CantidadAtendida ?? 0) >= x.Cantidad);
+                    //            bool algoAtendido = itemsOrden.Any(x => (x.CantidadAtendida ?? 0) > 0);
 
-                                if (todoAtendido)
-                                {
-                                    ordenCompra.EstadoId = estOrdenTotal.Id; // Cierre Total
-                                }
-                                else if (algoAtendido)
-                                {
-                                    ordenCompra.EstadoId = estOrdenParcial.Id; // Cierre Parcial
-                                }
-                                // Si nada atendido, se queda en Aprobado (no tocamos)
-                            }
-                        }
-                        _context.SaveChanges();
-                    }
+                    //            if (todoAtendido)
+                    //            {
+                    //                ordenCompra.EstadoId = estOrdenTotal.Id; // Cierre Total
+                    //            }
+                    //            else if (algoAtendido)
+                    //            {
+                    //                ordenCompra.EstadoId = estOrdenParcial.Id; // Cierre Parcial
+                    //            }
+                    //            // Si nada atendido, se queda en Aprobado (no tocamos)
+                    //        }
+                    //    }
+                    //    _context.SaveChanges();
+                    //}
 
                     transaction.Commit();
                     return Json(new { status = true, message = "Movimiento registrado correctamente. Stock y Orden actualizados." });
