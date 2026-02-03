@@ -247,7 +247,8 @@
         });
 
         $('#txt_IGV').on('change', function () {
-            IGV_TASA = $(this).val();
+            IGV_TASA = Number($(this).val());
+            recalcularGlobales();
         });
     });
 
