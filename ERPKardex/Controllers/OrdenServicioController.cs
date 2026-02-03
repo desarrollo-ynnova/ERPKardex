@@ -346,15 +346,15 @@ namespace ERPKardex.Controllers
                         }
 
                         // Actualizar saldos
-                        if (det.IdReferencia != null && det.TablaReferencia == "DPEDSERVICIO")
-                        {
-                            var ped = _context.DPedidosServicio.Find(det.IdReferencia);
-                            if (ped != null)
-                            {
-                                ped.CantidadAtendida = (ped.CantidadAtendida ?? 0) + det.Cantidad;
-                                _context.DPedidosServicio.Update(ped);
-                            }
-                        }
+                        //if (det.IdReferencia != null && det.TablaReferencia == "DPEDSERVICIO")
+                        //{
+                        //    var ped = _context.DPedidosServicio.Find(det.IdReferencia);
+                        //    if (ped != null)
+                        //    {
+                        //        ped.CantidadAtendida = (ped.CantidadAtendida ?? 0) + det.Cantidad;
+                        //        _context.DPedidosServicio.Update(ped);
+                        //    }
+                        //}
 
                         _context.DOrdenServicios.Add(det);
                         item++;

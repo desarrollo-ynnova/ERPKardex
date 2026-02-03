@@ -355,16 +355,16 @@ namespace ERPKardex.Controllers
                             det.Total = subtotalLinea;
                         }
 
-                        // Actualizar Saldos Pedido
-                        if (det.IdReferencia != null && det.TablaReferencia == "DPEDCOMPRA")
-                        {
-                            var lineaPedido = _context.DPedidoCompras.Find(det.IdReferencia);
-                            if (lineaPedido != null)
-                            {
-                                lineaPedido.CantidadAtendida = (lineaPedido.CantidadAtendida ?? 0) + det.Cantidad;
-                                _context.DPedidoCompras.Update(lineaPedido);
-                            }
-                        }
+                        //// Actualizar Saldos Pedido
+                        //if (det.IdReferencia != null && det.TablaReferencia == "DPEDCOMPRA")
+                        //{
+                        //    var lineaPedido = _context.DPedidoCompras.Find(det.IdReferencia);
+                        //    if (lineaPedido != null)
+                        //    {
+                        //        lineaPedido.CantidadAtendida = (lineaPedido.CantidadAtendida ?? 0) + det.Cantidad;
+                        //        _context.DPedidoCompras.Update(lineaPedido);
+                        //    }
+                        //}
 
                         _context.DOrdenCompras.Add(det);
                         item++;
