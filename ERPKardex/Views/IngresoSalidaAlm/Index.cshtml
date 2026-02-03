@@ -62,7 +62,7 @@
                                     <th>U.M.</th>
                                     <th>Cantidad</th>
                                     <th>Valor Unit.</th>
-                                    <th>Total</th>
+                                    <th class="d-none">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="tblBodyDetalleMov">
@@ -339,7 +339,7 @@
                         <td>${d.unidad}</td>
                         <td class="font-weight-bold">${parseFloat(d.cantidad).toFixed(2)}</td>
                         <td>${parseFloat(d.precio).toFixed(4)}</td>
-                        <td>${parseFloat(d.total).toFixed(2)}</td>
+                        <td class="d-none">${parseFloat(d.total).toFixed(2)}</td>
                     </tr>`;
                 });
                 $('#tblBodyDetalleMov').html(html);
