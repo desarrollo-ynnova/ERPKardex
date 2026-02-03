@@ -282,6 +282,7 @@ namespace ERPKardex.Controllers
                                 join e in _context.Estados on o.EstadoId equals e.Id
                                 join m in _context.Monedas on o.MonedaId equals m.Id
                                 where estadosOrdenValidos.Contains(e.Nombre)
+                                where o.EmpresaId == EmpresaUsuarioId
                                 orderby o.FechaEmision descending
                                 select new
                                 {
@@ -324,6 +325,7 @@ namespace ERPKardex.Controllers
                                 join e in _context.Estados on o.EstadoId equals e.Id
                                 join m in _context.Monedas on o.MonedaId equals m.Id
                                 where estadosOrdenValidos.Contains(e.Nombre)
+                                where o.EmpresaId == EmpresaUsuarioId
                                 orderby o.FechaEmision descending
                                 select new
                                 {
