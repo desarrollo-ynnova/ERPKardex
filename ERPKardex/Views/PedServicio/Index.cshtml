@@ -18,11 +18,11 @@
                 <table id="tbl_PedServicios" class="table table-bordered table-striped hover display nowrap" style="width:100%">
                     <thead class="bg-dark text-white">
                         <tr>
-                            <th class="text-center" style="width: 5%;">ID</th>
                             <th class="text-center">NÚMERO</th>
                             <th class="text-center">F. EMISIÓN</th>
                             <th class="text-center">F. NECESARIA</th>
                             <th class="text-center">CC (RESUMEN)</th>
+                            <th class="text-center">EMPRESA</th>
                             <th class="text-center">SOLICITANTE</th>
                             <th class="text-center">ESTADO</th>
                             <th class="text-center">ACCIONES</th>
@@ -212,7 +212,6 @@
                 }
             },
             columns: [
-                { data: "id", className: "text-center align-middle" },
                 { data: "numero", className: "align-middle font-weight-bold" },
                 {
                     data: "fechaEmision", className: "text-center align-middle",
@@ -225,6 +224,7 @@
                     className: "align-middle text-success font-weight-bold text-center",
                     render: function(data) { return `<small>${data}</small>`; }
                 },
+                { data: "empresa", className: "align-middle" },
                 { data: "solicitante", className: "align-middle" },
                 {
                     data: "estado", className: "text-center align-middle",
@@ -254,7 +254,7 @@
                     }
                 }
             ],
-            order: [[1, 'desc']],
+            order: [[0, 'desc']],
             lengthMenu: [[100, 200, 500, -1], [100, 200, 500, 'Todos']],
             initComplete: function (data, row, cell, start, end, display) {
                 $('.dt-buttons button').addClass('m-1');

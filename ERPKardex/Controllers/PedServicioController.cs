@@ -34,10 +34,13 @@ namespace ERPKardex.Controllers
                 var query = from p in _context.PedServicios
                             join u in _context.Usuarios on p.UsuarioSolicitanteId equals u.Id
                             join e in _context.Estados on p.EstadoId equals e.Id
+                            join emp in _context.Empresas on p.EmpresaId equals emp.Id
                             select new
                             {
                                 p.Id,
                                 p.EmpresaId,
+                                Empresa = emp.Nombre,
+                                emp.RazonSocial,
                                 p.Numero,
                                 FechaEmision = p.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 FechaNecesaria = p.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),
@@ -65,6 +68,8 @@ namespace ERPKardex.Controllers
                     x.FechaEmision,
                     x.FechaNecesaria,
                     CentroCosto = x.CentrosInvolucrados.Any() ? string.Join(", ", x.CentrosInvolucrados) : "N/A",
+                    x.Empresa,
+                    x.RazonSocial,
                     x.Solicitante,
                     x.Estado
                 });

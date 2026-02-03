@@ -36,12 +36,15 @@ namespace ERPKardex.Controllers
                 var data = (from r in _context.ReqCompras
                             join usu in _context.Usuarios on r.UsuarioSolicitanteId equals usu.Id
                             join est in _context.Estados on r.EstadoId equals est.Id
+                            join emp in _context.Empresas on r.EmpresaId equals emp.Id
                             // LÓGICA LIMPIA: Si soy global veo todo, si no, solo lo mío
                             where (esGlobal || r.EmpresaId == miEmpresaId)
                             orderby r.Id descending
                             select new
                             {
                                 r.Id,
+                                Empresa = emp.Nombre,
+                                emp.RazonSocial,
                                 r.Numero,
                                 FechaEmision = r.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 FechaNecesaria = r.FechaNecesaria.GetValueOrDefault().ToString("dd/MM/yyyy"),

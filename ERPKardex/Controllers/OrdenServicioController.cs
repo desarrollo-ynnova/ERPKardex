@@ -36,11 +36,14 @@ namespace ERPKardex.Controllers
                             join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id
                             join est in _context.Estados on o.EstadoId equals est.Id
                             join mon in _context.Monedas on o.MonedaId equals mon.Id
+                            join emp in _context.Empresas on o.EmpresaId equals emp.Id
                             orderby o.Id descending
                             select new
                             {
                                 o.Id,
                                 o.EmpresaId,
+                                Empresa = emp.Nombre,
+                                emp.RazonSocial,
                                 o.Numero,
                                 Fecha = o.FechaEmision.GetValueOrDefault().ToString("dd/MM/yyyy HH:mm"),
                                 Proveedor = ent.RazonSocial,
@@ -106,7 +109,7 @@ namespace ERPKardex.Controllers
                 // Hacemos JOIN para obtener el Tipo de Documento
                 var proveedores = (from p in _context.Proveedores
                                    join td in _context.TiposDocumentoIdentidad on p.TipoDocumentoIdentidadId equals td.Id
-                                   where p.Estado == true && (esGlobal || p.EmpresaId == miEmpresaId)
+                                   where p.Estado == true && (p.EmpresaId == miEmpresaId)
                                    select new
                                    {
                                        p.Id,

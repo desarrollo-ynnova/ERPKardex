@@ -245,6 +245,10 @@
         $('#txt_FechaEmision').on('change', function (){
             buscarTipoCambio();
         });
+
+        $('#txt_IGV').on('change', function () {
+            IGV_TASA = $(this).val();
+        });
     });
 
     function buscarTipoCambio() {
