@@ -232,7 +232,7 @@
                             <td>${d.unidadMedida}</td>
                             <td><input type="number" class="form-control form-control-sm text-center font-weight-bold txt-cant border-warning" value="${d.saldo}" max="${d.saldo}" min="0" step="0.01" oninput="calcularFila(this)"></td>
                             <td><input type="number" class="form-control form-control-sm text-right txt-precio bg-light" value="${d.precioUnitario}" readonly></td>
-                            <td class="font-weight-bold txt-subtotal text-right">${(d.saldo * d.precioUnitario).toFixed(2)}</td>
+                            <td class="font-weight-bold txt-subtotal text-right">${(d.saldo * d.precioUnitario)}</td>
                         </tr>`;
                     });
                     $('#tbl_DetalleBody').html(html);
