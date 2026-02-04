@@ -26,6 +26,7 @@
                             <th>MARCA / MODELO</th>
                             <th>CHOFER ASIGNADO</th>
                             <th>KILOMETRAJE</th>
+                            <th>PRÓXIMO MANT</th>
                             <th>MANTENIMIENTO</th>
                             <th>ESTADO</th>
                             <th>ACCIONES</th>
@@ -62,20 +63,28 @@
                         let semaforo = '<span class="badge badge-success">OK</span>';
                         let faltaParaMant = item.proxMant - item.kilometraje;
 
+                        // if(item.alertaMant === "ROJO") {
+                        //     semaforo = `<span class="badge badge-danger">VENCIDO (${faltaParaMant} KM)</span>`;
+                        // } else if (faltaParaMant <= 1000) {
+                        //     semaforo = `<span class="badge badge-warning">PRÓXIMO (${faltaParaMant} KM)</span>`;
+                        // }
+
                         if(item.alertaMant === "ROJO") {
                             semaforo = `<span class="badge badge-danger">VENCIDO (${faltaParaMant} KM)</span>`;
-                        } else if (faltaParaMant <= 1000) {
+                        } else {
                             semaforo = `<span class="badge badge-warning">PRÓXIMO (${faltaParaMant} KM)</span>`;
                         }
 
                         // Formateo de Miles
                         let kmFormat = new Intl.NumberFormat().format(item.kilometraje);
+                        let proxMantFormat = new Intl.NumberFormat().format(item.proxMant);
 
                         html += `
                             <tr>
                                 <td class="font-weight-bold text-center">${item.codigo}</td> <td>${item.descripcion} <br> <small class="text-muted">VIN: ${item.serie}</small></td>
                                 <td>${item.asignadoA}</td>
                                 <td class="text-right font-weight-bold">${kmFormat} KM</td>
+                                <td class="text-right font-weight-bold">${proxMantFormat} KM</td>
                                 <td class="text-center">${semaforo}</td>
                                 <td class="text-center">${item.condicion}</td>
                                 <td class="text-center">

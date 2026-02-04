@@ -676,7 +676,7 @@ namespace ERPKardex.Controllers
                     Valor = h.ValorMedida,
                     Origen = h.OrigenDato,
                     Obs = h.Observacion,
-                    Usuario = _context.Usuarios.FirstOrDefault(u => u.Id == h.UsuarioRegistroId).Nombre
+                    Usuario = _context.Usuarios.FirstOrDefault(u => u.Id == h.UsuarioRegistroId).Nombre ?? ""
                 }).ToList();
             return Json(new { status = true, data = data });
         }
