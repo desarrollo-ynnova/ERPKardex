@@ -42,8 +42,14 @@
                                 <option value="RH">RECIBO X HONORARIOS</option>
                             </select>
                         </div>
-                        <div class="col-md-3"><label class="font-weight-bold">Serie</label><input type="text" id="txt_Serie" class="form-control text-uppercase" maxlength="10"></div>
-                        <div class="col-md-3"><label class="font-weight-bold">Número</label><input type="text" id="txt_Numero" class="form-control" maxlength="20"></div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Serie</label>
+                            <input type="text" id="txt_Serie" class="form-control text-uppercase" maxlength="10" oninput="this.value = this.value.toUpperCase();">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Número</label>
+                            <input type="text" id="txt_Numero" class="form-control" maxlength="20">
+                        </div>
                         <div class="col-md-2">
                             <label class="font-weight-bold">Moneda</label>
                             <select id="cbx_Moneda" class="form-control bg-light font-weight-bold" disabled>
