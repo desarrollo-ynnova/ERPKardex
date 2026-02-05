@@ -156,13 +156,26 @@
         let g_listaDisponibles = [];
 
         $(document).ready(function() {
-            $('#cbx_Proveedor').select2({
-                theme: 'bootstrap4', placeholder: "Buscar proveedor...",
-                ajax: {
-                    url: '/OrdenCompra/GetCombosRegistro', dataType: 'json', delay: 250,
-                    processResults: function (data) {
-                        return { results: data.proveedores.map(function(item) { return { id: item.id, text: item.tipoDocumentoIdentidad + ': ' + item.numeroDocumento + ' - ' + item.razonSocial }; }) };
-                    }
+            $.ajax({
+                url: '/OrdenCompra/GetCombosRegistro',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    // Transformamos los datos al formato que Select2 entiende {id, text}
+                    const proveedoresTransformados = data.proveedores.map(x => ({
+                        id: x.id,
+                        text: x.tipoDocumentoIdentidad + ': ' + x.numeroDocumento + ' - ' + x.razonSocial
+                    }));
+
+                    // Inicializamos Select2 con los datos ya cargados
+                    $('#cbx_Proveedor').select2({
+                        theme: 'bootstrap4',
+                        placeholder: "Todos los proveedores",
+                        allowClear: true,
+                        data: proveedoresTransformados // Aquí es donde ocurre la magia local
+                    });
+
+                    $('#cbx_Proveedor').val(null).trigger('change');
                 }
             });
             $('#cbx_Proveedor').on('select2:select', function(e) { cargarDocumentos(); });
