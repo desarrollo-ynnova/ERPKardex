@@ -95,6 +95,10 @@
         $(document).ready(function () {
             $('.select2-busqueda').select2({ theme: 'bootstrap4' });
             fct_CargarCombos();
+
+            $('#cbx_Marca').on('change', function (){
+                fct_LlenarModelos();
+            });
         });
 
         function fct_CargarCombos() {
@@ -103,7 +107,7 @@
                     fct_LlenarSelect('#cbx_Grupo', res.grupos);
                     fct_LlenarSelect('#cbx_Tipo', res.tipos);
                     fct_LlenarSelect('#cbx_Marca', res.marcas);
-                    fct_LlenarSelect('#cbx_Modelo', res.modelos);
+                    fct_LlenarModelos();
                 }
             });
         }
@@ -112,6 +116,17 @@
             let h = '<option value="">-- SELECCIONE --</option>';
             data.forEach(x => h += `<option value="${x.id}">${x.nombre}</option>`);
             $(selector).html(h);
+        }
+
+        function fct_LlenarModelos() {
+            $.get('/Activo/GetModelosByMarca', { marcaId: $('#cbx_Marca').val() },  function(res) {
+                if(res.status) {
+                    let data = res.data;
+                    let h = '<option value="">-- SELECCIONE --</option>';
+                    data.forEach(x => h += `<option value="${x.id}">${x.nombre}</option>`);
+                    $('#cbx_Modelo').html(h);
+                }
+            });            
         }
 
         function fct_AgregarSpec() {

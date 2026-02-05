@@ -752,7 +752,6 @@ namespace ERPKardex.Controllers
                 grupos = grupos,
                 tipos = _context.ActivoTipos.Where(x => x.Estado == true).ToList(),
                 marcas = _context.Marcas.Where(x => x.Estado == true).ToList(),
-                modelos = _context.Modelos.Where(x => x.Estado == true).ToList()
             });
         }
 

@@ -32,7 +32,7 @@ namespace ERPKardex.Controllers
         {
             try
             {
-                var codigos = new List<string> { "FAC", "BOL", "RH" }; // Solo Provisiones
+                var codigos = new List<string> { "FAC", "BOL", "RH", "REC" }; // Solo Provisiones
 
                 var data = (from d in _context.DocumentosPagar
                             join p in _context.Proveedores on d.ProveedorId equals p.Id
@@ -496,7 +496,7 @@ namespace ERPKardex.Controllers
                     decimal totalOrden = 0, totalPrevio = 0;
                     var estadoAnulado = _context.Estados.FirstOrDefault(x => x.Tabla == "DOCUMENTO_PAGAR" && x.Nombre == "Anulado");
                     int idAnulado = estadoAnulado?.Id ?? -1;
-                    var codigosFacturables = new List<string> { "FAC", "BOL", "RH" };
+                    var codigosFacturables = new List<string> { "FAC", "BOL", "RH", "REC" };
 
                     if (doc.OrdenCompraId != null)
                     {
