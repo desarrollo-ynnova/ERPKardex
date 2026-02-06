@@ -95,6 +95,7 @@
                             <thead class="thead-light text-center font-weight-bold text-dark">
                                 <tr>
                                     <th>FECHA PAGO</th>
+                                    <th>TIPO</th>
                                     <th>N° OP</th>
                                     <th>DOC. CANCELADO</th>
                                     <th>PROVEEDOR</th>
@@ -161,15 +162,19 @@
 
                             <h6 class="text-success font-weight-bold mb-3 border-bottom pb-2">Detalle de la Transacción</h6>
                             <div class="form-row">
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
                                     <label class="small font-weight-bold">Fecha Pago</label>
                                     <input type="date" id="txtFechaPago" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
                                 </div>
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
                                     <label class="small font-weight-bold">Banco Origen</label>
                                     <select id="cbxBanco" class="form-control"></select>
                                 </div>
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
+                                    <label class="small font-weight-bold">Tipo de Pago</label>
+                                    <select id="cbxTipoPago" class="form-control"></select>
+                                </div>
+                                <div class="form-group col-md-6">
                                     <label class="small font-weight-bold text-success">Monto a Pagar</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend"><span class="input-group-text font-weight-bold" id="lblMonedaInput">S/.</span></div>
@@ -338,6 +343,10 @@
                     res.bancos.forEach(b => htmlB += `<option value="${b.id}">${b.nombre}</option>`);
                     $('#cbxBanco').html(htmlB);
 
+                    let htmlTipo = '<option value="">-- Seleccionar tipo --</option>';
+                    res.tipoOrdenPagos.forEach(b => htmlTipo += `<option value="${b.id}">${b.nombre}</option>`);
+                    $('#cbxTipoPago').html(htmlTipo);
+
                     // LÓGICA DE VISUALIZACIÓN DE CUENTAS
                     $('#lista_cuentas').empty();
                     $('#lbl_MonedaCta').text("Moneda: " + d.monedaSimbolo);
@@ -391,6 +400,7 @@
                 DocumentoPagarId: $('#hdnIdDocumento').val(),
                 MonedaId: $('#hdnMonedaId').val(),
                 BancoId: $('#cbxBanco').val() || null,
+                TipoOrdenPagoId: $('#cbxTipoPago').val() || null,
                 NumeroOperacion: $('#txtOperacion').val(),
                 Observacion: $('#txtObs').val(),
                 MontoPagado: monto
@@ -438,6 +448,7 @@
                         let btnVoucher = x.rutaVoucher ? `<a href="/${x.rutaVoucher}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-file-image"></i></a>` : '-';
                         html += `<tr>
                             <td>${x.fecha}</td>
+                            <td class="font-weight-bold">${x.tipoOrdenPago}</td>
                             <td class="font-weight-bold">${x.numeroOP}</td>
                             <td>${x.docRef}</td>
                             <td>${x.proveedor}</td>

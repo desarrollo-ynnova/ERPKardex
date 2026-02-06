@@ -45,7 +45,8 @@ namespace ERPKardex.Models
 
         [Column("observacion")]
         public string Observacion { get; set; }
-
+        [Column("tipo_orden_pago_id")]
+        public int? TipoOrdenPagoId { get; set; }
         [Column("empresa_id")]
         public int? EmpresaId { get; set; }
 

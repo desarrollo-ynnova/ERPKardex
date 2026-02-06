@@ -142,6 +142,7 @@ namespace ERPKardex.Controllers
 
                 // Bancos para el combo del modal
                 var bancos = await _context.Bancos.Where(b => b.Estado == true).Select(b => new { b.Id, b.Nombre }).ToListAsync();
+                var tipoOrdenPagos = await _context.TipoOrdenPagos.Where(t => t.Estado.Value == true).Select(t => new { t.Id, t.Nombre }).ToListAsync();
 
                 // Filtramos las cuentas que coinciden con la moneda del documento
                 var cuentasFiltradas = new List<object>();
@@ -169,7 +170,8 @@ namespace ERPKardex.Controllers
                         CuentasProveedor = cuentasFiltradas,
                         CuentaDetraccion = consulta.CuentaDetraccion
                     },
-                    bancos
+                    bancos,
+                    tipoOrdenPagos,
                 });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
@@ -283,6 +285,7 @@ namespace ERPKardex.Controllers
             {
                 // Listamos las Órdenes de Pago realizadas
                 var data = await (from op in _context.OrdenPagos
+                                  join top in _context.TipoOrdenPagos on op.TipoOrdenPagoId equals top.Id
                                   join doc in _context.DocumentosPagar on op.DocumentoPagarId equals doc.Id
                                   join prov in _context.Proveedores on doc.ProveedorId equals prov.Id
                                   join t in _context.TiposDocumentoInterno on doc.TipoDocumentoInternoId equals t.Id
@@ -295,6 +298,7 @@ namespace ERPKardex.Controllers
                                   {
                                       op.Id,
                                       Fecha = op.FechaPago.ToString("dd/MM/yyyy"),
+                                      TipoOrdenPago = top.Nombre,
                                       NumeroOP = op.Numero,
                                       DocRef = t.Codigo + " " + doc.Serie + "-" + doc.Numero,
                                       Proveedor = prov.RazonSocial,

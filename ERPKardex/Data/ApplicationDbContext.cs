@@ -63,9 +63,15 @@ namespace ERPKardex.Data
         public DbSet<ActivoEspecificacion> ActivoEspecificaciones { get; set; }
         public DbSet<ActivoDocumento> ActivoDocumentos { get; set; }
         public DbSet<ActivoHistorialMedida> ActivoHistorialMedidas { get; set; }
+        public DbSet<VehiculoFicha> VehiculoFichas { get; set; }
+        public DbSet<VehiculoMantenimiento> VehiculoMantenimientos { get; set; }
+        public DbSet<VehiculoGps> VehiculoGpsList { get; set; }
+        public DbSet<VehiculoInfraccion> VehiculoInfracciones { get; set; }
+        public DbSet<VehiculoSeguro> VehiculoSeguros { get; set; }
         public DbSet<Personal> Personal { get; set; }
         public DbSet<TipoCambio> TipoCambios { get; set; }
         public DbSet<Banco> Bancos { get; set; }
+        public DbSet<TipoOrdenPago> TipoOrdenPagos { get; set; }
         public DbSet<OrdenPago> OrdenPagos { get; set; }
         public DbSet<DocumentoPagar> DocumentosPagar { get; set; }
         public DbSet<DDocumentoPagar> DDocumentosPagar { get; set; }

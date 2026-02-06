@@ -16,78 +16,56 @@ namespace ERPKardex.Controllers
             _env = env;
         }
 
-        #region VISTAS (Navegación)
+        // ==========================================================================================
+        // REGIÓN 1: MÓDULO DE CÓMPUTO (LÓGICA ORIGINAL LIMPIA)
+        // ==========================================================================================
+        #region MÓDULO CÓMPUTO
 
-        public IActionResult Index(string tipo = "COMPUTO")
+        // 1. VISTAS DE CÓMPUTO
+        public IActionResult IndexComputo()
         {
-            ViewBag.TipoModulo = tipo;
+            ViewBag.TipoModulo = "COMPUTO";
             ViewBag.EsAdmin = EsAdminGlobal;
-            if (tipo == "VEHICULOS") return View("IndexVehiculos");
-            return View("Index");
+            return View("Index"); // Usa tu vista original Index.cshtml
         }
 
-        public IActionResult Registro(string tipo = "COMPUTO")
+        public IActionResult RegistroComputo()
         {
-            ViewBag.TipoModulo = tipo;
-            if (tipo == "VEHICULOS") return View("RegistroVehiculo");
-            return View("Registro");
+            ViewBag.TipoModulo = "COMPUTO";
+            return View("Registro"); // Usa tu vista original Registro.cshtml
         }
 
-        public IActionResult Historial(string tipo = "COMPUTO")
+        public IActionResult HistorialComputo(int id)
         {
-            ViewBag.TipoModulo = tipo;
-            if (int.TryParse(Request.Query["id"], out int id)) ViewBag.ActivoId = id;
-
-            // AQUÍ LA SEPARACIÓN:
-            if (tipo == "VEHICULOS") return View("HistorialVehiculo");
-
-            return View("Historial"); // Vista clásica (Cómputo)
+            ViewBag.TipoModulo = "COMPUTO";
+            ViewBag.ActivoId = id;
+            return View("Historial"); // Usa tu vista original Historial.cshtml
         }
 
-        public IActionResult Asignacion(string tipo = "COMPUTO")
+        public IActionResult AsignacionComputo()
         {
-            ViewBag.TipoModulo = tipo;
-
-            // AQUÍ LA SEPARACIÓN:
-            if (tipo == "VEHICULOS") return View("AsignacionVehiculo");
-
-            return View("Asignacion"); // Vista clásica (Cómputo)
+            ViewBag.TipoModulo = "COMPUTO";
+            return View("Asignacion"); // Usa tu vista original Asignacion.cshtml
         }
 
-        // Vista para impresión de actas
         public IActionResult ActaImpresion(int id)
         {
             ViewBag.IdMovimiento = id;
             return View();
         }
 
-        // Vistas Parciales (Modales)
-        public IActionResult BitacoraKm(int id)
-        {
-            ViewBag.ActivoId = id;
-            return PartialView("_BitacoraKilometraje");
-        }
-
-        public IActionResult GestionDocumental(int id)
-        {
-            ViewBag.ActivoId = id;
-            return PartialView("_GestionDocumental");
-        }
-        #endregion
-
-        #region API: LISTADO PRINCIPAL (GetActivos)
-
+        // 2. APIS DE CÓMPUTO (GetActivos ORIGINAL LIMPIO)
         [HttpGet]
-        public async Task<JsonResult> GetActivos(int? empresaIdFiltro, string tipoModulo = "COMPUTO")
+        public async Task<JsonResult> GetActivos(int? empresaIdFiltro)
         {
             try
             {
-                // 1. Join Inicial para poder filtrar por Grupo
+                // Join Inicial
                 var query = from a in _context.Activos
                             join g in _context.ActivoGrupos on a.ActivoGrupoId equals g.Id
                             select new { a, g };
 
-                // 2. Filtros de Seguridad y Módulo
+                // Filtros de Seguridad
                 if (EsAdminGlobal)
                 {
                     if (empresaIdFiltro.HasValue && empresaIdFiltro.Value > 0)
@@ -98,15 +76,10 @@ namespace ERPKardex.Controllers
                     query = query.Where(x => x.a.EmpresaId == EmpresaUsuarioId);
                 }
 
-                if (!string.IsNullOrEmpty(tipoModulo))
-                {
-                    if (tipoModulo == "VEHICULOS")
-                        query = query.Where(x => x.g.Nombre == "VEHÍCULOS");
-                    else
-                        query = query.Where(x => x.g.Nombre != "VEHÍCULOS");
-                }
+                // FILTRO ESTRICTO: NO MOSTRAR VEHÍCULOS AQUÍ
+                query = query.Where(x => x.g.Nombre != "VEHÍCULOS" && x.g.Nombre != "FLOTA");
 
-                // 3. Proyección de Datos
+                // Proyección de Datos (Tu lógica original)
                 var data = await (from q in query
                                   join t in _context.ActivoTipos on q.a.ActivoTipoId equals t.Id into tj
                                   from t in tj.DefaultIfEmpty()
@@ -114,17 +87,14 @@ namespace ERPKardex.Controllers
                                   from m in mj.DefaultIfEmpty()
                                   join mo in _context.Modelos on q.a.ModeloId equals mo.Id into moj
                                   from mo in moj.DefaultIfEmpty()
-
-                                      // Subquery para obtener la última ubicación/responsable
+                                      // Subquery última ubicación
                                   let ultimoMov = (from d in _context.DMovimientosActivo
                                                    join mov in _context.MovimientosActivo on d.MovimientoActivoId equals mov.Id
                                                    where d.ActivoId == q.a.Id && mov.Estado == true
                                                    orderby mov.FechaMovimiento descending, mov.Id descending
                                                    select new { mov.PersonalId, mov.UbicacionDestino }).FirstOrDefault()
-
                                   join p in _context.Personal on ultimoMov.PersonalId equals p.Id into pj
                                   from p in pj.DefaultIfEmpty()
-
                                   select new
                                   {
                                       Id = q.a.Id,
@@ -133,16 +103,12 @@ namespace ERPKardex.Controllers
                                       Serie = q.a.Serie ?? "-",
                                       Condicion = q.a.Condicion,
                                       Situacion = q.a.Situacion,
-                                      Kilometraje = q.a.MedidaActual,
-                                      ProxMant = q.a.ProxMantenimiento,
-                                      AlertaMant = (tipoModulo == "VEHICULOS" && q.a.MedidaActual >= q.a.ProxMantenimiento) ? "ROJO" : "VERDE",
                                       AsignadoA = (q.a.Situacion == "EN STOCK") ? " EN STOCK" : (p != null) ? p.NombresCompletos : "SIN ASIGNAR",
-                                      PersonalId = (p != null) ? p.Id : (int?)null,
                                       Ubicacion = ultimoMov != null ? ultimoMov.UbicacionDestino : "-"
                                   })
                                   .ToListAsync();
 
-                return Json(new { status = true, data = data.OrderBy(x => x.AsignadoA).ToList() });
+                return Json(new { status = true, data = data });
             }
             catch (Exception ex)
             {
@@ -159,6 +125,7 @@ namespace ERPKardex.Controllers
                 if (activo == null) return Json(new { status = false, message = "No encontrado" });
 
                 var specs = await _context.ActivoEspecificaciones.Where(s => s.ActivoId == id).ToListAsync();
+                // Solo traemos documentos básicos
                 var docs = await _context.ActivoDocumentos.Where(d => d.ActivoId == id && d.Estado == true).ToListAsync();
 
                 return Json(new { status = true, data = activo, specs = specs, docs = docs });
@@ -166,244 +133,7 @@ namespace ERPKardex.Controllers
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
-        #endregion
-
-        #region API: HISTORIAL Y ACTAS (RESTAURADO Y ADAPTADO)
-
-        [HttpGet]
-        public async Task<JsonResult> GetHistorial(int activoId)
-        {
-            try
-            {
-                // 1. Cabecera del Activo
-                var activoHeader = await (from a in _context.Activos
-                                          join t in _context.ActivoTipos on a.ActivoTipoId equals t.Id into tj
-                                          from t in tj.DefaultIfEmpty()
-                                          join m in _context.Marcas on a.MarcaId equals m.Id into mj
-                                          from m in mj.DefaultIfEmpty()
-                                          join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
-                                          from mo in moj.DefaultIfEmpty()
-                                          where a.Id == activoId
-                                          select new
-                                          {
-                                              Id = a.Id,
-                                              Codigo = a.CodigoInterno, // Placa
-                                              Serie = a.Serie,          // VIN
-                                              Descripcion = (t.Nombre ?? "") + " " + (m.Nombre ?? "") + " " + (mo.Nombre ?? ""),
-                                              Condicion = a.Condicion,
-                                              Situacion = a.Situacion,
-                                              KmActual = a.MedidaActual, // Dato vital para cabecera de vehículo
-                                              Unidad = a.UnidadMedidaUso
-                                          }).FirstOrDefaultAsync();
-
-                // 2. Historial de Movimientos (Kardex)
-                // CORRECCIÓN: Agregamos d.MedidaRegistro para ver con cuánto KM se entregó/devolvió
-                var historial = await (from d in _context.DMovimientosActivo
-                                       join m in _context.MovimientosActivo on d.MovimientoActivoId equals m.Id
-                                       join p in _context.Personal on m.PersonalId equals p.Id into pj
-                                       from p in pj.DefaultIfEmpty()
-                                       where d.ActivoId == activoId
-                                       orderby m.FechaMovimiento descending
-                                       select new
-                                       {
-                                           Id = m.Id,
-                                           CodigoActa = m.CodigoActa,
-                                           Fecha = m.FechaMovimiento.HasValue ? m.FechaMovimiento.Value.ToString("dd/MM/yyyy HH:mm") : "-",
-                                           Tipo = m.TipoMovimiento,
-                                           Responsable = (m.TipoMovimiento == "DEVOLUCION") ? "ALMACÉN / STOCK" : (p != null ? p.NombresCompletos : "SIN ASIGNAR"),
-                                           Ubicacion = m.UbicacionDestino,
-                                           Observacion = string.IsNullOrEmpty(d.ObservacionItem) ? m.Observacion : d.ObservacionItem,
-                                           Kilometraje = d.MedidaRegistro, // <--- ESTO FALTABA
-                                           RutaActa = m.RutaActaPdf,
-                                           Estado = m.Estado == true ? "VIGENTE" : "ANULADO"
-                                       }).ToListAsync();
-
-                return Json(new { status = true, data = historial, activoInfo = activoHeader });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
-
-        // [NUEVO] API PARA LISTAR DOCUMENTOS EN LA VISTA DE HISTORIAL
-        [HttpGet]
-        public async Task<JsonResult> GetDocumentosActivo(int activoId)
-        {
-            try
-            {
-                var docs = await _context.ActivoDocumentos
-                                         .Where(x => x.ActivoId == activoId && x.Estado == true)
-                                         .OrderByDescending(x => x.FechaVencimiento)
-                                         .Select(x => new
-                                         {
-                                             x.Id,
-                                             Tipo = x.TipoDocumento,
-                                             Nro = x.NroDocumento,
-                                             Vence = x.FechaVencimiento.HasValue ? x.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
-                                             x.RutaArchivo,
-                                             EstadoVenc = (x.FechaVencimiento < DateTime.Now) ? "VENCIDO" : "VIGENTE"
-                                         })
-                                         .ToListAsync();
-
-                return Json(new { status = true, data = docs });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetDatosActa(int idMovimiento)
-        {
-            try
-            {
-                var movimiento = await _context.MovimientosActivo.FindAsync(idMovimiento);
-                if (movimiento == null) return Json(new { status = false, message = "Acta no encontrada" });
-
-                bool esDevolucion = movimiento.TipoMovimiento == "DEVOLUCION";
-                string tipoActa = esDevolucion ? "ACTA DE DEVOLUCIÓN" : "ACTA DE ENTREGA";
-
-                // Recuperar Items (JOIN MANUAL)
-                var items = await (from d in _context.DMovimientosActivo
-                                   join a in _context.Activos on d.ActivoId equals a.Id
-                                   join t in _context.ActivoTipos on a.ActivoTipoId equals t.Id into tj
-                                   from t in tj.DefaultIfEmpty()
-                                   join m in _context.Marcas on a.MarcaId equals m.Id into mj
-                                   from m in mj.DefaultIfEmpty()
-                                   join mo in _context.Modelos on a.ModeloId equals mo.Id into moj
-                                   from mo in moj.DefaultIfEmpty()
-                                   where d.MovimientoActivoId == idMovimiento
-                                   select new
-                                   {
-                                       a.Id,
-                                       Tipo = t.Nombre,
-                                       Marca = m.Nombre,
-                                       Modelo = mo.Nombre,
-                                       Serie = a.Serie,
-                                       Codigo = a.CodigoInterno,
-                                       Condicion = d.CondicionItem,
-                                       Specs = _context.ActivoEspecificaciones.Where(s => s.ActivoId == a.Id).ToList()
-                                   }).ToListAsync();
-
-                var listaItems = items.Select(i => new
-                {
-                    Codigo = i.Codigo,
-                    Equipo = $"{i.Tipo} {i.Marca}".Trim(),
-                    Modelo = i.Modelo,
-                    Serie = i.Serie,
-                    Condicion = i.Condicion,
-                    Caracteristicas = string.Join(", ", i.Specs.Select(s => $"{s.Clave}: {s.Valor}"))
-                }).ToList();
-
-                // Datos Personales (Manuales sin navegación)
-                string nombreEmisor = "", dniEmisor = "", cargoEmisor = "", empresaEmisor = "";
-                string nombreReceptor = "", dniReceptor = "", cargoReceptor = "", empresaReceptor = "";
-
-                // Info Usuario Sistema (TI)
-                var userSys = await _context.Usuarios.FindAsync(movimiento.UsuarioRegistroId);
-                // Info Empresa (Dueña del activo)
-                var empSys = await _context.Empresas.FindAsync(movimiento.EmpresaUsuarioRegistroId);
-
-                string tiNombre = userSys?.Nombre ?? "TI/SISTEMAS";
-                string tiDni = userSys?.Dni ?? "";
-                string tiEmpresa = empSys?.RazonSocial ?? "YNNOVACORP";
-
-                if (esDevolucion)
-                {
-                    // Devuelve: Personal -> Recibe: TI
-                    if (movimiento.PersonalId.HasValue)
-                    {
-                        var per = await _context.Personal.FindAsync(movimiento.PersonalId);
-                        var empPer = await _context.Empresas.FindAsync(per?.EmpresaId);
-                        nombreEmisor = per?.NombresCompletos;
-                        dniEmisor = per?.Dni;
-                        cargoEmisor = per?.Cargo;
-                        empresaEmisor = empPer?.RazonSocial;
-                    }
-                    nombreReceptor = tiNombre;
-                    dniReceptor = tiDni;
-                    cargoReceptor = "Soporte TI";
-                    empresaReceptor = tiEmpresa;
-                }
-                else
-                {
-                    // Entrega: TI -> Recibe: Personal
-                    nombreEmisor = tiNombre;
-                    dniEmisor = tiDni;
-                    cargoEmisor = "Soporte TI";
-                    empresaEmisor = tiEmpresa;
-
-                    if (movimiento.PersonalId.HasValue)
-                    {
-                        var per = await _context.Personal.FindAsync(movimiento.PersonalId);
-                        var empPer = await _context.Empresas.FindAsync(per?.EmpresaId);
-                        nombreReceptor = per?.NombresCompletos;
-                        dniReceptor = per?.Dni;
-                        cargoReceptor = per?.Cargo;
-                        empresaReceptor = empPer?.RazonSocial;
-                    }
-                }
-
-                return Json(new
-                {
-                    status = true,
-                    data = new
-                    {
-                        Titulo = tipoActa,
-                        CodigoActa = movimiento.CodigoActa,
-                        Fecha = movimiento.FechaMovimiento?.ToString("dd/MM/yyyy"),
-                        Ubicacion = movimiento.UbicacionDestino,
-                        Emisor = new { Nombre = nombreEmisor, Dni = dniEmisor, Cargo = cargoEmisor, Empresa = empresaEmisor },
-                        Receptor = new { Nombre = nombreReceptor, Dni = dniReceptor, Cargo = cargoReceptor, Empresa = empresaReceptor },
-                        Items = listaItems
-                    }
-                });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
-
-        [HttpPost]
-        public async Task<JsonResult> SubirActa(int idMovimiento, IFormFile archivo)
-        {
-            try
-            {
-                if (archivo == null) return Json(new { status = false, message = "Sin archivo" });
-                var mov = await _context.MovimientosActivo.FindAsync(idMovimiento);
-
-                var path = Path.Combine(_env.WebRootPath, "uploads", "actas");
-                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-
-                string fileName = $"ACTA_{mov.Id}_{DateTime.Now.Ticks}.pdf";
-                using (var stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
-                {
-                    await archivo.CopyToAsync(stream);
-                }
-
-                mov.RutaActaPdf = "uploads/actas/" + fileName;
-                await _context.SaveChangesAsync();
-
-                return Json(new { status = true, message = "Archivo subido" });
-            }
-            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
-        }
-
-        #endregion
-
-        #region API: REGISTRO ACTIVO (COMPATIBLE CON AMBOS)
-
-        public class ActivoRegistroModel
-        {
-            public int? GrupoId { get; set; }
-            public int? TipoId { get; set; }
-            public int? MarcaId { get; set; }
-            public int? ModeloId { get; set; }
-            public string CodigoInterno { get; set; }
-            public string Serie { get; set; }
-            public string Condicion { get; set; }
-            public int? Anio { get; set; }
-            public string Color { get; set; }
-            public string Modalidad { get; set; }
-            public decimal? KilometrajeInicial { get; set; }
-            public decimal? FrecuenciaMant { get; set; }
-            public List<ActivoEspecificacion> Specs { get; set; }
-        }
-
+        // GUARDAR ACTIVO DE CÓMPUTO (Original)
         [HttpPost]
         public async Task<JsonResult> GuardarActivo(ActivoRegistroModel model)
         {
@@ -413,14 +143,7 @@ namespace ERPKardex.Controllers
                 {
                     string codigoFinal = model.CodigoInterno;
                     if (string.IsNullOrEmpty(codigoFinal))
-                    {
                         codigoFinal = "ACT-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
-                    }
-
-                    // Detectar si es vehículo para asignar unidad
-                    string unidad = "UND";
-                    var grupo = await _context.ActivoGrupos.FindAsync(model.GrupoId);
-                    if (grupo != null && grupo.Nombre == "VEHÍCULOS") unidad = "KM";
 
                     var activo = new Activo
                     {
@@ -435,14 +158,11 @@ namespace ERPKardex.Controllers
                         EmpresaId = EmpresaUsuarioId,
                         FechaRegistro = DateTime.Now,
                         Estado = true,
-                        // Datos Vehículo
-                        AnioFabricacion = model.Anio,
-                        Color = model.Color,
-                        ModalidadAdquisicion = model.Modalidad,
-                        MedidaActual = model.KilometrajeInicial ?? 0,
-                        ProxMantenimiento = (model.KilometrajeInicial ?? 0) + (model.FrecuenciaMant ?? 5000),
-                        FrecuenciaMant = model.FrecuenciaMant ?? 5000,
-                        UnidadMedidaUso = unidad
+                        // Valores por defecto para cómputo
+                        UnidadMedidaUso = "UND",
+                        MedidaActual = 0,
+                        ProxMantenimiento = 0,
+                        FrecuenciaMant = 0
                     };
 
                     _context.Activos.Add(activo);
@@ -451,23 +171,6 @@ namespace ERPKardex.Controllers
                     if (model.Specs != null)
                     {
                         foreach (var s in model.Specs) { s.ActivoId = activo.Id; _context.ActivoEspecificaciones.Add(s); }
-                        await _context.SaveChangesAsync();
-                    }
-
-                    // Historial Inicial de KM
-                    if (unidad == "KM" && activo.MedidaActual > 0)
-                    {
-                        var hist = new ActivoHistorialMedida
-                        {
-                            ActivoId = activo.Id,
-                            FechaLectura = DateTime.Now,
-                            ValorMedida = activo.MedidaActual,
-                            OrigenDato = "REGISTRO_INICIAL",
-                            Observacion = "Inicio",
-                            UsuarioRegistroId = UsuarioActualId,
-                            Estado = true
-                        };
-                        _context.ActivoHistorialMedidas.Add(hist);
                         await _context.SaveChangesAsync();
                     }
 
@@ -492,7 +195,7 @@ namespace ERPKardex.Controllers
                         ActivoId = activo.Id,
                         CondicionItem = activo.Condicion,
                         ObservacionItem = "Nuevo",
-                        MedidaRegistro = activo.MedidaActual
+                        MedidaRegistro = 0
                     };
                     _context.DMovimientosActivo.Add(det);
                     await _context.SaveChangesAsync();
@@ -507,177 +210,335 @@ namespace ERPKardex.Controllers
                 }
             }
         }
-        #endregion
 
-        #region API: GESTIÓN DE MOVIMIENTOS (ENTREGA/DEVOLUCIÓN)
-
-        public class MovimientoDTO
-        {
-            public string TipoMovimiento { get; set; }
-            public int? PersonalId { get; set; }
-            public string Ubicacion { get; set; }
-            public string Observacion { get; set; }
-            public List<ItemMovimientoDTO> Items { get; set; }
-        }
-
-        public class ItemMovimientoDTO
-        {
-            public int ActivoId { get; set; }
-            public string Condicion { get; set; }
-            public string Observacion { get; set; }
-            public decimal? NuevaMedida { get; set; }
-        }
-
+        // GUARDAR MOVIMIENTO DE CÓMPUTO (Original)
         [HttpPost]
-        public async Task<JsonResult> GuardarMovimiento([FromBody] MovimientoDTO data)
+        public async Task<JsonResult> GuardarMovimiento([FromBody] MovimientoDTO dto)
         {
-            if (data.Items == null || !data.Items.Any())
-                return Json(new { status = false, message = "No se han seleccionado activos." });
-
-            using (var tx = _context.Database.BeginTransaction())
+            using (var transaccion = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    int? responsableIdDetectado = data.PersonalId;
-
-                    if (data.TipoMovimiento == "DEVOLUCION")
+                    var mov = new MovimientoActivo
                     {
-                        int primerActivoId = data.Items.First().ActivoId;
-                        var ultimoMov = await (from d in _context.DMovimientosActivo
-                                               join m in _context.MovimientosActivo on d.MovimientoActivoId equals m.Id
-                                               where d.ActivoId == primerActivoId && m.Estado == true
-                                               orderby m.FechaMovimiento descending, m.Id descending
-                                               select m.PersonalId).FirstOrDefaultAsync();
-
-                        responsableIdDetectado = ultimoMov;
-                        if (responsableIdDetectado == null) return Json(new { status = false, message = "No se detectó responsable previo." });
-                    }
-
-                    var personal = _context.Personal.FirstOrDefault(p => p.Id == responsableIdDetectado);
-
-                    var cabecera = new MovimientoActivo
-                    {
-                        CodigoActa = "ACT-" + DateTime.Now.ToString("yyyyMMdd-HHmmss"),
-                        TipoMovimiento = data.TipoMovimiento,
+                        CodigoActa = "MOV-" + DateTime.Now.Ticks.ToString().Substring(10),
+                        TipoMovimiento = dto.TipoMovimiento,
                         FechaMovimiento = DateTime.Now,
-                        EmpresaId = personal?.EmpresaId ?? 0,
-                        EmpresaUsuarioRegistroId = EmpresaUsuarioId,
+                        PersonalId = dto.PersonalId,
+                        EmpresaId = EmpresaUsuarioId,
                         UsuarioRegistroId = UsuarioActualId,
-                        PersonalId = responsableIdDetectado,
-                        UbicacionDestino = data.Ubicacion,
-                        Observacion = data.Observacion,
+                        UbicacionDestino = dto.Ubicacion,
+                        Observacion = dto.Observacion,
                         Estado = true
                     };
-
-                    _context.MovimientosActivo.Add(cabecera);
+                    _context.MovimientosActivo.Add(mov);
                     await _context.SaveChangesAsync();
 
-                    foreach (var item in data.Items)
+                    foreach (var item in dto.Items)
                     {
-                        var activoDb = await _context.Activos.FindAsync(item.ActivoId);
-                        if (activoDb == null) continue;
-
-                        // Validar KM (Solo para Vehículos)
-                        if (activoDb.UnidadMedidaUso == "KM" && item.NuevaMedida.HasValue)
+                        var det = new DMovimientoActivo
                         {
-                            if (item.NuevaMedida < activoDb.MedidaActual)
-                                throw new Exception($"Error: El KM ingresado ({item.NuevaMedida}) es menor al actual ({activoDb.MedidaActual}).");
-
-                            activoDb.MedidaActual = item.NuevaMedida.Value;
-
-                            var hist = new ActivoHistorialMedida
-                            {
-                                ActivoId = activoDb.Id,
-                                FechaLectura = DateTime.Now,
-                                ValorMedida = item.NuevaMedida.Value,
-                                OrigenDato = data.TipoMovimiento,
-                                Observacion = "Registro por acta " + cabecera.CodigoActa,
-                                UsuarioRegistroId = UsuarioActualId,
-                                Estado = true
-                            };
-                            _context.ActivoHistorialMedidas.Add(hist);
-                        }
-
-                        var detalle = new DMovimientoActivo
-                        {
-                            MovimientoActivoId = cabecera.Id,
+                            MovimientoActivoId = mov.Id,
                             ActivoId = item.ActivoId,
                             CondicionItem = item.Condicion,
                             ObservacionItem = item.Observacion,
-                            MedidaRegistro = item.NuevaMedida ?? 0
+                            MedidaRegistro = 0 // Cómputo no usa KM
                         };
-                        _context.DMovimientosActivo.Add(detalle);
+                        _context.DMovimientosActivo.Add(det);
 
-                        activoDb.Condicion = item.Condicion;
-                        if (data.TipoMovimiento == "ENTREGA") activoDb.Situacion = "EN USO";
-                        else activoDb.Situacion = "EN STOCK";
+                        // Actualizar Activo
+                        var activo = await _context.Activos.FindAsync(item.ActivoId);
+                        if (activo != null)
+                        {
+                            activo.Condicion = item.Condicion;
+                            if (dto.TipoMovimiento == "ENTREGA") activo.Situacion = "EN USO";
+                            else if (dto.TipoMovimiento == "DEVOLUCION") activo.Situacion = "EN STOCK";
+                        }
                     }
-
                     await _context.SaveChangesAsync();
-                    tx.Commit();
+                    transaccion.Commit();
 
-                    return Json(new { status = true, message = "Movimiento registrado.", idMovimiento = cabecera.Id });
+                    return Json(new { status = true, message = "Movimiento registrado", idMovimiento = mov.Id });
                 }
                 catch (Exception ex)
                 {
-                    tx.Rollback();
+                    transaccion.Rollback();
                     return Json(new { status = false, message = "Error: " + ex.Message });
                 }
             }
         }
+
         #endregion
 
-        #region API: DOCUMENTOS Y BITÁCORA
+        // ==========================================================================================
+        // REGIÓN 2: MÓDULO DE FLOTA VEHICULAR (LÓGICA NUEVA)
+        // ==========================================================================================
+        #region MÓDULO FLOTA
 
-        [HttpPost]
-        public async Task<JsonResult> GuardarDocumento(int activoId, string tipoDoc, string nroDoc, DateTime fechaVenc, IFormFile archivo)
+        // 1. VISTAS DE FLOTA
+        public IActionResult IndexFlota()
+        {
+            ViewBag.TipoModulo = "VEHICULOS";
+            return View("IndexVehiculos"); // Carga IndexVehiculos.cshtml
+        }
+
+        public IActionResult RegistroFlota()
+        {
+            ViewBag.TipoModulo = "VEHICULOS";
+            // Asegúrate de tener una vista llamada RegistroVehiculo.cshtml o adapta la existente
+            return View("RegistroVehiculo");
+        }
+
+        public IActionResult HistorialFlota(int id)
+        {
+            var activo = _context.Activos.Find(id);
+            if (activo == null) return NotFound();
+
+            ViewBag.TipoModulo = "VEHICULOS";
+            ViewBag.ActivoId = id;
+            ViewBag.Placa = activo.CodigoInterno;
+            ViewBag.Estado = activo.Condicion;
+            return View("HistorialVehiculo"); // Carga HistorialVehiculo.cshtml
+        }
+
+        public IActionResult AsignacionFlota()
+        {
+            ViewBag.TipoModulo = "VEHICULOS";
+            return View("AsignacionVehiculo"); // Carga AsignacionVehiculo.cshtml
+        }
+
+
+        // 2. APIS DE FLOTA (NUEVAS TABLAS)
+
+        // Listado para IndexVehiculos
+        [HttpGet]
+        public async Task<JsonResult> GetListadoFlota()
         {
             try
             {
-                string rutaRelativa = null;
-                if (archivo != null)
-                {
-                    var path = Path.Combine(_env.WebRootPath, "uploads", "vehiculos");
-                    if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-                    string nombreFile = $"{activoId}_{tipoDoc}_{DateTime.Now.Ticks}{Path.GetExtension(archivo.FileName)}";
-                    using (var stream = new FileStream(Path.Combine(path, nombreFile), FileMode.Create))
-                    {
-                        await archivo.CopyToAsync(stream);
-                    }
-                    rutaRelativa = "uploads/vehiculos/" + nombreFile;
-                }
+                var data = await (from a in _context.Activos
+                                  join f in _context.VehiculoFichas on a.Id equals f.ActivoId into fichas
+                                  from ficha in fichas.DefaultIfEmpty()
+                                  join g in _context.ActivoGrupos on a.ActivoGrupoId equals g.Id
 
-                var doc = new ActivoDocumento
-                {
-                    ActivoId = activoId,
-                    TipoDocumento = tipoDoc,
-                    NroDocumento = nroDoc,
-                    FechaVencimiento = fechaVenc,
-                    FechaEmision = DateTime.Now,
-                    RutaArchivo = rutaRelativa,
-                    Estado = true
-                };
-                _context.ActivoDocumentos.Add(doc);
-                await _context.SaveChangesAsync();
-                return Json(new { status = true, message = "Documento registrado." });
+                                  // Subquery responsable
+                                  let ultimoMov = (from d in _context.DMovimientosActivo
+                                                   join mov in _context.MovimientosActivo on d.MovimientoActivoId equals mov.Id
+                                                   join p in _context.Personal on mov.PersonalId equals p.Id
+                                                   where d.ActivoId == a.Id && mov.Estado == true
+                                                   orderby mov.FechaMovimiento descending
+                                                   select new { Responsable = p.NombresCompletos }).FirstOrDefault()
+
+                                  where a.Estado == true && (g.Nombre == "VEHÍCULOS" || g.Nombre == "FLOTA")
+                                  orderby a.CodigoInterno ascending
+                                  select new
+                                  {
+                                      id = a.Id,
+                                      placa = a.CodigoInterno,
+                                      descripcion = ficha != null ? (ficha.Marca + " " + ficha.Modelo) : "SIN FICHA",
+                                      asignadoA = (ultimoMov != null) ? ultimoMov.Responsable : (a.Situacion == "EN STOCK" ? "EN STOCK" : "SIN ASIGNAR"),
+                                      kilometraje = a.MedidaActual,
+                                      proxMant = a.ProxMantenimiento,
+                                      alertaMant = (a.MedidaActual >= a.ProxMantenimiento) ? "ROJO" : "VERDE",
+                                      estado = a.Condicion
+                                  }).ToListAsync();
+
+                return Json(new { status = true, data = data });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
+        // Detalle Completo para HistorialVehiculo
         [HttpGet]
-        public JsonResult GetHistorialMedidas(int activoId)
+        public async Task<JsonResult> GetDetalleFlota(int id)
         {
-            var data = _context.ActivoHistorialMedidas
-                .Where(h => h.ActivoId == activoId && h.Estado == true)
-                .OrderByDescending(h => h.FechaLectura)
-                .Select(h => new
+            try
+            {
+                var ficha = await _context.VehiculoFichas.FirstOrDefaultAsync(x => x.ActivoId == id);
+                var gps = await _context.VehiculoGpsList.FirstOrDefaultAsync(x => x.ActivoId == id);
+                var seguro = await _context.VehiculoSeguros.Where(x => x.ActivoId == id).OrderByDescending(x => x.VigenciaFin).FirstOrDefaultAsync();
+                var mant = await _context.VehiculoMantenimientos.Where(x => x.ActivoId == id).OrderByDescending(x => x.FechaServicio).ToListAsync();
+
+                var docs = await _context.ActivoDocumentos
+                                   .Where(x => x.ActivoId == id && x.Estado == true)
+                                   .Select(x => new
+                                   {
+                                       tipo = x.TipoDocumento,
+                                       nro = x.NroDocumento,
+                                       vence = x.FechaVencimiento.HasValue ? x.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
+                                       estadoVenc = (x.FechaVencimiento < DateTime.Now) ? "VENCIDO" : "VIGENTE",
+                                       ruta = x.RutaArchivo
+                                   }).ToListAsync();
+
+                return Json(new { status = true, ficha, gps, seguro, mantenimientos = mant, documentos = docs });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // GUARDAR NUEVO VEHÍCULO
+        [HttpPost]
+        public async Task<JsonResult> GuardarVehiculo(VehiculoFicha ficha, decimal kmInicial, int frecuenciaMant)
+        {
+            using (var transaccion = _context.Database.BeginTransaction())
+            {
+                try
                 {
-                    Fecha = h.FechaLectura.HasValue ? h.FechaLectura.Value.ToString("dd/MM/yyyy HH:mm") : "-",
-                    Valor = h.ValorMedida,
-                    Origen = h.OrigenDato,
-                    Obs = h.Observacion,
-                    Usuario = _context.Usuarios.FirstOrDefault(u => u.Id == h.UsuarioRegistroId).Nombre ?? ""
-                }).ToList();
+                    var activo = new Activo
+                    {
+                        CodigoInterno = ficha.Placa.ToUpper(),
+                        Serie = ficha.VinChasis,
+                        ActivoGrupoId = 7, // OJO: ID del grupo vehículos en tu BD
+                        Condicion = "OPERATIVO",
+                        Situacion = "EN STOCK",
+                        MedidaActual = kmInicial,
+                        UnidadMedidaUso = "KM",
+                        ProxMantenimiento = kmInicial + frecuenciaMant,
+                        FrecuenciaMant = frecuenciaMant,
+                        EmpresaId = EmpresaUsuarioId,
+                        Estado = true,
+                        FechaRegistro = DateTime.Now
+                    };
+                    _context.Activos.Add(activo);
+                    await _context.SaveChangesAsync();
+
+                    ficha.ActivoId = activo.Id;
+                    ficha.Estado = true;
+                    _context.VehiculoFichas.Add(ficha);
+
+                    _context.ActivoHistorialMedidas.Add(new ActivoHistorialMedida
+                    {
+                        ActivoId = activo.Id,
+                        FechaLectura = DateTime.Now,
+                        ValorMedida = kmInicial,
+                        OrigenDato = "REGISTRO_INICIAL",
+                        Observacion = "Ingreso al sistema",
+                        UsuarioRegistroId = UsuarioActualId,
+                        Estado = true
+                    });
+
+                    await _context.SaveChangesAsync();
+                    transaccion.Commit();
+                    return Json(new { status = true, message = "Vehículo registrado" });
+                }
+                catch (Exception ex) { transaccion.Rollback(); return Json(new { status = false, message = ex.Message }); }
+            }
+        }
+
+        // REGISTRAR MANTENIMIENTO (Nueva Tabla)
+        [HttpPost]
+        public async Task<JsonResult> GuardarMantenimiento(VehiculoMantenimiento model)
+        {
+            try
+            {
+                model.Estado = true;
+                _context.VehiculoMantenimientos.Add(model);
+
+                if (model.Tipo == "PREVENTIVO")
+                {
+                    var activo = await _context.Activos.FindAsync(model.ActivoId);
+                    if (activo != null)
+                    {
+                        activo.ProxMantenimiento = (model.KmRealServicio ?? activo.MedidaActual) + activo.FrecuenciaMant;
+                        activo.Condicion = "OPERATIVO";
+                    }
+                }
+                await _context.SaveChangesAsync();
+                return Json(new { status = true, message = "Mantenimiento registrado" });
+            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
+        }
+
+        // REGISTRAR MOVIMIENTO FLOTA (Actualiza KM y Estado)
+        [HttpPost]
+        public async Task<JsonResult> GuardarMovimientoFlota([FromBody] MovimientoDTO dto)
+        {
+            using (var transaccion = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    var mov = new MovimientoActivo
+                    {
+                        CodigoActa = "MOV-FLOTA-" + DateTime.Now.Ticks.ToString().Substring(12),
+                        TipoMovimiento = dto.TipoMovimiento,
+                        FechaMovimiento = DateTime.Now,
+                        PersonalId = dto.PersonalId,
+                        EmpresaId = EmpresaUsuarioId,
+                        UsuarioRegistroId = UsuarioActualId,
+                        UbicacionDestino = dto.Ubicacion,
+                        Observacion = dto.Observacion,
+                        Estado = true
+                    };
+                    _context.MovimientosActivo.Add(mov);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var item in dto.Items)
+                    {
+                        _context.DMovimientosActivo.Add(new DMovimientoActivo
+                        {
+                            MovimientoActivoId = mov.Id,
+                            ActivoId = item.ActivoId,
+                            CondicionItem = item.Condicion,
+                            MedidaRegistro = item.NuevaMedida.Value,
+                            ObservacionItem = item.Observacion
+                        });
+
+                        var activo = await _context.Activos.FindAsync(item.ActivoId);
+                        if (activo != null)
+                        {
+                            activo.Condicion = item.Condicion;
+                            if (dto.TipoMovimiento == "ENTREGA") activo.Situacion = "EN USO";
+                            else activo.Situacion = "EN STOCK";
+
+                            if (item.NuevaMedida > activo.MedidaActual)
+                            {
+                                activo.MedidaActual = item.NuevaMedida ?? activo.MedidaActual;
+                                _context.ActivoHistorialMedidas.Add(new ActivoHistorialMedida
+                                {
+                                    ActivoId = activo.Id,
+                                    FechaLectura = DateTime.Now,
+                                    ValorMedida = activo.MedidaActual,
+                                    OrigenDato = "MOVIMIENTO_" + dto.TipoMovimiento,
+                                    UsuarioRegistroId = UsuarioActualId,
+                                    Estado = true
+                                });
+                            }
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+                    transaccion.Commit();
+                    return Json(new { status = true, message = "Movimiento registrado", idMovimiento = mov.Id });
+                }
+                catch (Exception ex) { transaccion.Rollback(); return Json(new { status = false, message = ex.Message }); }
+            }
+        }
+
+        #endregion
+
+
+        // ==========================================================================================
+        // REGIÓN 3: COMUNES (BITÁCORA, DOCUMENTOS, ACTAS) - Funciona para ambos
+        // ==========================================================================================
+        #region COMUNES
+
+        // Vistas Parciales
+        public IActionResult BitacoraKm(int id) { ViewBag.ActivoId = id; return PartialView("_BitacoraKilometraje"); }
+        public IActionResult GestionDocumental(int id) { ViewBag.ActivoId = id; return PartialView("_GestionDocumental"); }
+
+        // API Bitácora
+        [HttpGet]
+        public async Task<JsonResult> GetHistorialMedidas(int activoId)
+        {
+            var data = await _context.ActivoHistorialMedidas
+                                     .Where(x => x.ActivoId == activoId)
+                                     .OrderByDescending(x => x.FechaLectura)
+                                     .Select(x => new
+                                     {
+                                         fecha = x.FechaLectura.Value.ToString("dd/MM/yyyy HH:mm"),
+                                         valor = x.ValorMedida,
+                                         origen = x.OrigenDato,
+                                         obs = x.Observacion,
+                                         usuario = "SISTEMA"
+                                     }).ToListAsync();
             return Json(new { status = true, data = data });
         }
 
@@ -687,156 +548,134 @@ namespace ERPKardex.Controllers
             try
             {
                 var activo = await _context.Activos.FindAsync(activoId);
-                if (activo == null) return Json(new { status = false, message = "Activo no encontrado" });
-                if (medida < activo.MedidaActual) return Json(new { status = false, message = "El valor no puede ser menor al actual." });
+                if (medida < activo.MedidaActual) return Json(new { status = false, message = "El KM no puede disminuir." });
 
-                activo.MedidaActual = medida;
-                var hist = new ActivoHistorialMedida
+                _context.ActivoHistorialMedidas.Add(new ActivoHistorialMedida
                 {
                     ActivoId = activoId,
                     FechaLectura = DateTime.Now,
                     ValorMedida = medida,
-                    OrigenDato = "CONTROL_SEMANAL",
+                    OrigenDato = "CONTROL_MANUAL",
                     Observacion = observacion,
                     UsuarioRegistroId = UsuarioActualId,
                     Estado = true
-                };
-                _context.ActivoHistorialMedidas.Add(hist);
+                });
+
+                activo.MedidaActual = medida;
                 await _context.SaveChangesAsync();
-                return Json(new { status = true, message = "Lectura registrada." });
+                return Json(new { status = true, message = "Lectura registrada" });
             }
             catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
-        #endregion
 
-        #region COMBOS
-        [HttpGet]
-        public JsonResult GetEmpresasCombo()
+        // API Documentos
+        [HttpPost]
+        public async Task<JsonResult> SubirDocumento(int activoId, string tipoDoc, string nroDoc, DateTime? vencimiento, IFormFile archivo)
         {
             try
             {
-                var esGlobal = EsAdminGlobal;
-                var miEmpresaId = EmpresaUsuarioId;
+                if (archivo == null) return Json(new { status = false, message = "Archivo requerido" });
 
-                var query = _context.Empresas.Where(x => x.Estado == true);
+                var path = Path.Combine(_env.WebRootPath, "uploads", "docs", activoId.ToString());
+                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
-                if (!esGlobal)
+                string fileName = $"{tipoDoc}_{DateTime.Now.Ticks}{Path.GetExtension(archivo.FileName)}";
+                using (var stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
                 {
-                    query = query.Where(x => x.Id == miEmpresaId);
+                    await archivo.CopyToAsync(stream);
                 }
 
-                var data = query.Select(x => new
+                _context.ActivoDocumentos.Add(new ActivoDocumento
                 {
-                    x.Id,
-                    x.RazonSocial,
-                    x.Nombre
-                }).ToList();
-
-                return Json(new { status = true, data });
+                    ActivoId = activoId,
+                    TipoDocumento = tipoDoc,
+                    NroDocumento = nroDoc,
+                    FechaVencimiento = vencimiento,
+                    RutaArchivo = $"uploads/docs/{activoId}/{fileName}",
+                    Estado = true
+                });
+                await _context.SaveChangesAsync();
+                return Json(new { status = true, message = "Documento subido" });
             }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
-        }
-        [HttpGet]
-        public JsonResult GetCombosRegistro(string tipoModulo = "COMPUTO")
-        {
-            var grupos = _context.ActivoGrupos.Where(x => x.Estado == true).ToList();
-            if (tipoModulo == "VEHICULOS") grupos = grupos.Where(g => g.Nombre == "VEHÍCULOS").ToList();
-            else grupos = grupos.Where(g => g.Nombre != "VEHÍCULOS").ToList();
-
-            return Json(new
-            {
-                status = true,
-                grupos = grupos,
-                tipos = _context.ActivoTipos.Where(x => x.Estado == true).ToList(),
-                marcas = _context.Marcas.Where(x => x.Estado == true).ToList(),
-            });
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
 
         [HttpGet]
-        public JsonResult GetPersonalCombo()
+        public async Task<JsonResult> GetDocumentosActivo(int activoId)
         {
-            var p = _context.Personal.Where(x => x.Estado == true)
-                .Select(x => new { x.Id, x.NombresCompletos, x.EmpresaId })
-                .OrderBy(x => x.NombresCompletos).ToList();
-
-            if (!EsAdminGlobal) p = p.Where(p => p.EmpresaId == EmpresaUsuarioId).ToList();
-            return Json(new { status = true, data = p });
+            var data = await _context.ActivoDocumentos.Where(x => x.ActivoId == activoId && x.Estado == true)
+                .OrderBy(x => x.FechaVencimiento).Select(x => new
+                {
+                    tipo = x.TipoDocumento,
+                    nro = x.NroDocumento,
+                    vence = x.FechaVencimiento.HasValue ? x.FechaVencimiento.Value.ToString("dd/MM/yyyy") : "-",
+                    estadoVenc = (x.FechaVencimiento < DateTime.Now) ? "VENCIDO" : "VIGENTE",
+                    ruta = x.RutaArchivo
+                }).ToListAsync();
+            return Json(new { status = true, data = data });
         }
 
-        [HttpGet]
-        public JsonResult GetModelosByMarca(int marcaId)
-        {
-            var modelos = _context.Modelos.Where(x => x.MarcaId == marcaId && x.Estado == true && x.EmpresaId == EmpresaUsuarioId)
-                .Select(x => new { x.Id, x.Nombre }).OrderBy(x => x.Nombre).ToList();
-            return Json(new { status = true, data = modelos });
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetUbicaciones()
-        {
-            var ubicaciones = await _context.MovimientosActivo.Where(x => !string.IsNullOrEmpty(x.UbicacionDestino))
-                .Select(x => x.UbicacionDestino).Distinct().OrderBy(x => x).ToListAsync();
-            return Json(new { status = true, data = ubicaciones });
-        }
-        #endregion
-        #region DASHBOARD GERENCIAL
-
-        public IActionResult Dashboard()
-        {
-            return View();
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetResumenDashboard()
+        // Subir Acta de Entrega/Devolución
+        [HttpPost]
+        public async Task<JsonResult> SubirActa(int idMovimiento, IFormFile archivo)
         {
             try
             {
-                // 1. DATA BASE
-                var dataBase = await (from a in _context.Activos
-                                      join g in _context.ActivoGrupos on a.ActivoGrupoId equals g.Id
-                                      join t in _context.ActivoTipos on a.ActivoTipoId equals t.Id
-                                      join e in _context.Empresas on a.EmpresaId equals e.Id
-                                      where a.Estado == true
-                                      select new { Grupo = g.Nombre, Tipo = t.Nombre, Empresa = e.Nombre })
-                                      .ToListAsync();
+                if (archivo == null) return Json(new { status = false, message = "Sin archivo" });
+                var mov = await _context.MovimientosActivo.FindAsync(idMovimiento);
+                if (mov == null) return Json(new { status = false, message = "Movimiento no existe" });
 
-                // 2. KPIs
-                var cards = new
+                var path = Path.Combine(_env.WebRootPath, "uploads", "actas");
+                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+
+                string fileName = $"ACTA_{mov.Id}_{DateTime.Now.Ticks}.pdf";
+                using (var stream = new FileStream(Path.Combine(path, fileName), FileMode.Create))
                 {
-                    total = dataBase.Count,
-                    vehiculos = dataBase.Count(x => x.Grupo == "VEHÍCULOS"),
-                    computo = dataBase.Count(x => x.Grupo != "VEHÍCULOS")
-                };
+                    await archivo.CopyToAsync(stream);
+                }
 
-                // 3. DATOS FLOTA (Para Pie Chart)
-                var fleetData = dataBase.Where(x => x.Grupo == "VEHÍCULOS")
-                                        .GroupBy(x => x.Empresa)
-                                        .Select(g => new { name = g.Key, value = g.Count() })
-                                        .ToList();
+                mov.RutaActaPdf = "uploads/actas/" + fileName;
+                await _context.SaveChangesAsync();
 
-                // 4. DATOS CÓMPUTO (RAW DATA para filtrar en Front)
-                // Enviamos: [{ Empresa: 'Inigde', Tipo: 'Laptop', Cantidad: 10 }, ...]
-                var compData = dataBase.Where(x => x.Grupo != "VEHÍCULOS")
-                                       .GroupBy(x => new { x.Empresa, x.Tipo })
-                                       .Select(g => new
-                                       {
-                                           Empresa = g.Key.Empresa,
-                                           Tipo = g.Key.Tipo,
-                                           Cantidad = g.Count()
-                                       })
-                                       .OrderBy(x => x.Empresa).ThenBy(x => x.Tipo)
-                                       .ToList();
-
-                return Json(new { status = true, cards, chartVehiculos = fleetData, rawComputo = compData });
+                return Json(new { status = true, message = "Archivo subido" });
             }
-            catch (Exception ex)
-            {
-                return Json(new { status = false, message = ex.Message });
-            }
+            catch (Exception ex) { return Json(new { status = false, message = ex.Message }); }
         }
+
         #endregion
+
+        // CLASES DTO AUXILIARES PARA EL POST
+        public class ActivoRegistroModel
+        {
+            public int? GrupoId { get; set; }
+            public int? TipoId { get; set; }
+            public int? MarcaId { get; set; }
+            public int? ModeloId { get; set; }
+            public string CodigoInterno { get; set; }
+            public string Serie { get; set; }
+            public string Condicion { get; set; }
+            public int? Anio { get; set; }
+            public string Color { get; set; }
+            public string Modalidad { get; set; }
+            public decimal? KilometrajeInicial { get; set; }
+            public decimal? FrecuenciaMant { get; set; }
+            public List<ActivoEspecificacion> Specs { get; set; }
+        }
+
+        public class MovimientoDTO
+        {
+            public string TipoMovimiento { get; set; }
+            public int? PersonalId { get; set; }
+            public string Ubicacion { get; set; }
+            public string Observacion { get; set; }
+            public List<ItemMovimientoDTO> Items { get; set; }
+        }
+        public class ItemMovimientoDTO
+        {
+            public int ActivoId { get; set; }
+            public string Condicion { get; set; }
+            public decimal? NuevaMedida { get; set; }
+            public string Observacion { get; set; }
+        }
     }
 }
