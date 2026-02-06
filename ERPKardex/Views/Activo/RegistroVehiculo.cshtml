@@ -162,11 +162,11 @@
                 if (res.status) {
 
                     // 1. Detectar el Grupo ID de "VEHÍCULOS"
-                    let grupo = res.grupos.find(x => x.nombre === 'VEHÍCULOS');
+                    let grupo = res.grupos.find(x => x.nombre === 'VEHICULOS');
                     if (grupo) {
                         GRUPO_VEHICULOS_ID = grupo.id;
                     } else {
-                        toastr.error("Error Crítico: No existe el grupo 'VEHÍCULOS' en la BD.");
+                        toastr.error("Error Crítico: No existe el grupo 'VEHICULOS' en la BD.");
                     }
 
                     // 2. Llenar Tipos (Camioneta, SUV, etc.)

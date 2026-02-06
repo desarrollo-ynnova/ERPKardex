@@ -101,9 +101,9 @@ namespace ERPKardex.Controllers
                 if (!string.IsNullOrEmpty(tipoModulo))
                 {
                     if (tipoModulo == "VEHICULOS")
-                        query = query.Where(x => x.g.Nombre == "VEHÍCULOS");
+                        query = query.Where(x => x.g.Nombre == "VEHICULOS");
                     else
-                        query = query.Where(x => x.g.Nombre != "VEHÍCULOS");
+                        query = query.Where(x => x.g.Nombre != "VEHICULOS");
                 }
 
                 // 3. Proyección de Datos
@@ -420,7 +420,7 @@ namespace ERPKardex.Controllers
                     // Detectar si es vehículo para asignar unidad
                     string unidad = "UND";
                     var grupo = await _context.ActivoGrupos.FindAsync(model.GrupoId);
-                    if (grupo != null && grupo.Nombre == "VEHÍCULOS") unidad = "KM";
+                    if (grupo != null && grupo.Nombre == "VEHICULOS") unidad = "KM";
 
                     var activo = new Activo
                     {
@@ -577,7 +577,7 @@ namespace ERPKardex.Controllers
                         var activoDb = await _context.Activos.FindAsync(item.ActivoId);
                         if (activoDb == null) continue;
 
-                        // Validar KM (Solo para Vehículos)
+                        // Validar KM (Solo para VEHICULOS)
                         if (activoDb.UnidadMedidaUso == "KM" && item.NuevaMedida.HasValue)
                         {
                             if (item.NuevaMedida < activoDb.MedidaActual)
@@ -743,14 +743,14 @@ namespace ERPKardex.Controllers
         public JsonResult GetCombosRegistro(string tipoModulo = "COMPUTO")
         {
             var grupos = _context.ActivoGrupos.Where(x => x.Estado == true).ToList();
-            if (tipoModulo == "VEHICULOS") grupos = grupos.Where(g => g.Nombre == "VEHÍCULOS").ToList();
-            else grupos = grupos.Where(g => g.Nombre != "VEHÍCULOS").ToList();
+            if (tipoModulo == "VEHICULOS") grupos = grupos.Where(g => g.Nombre == "VEHICULOS").ToList();
+            else grupos = grupos.Where(g => g.Nombre != "VEHICULOS").ToList();
 
             return Json(new
             {
                 status = true,
                 grupos = grupos,
-                tipos = _context.ActivoTipos.Where(x => x.Estado == true).ToList(),
+                tipos = _context.ActivoTipos.Where(x => x.Estado == true && grupos.Select(g => g.Id).ToList().Contains(x.ActivoGrupoId.Value)).ToList(),
                 marcas = _context.Marcas.Where(x => x.Estado == true).ToList(),
                 modelos = _context.Modelos.Where(x => x.Estado == true).ToList()
             });
@@ -808,19 +808,19 @@ namespace ERPKardex.Controllers
                 var cards = new
                 {
                     total = dataBase.Count,
-                    vehiculos = dataBase.Count(x => x.Grupo == "VEHÍCULOS"),
-                    computo = dataBase.Count(x => x.Grupo != "VEHÍCULOS")
+                    vehiculos = dataBase.Count(x => x.Grupo == "VEHICULOS"),
+                    computo = dataBase.Count(x => x.Grupo != "VEHICULOS")
                 };
 
                 // 3. DATOS FLOTA (Para Pie Chart)
-                var fleetData = dataBase.Where(x => x.Grupo == "VEHÍCULOS")
+                var fleetData = dataBase.Where(x => x.Grupo == "VEHICULOS")
                                         .GroupBy(x => x.Empresa)
                                         .Select(g => new { name = g.Key, value = g.Count() })
                                         .ToList();
 
                 // 4. DATOS CÓMPUTO (RAW DATA para filtrar en Front)
                 // Enviamos: [{ Empresa: 'Inigde', Tipo: 'Laptop', Cantidad: 10 }, ...]
-                var compData = dataBase.Where(x => x.Grupo != "VEHÍCULOS")
+                var compData = dataBase.Where(x => x.Grupo != "VEHICULOS")
                                        .GroupBy(x => new { x.Empresa, x.Tipo })
                                        .Select(g => new
                                        {
