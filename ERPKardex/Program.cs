@@ -8,8 +8,18 @@ builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Entity Framework Core
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
+{
+    // A. Recuperamos el interceptor que acabamos de registrar arriba
+    var interceptor = serviceProvider.GetRequiredService<ERPKardex.Data.AuditoriaInterceptor>();
+
+    // B. Obtenemos la cadena de conexión
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    // C. Configuramos SQL Server Y agregamos el interceptor en la misma línea
+    options.UseSqlServer(connectionString)
+           .AddInterceptors(interceptor);
+});
 
 // Usar Cookies
 builder.Services.AddAuthentication("Cookies")
@@ -40,6 +50,7 @@ builder.Services.AddControllersWithViews()
 // CACHÉ PARA PERMISOS
 builder.Services.AddMemoryCache(); // Habilitar Caché en RAM
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ERPKardex.Data.AuditoriaInterceptor>();
 builder.Services.AddScoped<ERPKardex.Services.IPermisoService, ERPKardex.Services.PermisoService>();
 
 // --- CONFIGURACI�N DE CULTURA H�BRIDA ---

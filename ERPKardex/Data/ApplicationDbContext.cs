@@ -109,6 +109,17 @@ namespace ERPKardex.Data
                 if (property.GetColumnType() == null)
                     property.SetColumnType("decimal(18,2)");
             }
+
+            modelBuilder.Entity<ReqCompra>().ToTable(tb => tb.HasTrigger("trg_Audit_reqcompra"));
+            modelBuilder.Entity<ReqServicio>().ToTable(tb => tb.HasTrigger("trg_Audit_reqservicio"));
+            modelBuilder.Entity<PedCompra>().ToTable(tb => tb.HasTrigger("trg_Audit_pedcompra"));
+            modelBuilder.Entity<PedServicio>().ToTable(tb => tb.HasTrigger("trg_Audit_pedservicio"));
+
+            modelBuilder.Entity<OrdenCompra>().ToTable(tb => tb.HasTrigger("trg_Audit_ordencompra"));
+            modelBuilder.Entity<OrdenServicio>().ToTable(tb => tb.HasTrigger("trg_Audit_ordenservicio"));
+
+            modelBuilder.Entity<DocumentoPagar>().ToTable(tb => tb.HasTrigger("trg_Audit_documento_pagar"));
+            modelBuilder.Entity<OrdenPago>().ToTable(tb => tb.HasTrigger("trg_Audit_orden_pago"));
         }
     }
 }
