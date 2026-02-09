@@ -429,6 +429,8 @@ namespace ERPKardex.Controllers
                     if (doc.OrdenCompraId == null && doc.OrdenServicioId == null)
                         throw new Exception("Anticipo requiere Orden.");
 
+                    if (doc.TipoCambio == null || doc.TipoCambio == 0) throw new Exception("Debe seleccionar un proveedor.");
+
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     doc.FechaRegistro = DateTime.Now;
@@ -491,6 +493,7 @@ namespace ERPKardex.Controllers
                     // 1. Validaciones
                     if (codigoTipoDoc == "PROV") throw new Exception("Provisión requiere documento físico.");
                     if (doc.OrdenCompraId == null && doc.OrdenServicioId == null) throw new Exception("Requiere Orden.");
+                    if (doc.TipoCambio == null || doc.TipoCambio == 0) throw new Exception("Debe seleccionar un proveedor.");
 
                     // 2. Validación Financiera (Misma lógica que ya teníamos)
                     decimal totalOrden = 0, totalPrevio = 0;
@@ -772,6 +775,8 @@ namespace ERPKardex.Controllers
             {
                 try
                 {
+                    if (doc.TipoCambio == null || doc.TipoCambio == 0) throw new Exception("Debe seleccionar un proveedor.");
+
                     doc.EmpresaId = EmpresaUsuarioId;
                     doc.UsuarioRegistroId = UsuarioActualId;
                     //doc.FechaEmision = DateTime.Now;

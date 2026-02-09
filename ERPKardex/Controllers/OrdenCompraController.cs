@@ -268,6 +268,7 @@ namespace ERPKardex.Controllers
                     var usuarioId = UsuarioActualId;
 
                     if (cabecera.ProveedorId == 0) throw new Exception("Debe seleccionar un proveedor.");
+                    if (cabecera.TipoCambio == null || cabecera.TipoCambio == 0) throw new Exception("Debe seleccionar un proveedor.");
 
                     // Correlativo y datos fijos...
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
