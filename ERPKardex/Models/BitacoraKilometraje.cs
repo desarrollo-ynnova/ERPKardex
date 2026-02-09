@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPKardex.Models
 {
-    [Table("activo_documento")]
-    public class ActivoDocumento
+    [Table("bitacora_kilometraje")]
+    public class BitacoraKilometraje
     {
         [Key]
         public int Id { get; set; }
@@ -12,22 +12,11 @@ namespace ERPKardex.Models
         [Column("activo_id")]
         public int ActivoId { get; set; }
 
-        [Column("tipo_documento_activo_id")]
-        public int TipoDocumentoActivoId { get; set; }
+        [Column("fecha")]
+        public DateTime Fecha { get; set; }
 
-        [Column("numero_documento")]
-        [StringLength(100)]
-        public string? NumeroDocumento { get; set; }
-
-        [Column("fecha_emision", TypeName = "date")]
-        public DateTime? FechaEmision { get; set; }
-
-        [Column("fecha_vencimiento", TypeName = "date")]
-        public DateTime? FechaVencimiento { get; set; }
-
-        [Column("ruta_archivo")]
-        [StringLength(500)]
-        public string? RutaArchivo { get; set; }
+        [Column("kilometraje", TypeName = "decimal(12,2)")]
+        public decimal? Kilometraje { get; set; }
 
         [Column("observacion")]
         [StringLength(500)]

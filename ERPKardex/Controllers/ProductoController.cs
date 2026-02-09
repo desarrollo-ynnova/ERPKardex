@@ -19,9 +19,6 @@ namespace ERPKardex.Controllers
         public IActionResult RegistroServicio() => View();
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
-        public IActionResult Editar(string id) => View();
-        public IActionResult Ver(string id) => View();
-
         // Vistas Parciales
         public IActionResult ObtenerVistaRegistroGrupo() => PartialView("_RegistrarGrupo");
         public IActionResult ObtenerVistaRegistroSubgrupo() => PartialView("_RegistrarSubgrupo");
@@ -34,34 +31,17 @@ namespace ERPKardex.Controllers
         public IActionResult ObtenerVistaRegistroCuenta() => PartialView("_RegistrarCuenta");
         public IActionResult ObtenerVistaRegistroIA() => PartialView("_RegistrarIngredienteActivo");
         #endregion
-
-        #region APIs
-
-        [HttpGet]
-        public JsonResult GetSucursalesByEmpresa(int empresaId) =>
-            Json(new { data = _context.Sucursales.Where(s => s.EmpresaId == empresaId && s.Estado == true).ToList(), status = true });
-
-        [HttpGet]
-        public JsonResult GetAlmacenesBySucursal(int sucursalId, int empresaId) =>
-            Json(new { data = _context.Almacenes.Where(a => a.SucursalId == sucursalId && a.EmpresaId == empresaId && a.Estado == true).ToList(), status = true });
-
+        #region Catalogo Productos
+        public IActionResult CatalogoProductos() => View();
         // GET PRODUCTOS
         [HttpGet]
-        public JsonResult GetProductosData(int? almacenId)
+        public JsonResult GetProductosData()
         {
             try
             {
-                // Uso de EmpresaUsuarioId heredado
                 var productosData = (from pro in _context.Productos
-                                     join disa in _context.DIngresoSalidaAlms on pro.Id equals disa.ProductoId
-                                     join isa in _context.IngresoSalidaAlms on disa.IngresoSalidaAlmId equals isa.Id
-                                     where isa.AlmacenId == almacenId
-                                     join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
-                                     from td in joinDoc.DefaultIfEmpty()
-                                     join ent in _context.Proveedores on isa.ProveedorId equals ent.Id into joinEnt
-                                     from ent in joinEnt.DefaultIfEmpty()
-                                     join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id into joinTdi
-                                     from tdi in joinTdi.DefaultIfEmpty()
+                                     where pro.Estado == true
+                                     where !pro.Codigo.StartsWith("6")
                                      where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
                                      select new
                                      {
@@ -73,19 +53,56 @@ namespace ERPKardex.Controllers
                                          pro.DescripcionSubgrupo,
                                          pro.DescripcionProducto,
                                          pro.CodUnidadMedida,
-                                         disa.Cantidad,
-                                         Proveedor = ((tdi.Descripcion ?? "") + ": " + (ent.NumeroDocumento ?? "") + " - " + (ent.RazonSocial ?? "")) ?? "Sin Proveedor",
-                                         TipoDocumento = td != null ? td.Descripcion : "S/D",
-                                         Documento = (isa.SerieDocumento ?? "") + " - " + (isa.NumeroDocumento ?? ""),
                                      }).ToList();
 
                 return Json(new { data = productosData, message = "Productos retornados exitosamente.", status = true });
             }
             catch (Exception ex)
             {
-                return Json(new { data = (object)null, message = ex.Message, status = false }); // Ajuste simple en ApiResponse si no existe la clase
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false }); // Ajuste simple en ApiResponse si no existe la clase
             }
         }
+        #endregion
+        #region Catalogo Servicios
+        public IActionResult CatalogoServicios() => View();
+        [HttpGet]
+        public JsonResult GetServiciosData()
+        {
+            try
+            {
+                var productosData = (from pro in _context.Productos
+                                     where pro.Estado == true
+                                     where pro.Codigo.StartsWith("6")
+                                     where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
+                                     select new
+                                     {
+                                         pro.Codigo,
+                                         pro.CodGrupo,
+                                         pro.DescripcionGrupo,
+                                         pro.DescripcionComercial,
+                                         pro.CodSubgrupo,
+                                         pro.DescripcionSubgrupo,
+                                         pro.DescripcionProducto,
+                                         pro.CodUnidadMedida,
+                                     }).ToList();
+
+                return Json(new { data = productosData, message = "Productos retornados exitosamente.", status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false }); // Ajuste simple en ApiResponse si no existe la clase
+            }
+        }
+        #endregion
+        #region APIs
+
+        [HttpGet]
+        public JsonResult GetSucursalesByEmpresa(int empresaId) =>
+            Json(new { data = _context.Sucursales.Where(s => s.EmpresaId == empresaId && s.Estado == true).ToList(), status = true });
+
+        [HttpGet]
+        public JsonResult GetAlmacenesBySucursal(int sucursalId, int empresaId) =>
+            Json(new { data = _context.Almacenes.Where(a => a.SucursalId == sucursalId && a.EmpresaId == empresaId && a.Estado == true).ToList(), status = true });
 
         // GET EMPRESAS
         public JsonResult GetEmpresaData()

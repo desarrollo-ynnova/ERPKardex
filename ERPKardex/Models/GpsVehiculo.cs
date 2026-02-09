@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPKardex.Models
 {
-    [Table("activo_documento")]
-    public class ActivoDocumento
+    [Table("gps_vehiculo")]
+    public class GpsVehiculo
     {
         [Key]
         public int Id { get; set; }
@@ -12,22 +12,32 @@ namespace ERPKardex.Models
         [Column("activo_id")]
         public int ActivoId { get; set; }
 
-        [Column("tipo_documento_activo_id")]
-        public int TipoDocumentoActivoId { get; set; }
+        [Column("empresa_gps")]
+        [StringLength(200)]
+        public string? EmpresaGps { get; set; }
 
-        [Column("numero_documento")]
-        [StringLength(100)]
-        public string? NumeroDocumento { get; set; }
+        [Column("url_acceso")]
+        [StringLength(500)]
+        public string? UrlAcceso { get; set; }
 
-        [Column("fecha_emision", TypeName = "date")]
-        public DateTime? FechaEmision { get; set; }
+        [Column("usuario")]
+        [StringLength(200)]
+        public string? Usuario { get; set; }
+
+        [Column("contrasena")]
+        [StringLength(200)]
+        public string? Contrasena { get; set; }
 
         [Column("fecha_vencimiento", TypeName = "date")]
         public DateTime? FechaVencimiento { get; set; }
 
-        [Column("ruta_archivo")]
-        [StringLength(500)]
-        public string? RutaArchivo { get; set; }
+        [Column("constancia")]
+        [StringLength(20)]
+        public string? Constancia { get; set; }
+
+        [Column("endoso")]
+        [StringLength(100)]
+        public string? Endoso { get; set; }
 
         [Column("observacion")]
         [StringLength(500)]

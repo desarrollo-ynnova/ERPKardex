@@ -194,7 +194,7 @@
                             (controllerName == "Cliente") ||
                             (controllerName == "TipoCambio") ||
                             (controllerName == "CentroCosto") ||
-                            (controllerName == "Producto" && actionName == "Registrar");
+                            (controllerName == "Producto");
 
                             <li class="nav-item @(isMaestrosOpen ? "menu-open" : "")">
                                 <a href="#" class="nav-link @(isMaestrosOpen ? "active" : "")">
@@ -285,7 +285,7 @@
                                     @if (await _permisos.TienePermiso("SUP_INV_STOCK_VER"))
                                     {
                                         <li class="nav-item">
-                                            <a href="/Producto/Index" class="nav-link @((controllerName == "Producto" && actionName == "Index") ? "active" : "")">
+                                            <a href="/IngresoSalidaAlm/ReporteStock" class="nav-link @((controllerName == "IngresoSalidaAlm" && actionName == "ReporteStock") ? "active" : "")">
                                                 <i class="fas fa-boxes nav-icon"></i><p>Reporte de Stock</p>
                                             </a>
                                         </li>

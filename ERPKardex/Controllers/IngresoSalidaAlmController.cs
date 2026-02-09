@@ -20,6 +20,7 @@ namespace ERPKardex.Controllers
         #region VISTAS
         public IActionResult Index() => View();
         public IActionResult Registrar() => View();
+        public IActionResult ReporteStock() => View();
         public IActionResult ReporteKardex() => View();
         public IActionResult Valorizacion() => View();
         public IActionResult ObtenerVistaRegistroEntidad()
@@ -978,6 +979,46 @@ namespace ERPKardex.Controllers
                     transaction.Rollback();
                     return Json(new { status = false, message = ex.Message });
                 }
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetReporteStock(int? almacenId)
+        {
+            try
+            {
+                var productosData = (from pro in _context.Productos
+                                     join disa in _context.DIngresoSalidaAlms on pro.Id equals disa.ProductoId
+                                     join isa in _context.IngresoSalidaAlms on disa.IngresoSalidaAlmId equals isa.Id
+                                     where isa.AlmacenId == almacenId
+                                     join td in _context.TipoDocumentos on isa.TipoDocumentoId equals td.Id into joinDoc
+                                     from td in joinDoc.DefaultIfEmpty()
+                                     join ent in _context.Proveedores on isa.ProveedorId equals ent.Id into joinEnt
+                                     from ent in joinEnt.DefaultIfEmpty()
+                                     join tdi in _context.TiposDocumentoIdentidad on ent.TipoDocumentoIdentidadId equals tdi.Id into joinTdi
+                                     from tdi in joinTdi.DefaultIfEmpty()
+                                     where pro.EmpresaId == EmpresaUsuarioId // <--- CAMBIO AQUÍ
+                                     select new
+                                     {
+                                         pro.Codigo,
+                                         pro.CodGrupo,
+                                         pro.DescripcionGrupo,
+                                         pro.DescripcionComercial,
+                                         pro.CodSubgrupo,
+                                         pro.DescripcionSubgrupo,
+                                         pro.DescripcionProducto,
+                                         pro.CodUnidadMedida,
+                                         disa.Cantidad,
+                                         Proveedor = ((tdi.Descripcion ?? "") + ": " + (ent.NumeroDocumento ?? "") + " - " + (ent.RazonSocial ?? "")) ?? "Sin Proveedor",
+                                         TipoDocumento = td != null ? td.Descripcion : "S/D",
+                                         Documento = (isa.SerieDocumento ?? "") + " - " + (isa.NumeroDocumento ?? ""),
+                                     }).ToList();
+
+                return Json(new { data = productosData, message = "Productos retornados exitosamente.", status = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ApiResponse { data = null, message = ex.Message, status = false });
             }
         }
 

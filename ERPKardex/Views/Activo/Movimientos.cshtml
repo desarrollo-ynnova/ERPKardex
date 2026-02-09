@@ -1,0 +1,416 @@
+@{
+    ViewData["Title"] = "Movimientos de Activos";
+}
+
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Movimientos de Activos (Entregas / Devoluciones)</h4>
+        <button class="btn btn-primary" onclick="abrirModalMovimiento()">
+            <i class="fas fa-plus me-1"></i> Nuevo Movimiento
+        </button>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Tipo de Activo</label>
+                <select id="filtroTipo" class="form-select form-select-sm" onchange="cargarMovimientos()">
+                    <option value="">-- Todos --</option>
+                    <option value="COMPUTO">Cómputo</option>
+                    <option value="VEHICULO">Vehículos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Empresa</label>
+                <select id="filtroEmpresa" class="form-select form-select-sm" onchange="cargarMovimientos()">
+                    <option value="">-- Todas --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="cargarMovimientos()">
+                    <i class="fas fa-search me-1"></i>Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABLA -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Tipo</th>
+                        <th>Empresa</th>
+                        <th>Personal</th>
+                        <th>DNI</th>
+                        <th>Fecha</th>
+                        <th>Observación</th>
+                        <th class="text-center" style="width:120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyMov">
+                    <tr><td colspan="8" class="text-center text-muted py-4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Nuevo Movimiento -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title">Nuevo Movimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                        <select id="movTipo" class="form-select">
+                            <option value="ENTREGA">ENTREGA</option>
+                            <option value="DEVOLUCION">DEVOLUCIÓN</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                        <select id="movEmpresa" class="form-select" onchange="cargarPersonalMov()"></select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Personal <span class="text-danger">*</span></label>
+                        <select id="movPersonal" class="form-select"></select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" id="movFecha" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tipo Activo</label>
+                        <select id="movTipoActivo" class="form-select" onchange="limpiarDetalle()">
+                            <option value="COMPUTO">Cómputo</option>
+                            <option value="VEHICULO">Vehículo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-12">
+                        <label class="form-label">Observación</label>
+                        <input type="text" id="movObs" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Buscador de activos -->
+                <hr class="my-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-boxes me-1"></i>Activos del Movimiento</h6>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-8">
+                        <input type="text" id="buscarActivoInput" class="form-control form-control-sm"
+                               placeholder="Buscar activo por código, marca, modelo, serie o placa..."
+                               onkeyup="if(event.key==='Enter') buscarActivos()">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="buscarActivos()">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <!-- Resultados de búsqueda -->
+                <div id="resultadosBusqueda" class="mb-3" style="max-height:200px; overflow-y:auto;"></div>
+                <!-- Detalle del movimiento (activos agregados) -->
+                <table class="table table-sm table-bordered">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Código</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Serie/Placa</th>
+                            <th>Tipo</th>
+                            <th>Ubicación</th>
+                            <th>Observación</th>
+                            <th width="50"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyDetalleMovimiento"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarMovimiento()">
+                    <i class="fas fa-save me-1"></i>Guardar Movimiento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Detalle de Movimiento (solo lectura) -->
+<div class="modal fade" id="modalDetalleMov" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white py-2">
+                <h5 class="modal-title" id="modalDetalleMovTitulo">Detalle del Movimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contenidoDetalleMov"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let detalleMovimiento = []; // Array temporal de activos agregados al movimiento
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarCombosMov();
+        cargarMovimientos();
+        document.getElementById('movFecha').value = new Date().toISOString().split('T')[0];
+    });
+
+    async function cargarCombosMov() {
+        let res = await fetch('/Activo/GetEmpresas');
+        let json = await res.json();
+        if (json.status) {
+            let s1 = document.getElementById('filtroEmpresa');
+            let s2 = document.getElementById('movEmpresa');
+            s2.innerHTML = '<option value="">-- Seleccione --</option>';
+            json.data.forEach(e => {
+                s1.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                s2.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+            });
+        }
+    }
+
+    async function cargarPersonalMov() {
+        let empresaId = document.getElementById('movEmpresa').value;
+        let res = await fetch(`/Activo/GetPersonal?empresaId=${empresaId || 0}`);
+        let json = await res.json();
+        let sel = document.getElementById('movPersonal');
+        sel.innerHTML = '<option value="">-- Seleccione --</option>';
+        if (json.status) {
+            json.data.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.nombresCompletos} ${p.dni ? '(' + p.dni + ')' : ''}</option>`;
+            });
+        }
+    }
+
+    // ======================== LISTADO ========================
+
+    async function cargarMovimientos() {
+        let tipoCodigo = document.getElementById('filtroTipo').value;
+        let empresaId = document.getElementById('filtroEmpresa').value;
+        let url = '/Activo/GetMovimientos?';
+        if (tipoCodigo) url += `tipoCodigo=${tipoCodigo}&`;
+        if (empresaId) url += `empresaId=${empresaId}&`;
+
+        let res = await fetch(url);
+        let json = await res.json();
+        let tbody = document.getElementById('bodyMov');
+
+        if (!json.status || json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron movimientos.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        json.data.forEach(m => {
+            let badgeTipo = m.tipoMovimiento === 'ENTREGA' ? 'bg-success' : 'bg-warning text-dark';
+            html += `<tr>
+                <td><strong>${m.codigo}</strong></td>
+                <td><span class="badge ${badgeTipo}">${m.tipoMovimiento}</span></td>
+                <td>${m.empresa}</td>
+                <td>${m.personal}</td>
+                <td>${m.personalDni || ''}</td>
+                <td>${m.fechaMovimiento}</td>
+                <td><small>${m.observacion || ''}</small></td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info" onclick="verMovimiento(${m.id})" title="Ver detalle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarMovimiento(${m.id}, '${m.codigo}')" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ======================== NUEVO MOVIMIENTO ========================
+
+    function abrirModalMovimiento() {
+        detalleMovimiento = [];
+        document.getElementById('movTipo').value = 'ENTREGA';
+        document.getElementById('movEmpresa').value = '';
+        document.getElementById('movPersonal').innerHTML = '<option value="">-- Seleccione empresa primero --</option>';
+        document.getElementById('movFecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('movObs').value = '';
+        document.getElementById('bodyDetalleMovimiento').innerHTML = '';
+        document.getElementById('resultadosBusqueda').innerHTML = '';
+        document.getElementById('buscarActivoInput').value = '';
+        new bootstrap.Modal(document.getElementById('modalMovimiento')).show();
+    }
+
+    function limpiarDetalle() {
+        detalleMovimiento = [];
+        document.getElementById('bodyDetalleMovimiento').innerHTML = '';
+        document.getElementById('resultadosBusqueda').innerHTML = '';
+    }
+
+    async function buscarActivos() {
+        let empresaId = document.getElementById('movEmpresa').value;
+        let tipoCodigo = document.getElementById('movTipoActivo').value;
+        let buscar = document.getElementById('buscarActivoInput').value;
+        if (!empresaId) { alert('Seleccione una empresa primero.'); return; }
+
+        let url = `/Activo/BuscarActivosDisponibles?tipoCodigo=${tipoCodigo}&empresaId=${empresaId}`;
+        if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+
+        let res = await fetch(url);
+        let json = await res.json();
+        let div = document.getElementById('resultadosBusqueda');
+
+        if (!json.status || json.data.length === 0) {
+            div.innerHTML = '<p class="text-muted small">No se encontraron activos.</p>';
+            return;
+        }
+
+        let html = '<table class="table table-sm table-bordered table-hover"><tbody>';
+        json.data.forEach(a => {
+            let yaAgregado = detalleMovimiento.some(d => d.activoId === a.id);
+            html += `<tr class="${yaAgregado ? 'table-success' : ''}" style="cursor:pointer;"
+                onclick="${yaAgregado ? '' : `agregarActivo(${a.id},'${a.codigo}','${a.marca || ''}','${a.modelo || ''}','${a.numeroSerie || a.placa || ''}','${a.subtipo || ''}')`}">
+                <td>${a.codigo}</td><td>${a.marca || ''}</td><td>${a.modelo || ''}</td>
+                <td>${a.numeroSerie || a.placa || ''}</td><td>${a.subtipo || ''}</td>
+                <td>${yaAgregado ? '<span class="badge bg-success">Agregado</span>' : '<span class="badge bg-primary">+ Agregar</span>'}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        div.innerHTML = html;
+    }
+
+    function agregarActivo(id, codigo, marca, modelo, serieOPlaca, subtipo) {
+        if (detalleMovimiento.some(d => d.activoId === id)) return;
+        detalleMovimiento.push({ activoId: id, codigo, marca, modelo, serieOPlaca, subtipo, ubicacion: '', observacion: '' });
+        renderDetalleMovimiento();
+        buscarActivos(); // Refresh para marcar como agregado
+    }
+
+    function quitarActivo(idx) {
+        detalleMovimiento.splice(idx, 1);
+        renderDetalleMovimiento();
+    }
+
+    function renderDetalleMovimiento() {
+        let tbody = document.getElementById('bodyDetalleMovimiento');
+        if (detalleMovimiento.length === 0) { tbody.innerHTML = ''; return; }
+        tbody.innerHTML = detalleMovimiento.map((d, i) => `<tr>
+            <td>${d.codigo}</td><td>${d.marca}</td><td>${d.modelo}</td><td>${d.serieOPlaca}</td><td>${d.subtipo}</td>
+            <td><input type="text" class="form-control form-control-sm mov-ubi" data-idx="${i}" value="${d.ubicacion}" placeholder="Ubicación"></td>
+            <td><input type="text" class="form-control form-control-sm mov-obs" data-idx="${i}" value="${d.observacion}" placeholder="Obs."></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="quitarActivo(${i})"><i class="fas fa-times"></i></button></td>
+        </tr>`).join('');
+    }
+
+    async function guardarMovimiento() {
+        let tipoMovimiento = document.getElementById('movTipo').value;
+        let empresaId = document.getElementById('movEmpresa').value;
+        let personalId = document.getElementById('movPersonal').value;
+        let fecha = document.getElementById('movFecha').value;
+
+        if (!empresaId || !personalId || !fecha) { alert('Complete empresa, personal y fecha.'); return; }
+        if (detalleMovimiento.length === 0) { alert('Agregue al menos un activo.'); return; }
+
+        // Leer ubicaciones y observaciones actualizadas desde los inputs
+        document.querySelectorAll('.mov-ubi').forEach(inp => {
+            detalleMovimiento[parseInt(inp.dataset.idx)].ubicacion = inp.value;
+        });
+        document.querySelectorAll('.mov-obs').forEach(inp => {
+            detalleMovimiento[parseInt(inp.dataset.idx)].observacion = inp.value;
+        });
+
+        let params = new URLSearchParams();
+        params.append('tipoMovimiento', tipoMovimiento);
+        params.append('empresaId', empresaId);
+        params.append('personalId', personalId);
+        params.append('fechaMovimiento', fecha);
+        params.append('observacion', document.getElementById('movObs').value);
+        params.append('detalleJson', JSON.stringify(detalleMovimiento));
+
+        let res = await fetch('/Activo/GuardarMovimiento', { method: 'POST', body: params });
+        let json = await res.json();
+
+        if (json.status) {
+            bootstrap.Modal.getInstance(document.getElementById('modalMovimiento')).hide();
+            cargarMovimientos();
+        }
+        alert(json.message);
+    }
+
+    // ======================== VER DETALLE ========================
+
+    async function verMovimiento(id) {
+        let res = await fetch(`/Activo/GetMovimientoById?id=${id}`);
+        let json = await res.json();
+        if (!json.status) { alert(json.message); return; }
+
+        let m = json.movimiento;
+        let badgeTipo = m.tipoMovimiento === 'ENTREGA' ? 'bg-success' : 'bg-warning text-dark';
+
+        let html = `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <table class="table table-sm table-bordered">
+                        <tr><th class="bg-light">Código</th><td><strong>${m.codigo}</strong></td></tr>
+                        <tr><th class="bg-light">Tipo</th><td><span class="badge ${badgeTipo}">${m.tipoMovimiento}</span></td></tr>
+                        <tr><th class="bg-light">Empresa</th><td>${m.empresa}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm table-bordered">
+                        <tr><th class="bg-light">Personal</th><td>${m.personal} ${m.personalDni ? '(DNI: ' + m.personalDni + ')' : ''}</td></tr>
+                        <tr><th class="bg-light">Fecha</th><td>${m.fechaMovimiento}</td></tr>
+                        <tr><th class="bg-light">Observación</th><td>${m.observacion || '-'}</td></tr>
+                    </table>
+                </div>
+            </div>
+            <h6><i class="fas fa-boxes me-1"></i>Activos (${json.detalle.length})</h6>
+            <table class="table table-sm table-bordered">
+                <thead class="table-secondary"><tr>
+                    <th>Código</th><th>Marca</th><th>Modelo</th><th>Serie/Placa</th><th>Tipo</th><th>Ubicación</th><th>Obs.</th>
+                </tr></thead><tbody>`;
+
+        json.detalle.forEach(d => {
+            html += `<tr>
+                <td><strong>${d.codigo}</strong></td><td>${d.marca || ''}</td><td>${d.modelo || ''}</td>
+                <td>${d.numeroSerie || d.placa || ''}</td><td>${d.subtipo || ''}</td>
+                <td>${d.ubicacion || '-'}</td><td>${d.observacion || '-'}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+
+        document.getElementById('modalDetalleMovTitulo').textContent = `Movimiento: ${m.codigo}`;
+        document.getElementById('contenidoDetalleMov').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalDetalleMov')).show();
+    }
+
+    // ======================== ELIMINAR ========================
+
+    async function eliminarMovimiento(id, codigo) {
+        if (!confirm(`¿Eliminar el movimiento ${codigo}?`)) return;
+        let res = await fetch('/Activo/EliminarMovimiento', { method: 'POST', body: new URLSearchParams({ id }) });
+        let json = await res.json();
+        alert(json.message);
+        if (json.status) cargarMovimientos();
+    }
+</script>
+}

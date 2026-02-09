@@ -55,20 +55,20 @@ namespace ERPKardex.Data
         public DbSet<DOrdenCompra> DOrdenCompras { get; set; }
         public DbSet<OrdenServicio> OrdenServicios { get; set; }
         public DbSet<DOrdenServicio> DOrdenServicios { get; set; }
-        public DbSet<Activo> Activos { get; set; }
-        public DbSet<ActivoTipo> ActivoTipos { get; set; }
-        public DbSet<ActivoGrupo> ActivoGrupos { get; set; }
-        public DbSet<MovimientoActivo> MovimientosActivo { get; set; }
-        public DbSet<DMovimientoActivo> DMovimientosActivo { get; set; }
-        public DbSet<ActivoEspecificacion> ActivoEspecificaciones { get; set; }
-        public DbSet<ActivoDocumento> ActivoDocumentos { get; set; }
-        public DbSet<ActivoHistorialMedida> ActivoHistorialMedidas { get; set; }
-        public DbSet<VehiculoFicha> VehiculoFichas { get; set; }
-        public DbSet<VehiculoMantenimiento> VehiculoMantenimientos { get; set; }
-        public DbSet<VehiculoGps> VehiculoGpsList { get; set; }
-        public DbSet<VehiculoInfraccion> VehiculoInfracciones { get; set; }
-        public DbSet<VehiculoSeguro> VehiculoSeguros { get; set; }
         public DbSet<Personal> Personal { get; set; }
+        public DbSet<TipoActivo> TipoActivo { get; set; }
+        public DbSet<Activo> Activo { get; set; }
+        public DbSet<ActivoDetalle> ActivoDetalle { get; set; }
+        public DbSet<TipoDocumentoActivo> TipoDocumentoActivo { get; set; }
+        public DbSet<ActivoDocumento> ActivoDocumento { get; set; }
+        public DbSet<GrupoActivo> GrupoActivo { get; set; }
+        public DbSet<MovimientoActivo> MovimientoActivo { get; set; }
+        public DbSet<DMovimientoActivo> DMovimientoActivo { get; set; }
+        public DbSet<GpsVehiculo> GpsVehiculo { get; set; }
+        public DbSet<MantenimientoVehiculo> MantenimientoVehiculo { get; set; }
+        public DbSet<SeguroVehiculo> SeguroVehiculo { get; set; }
+        public DbSet<InfraccionVehiculo> InfraccionVehiculo { get; set; }
+        public DbSet<BitacoraKilometraje> BitacoraKilometraje { get; set; }
         public DbSet<TipoCambio> TipoCambios { get; set; }
         public DbSet<Banco> Bancos { get; set; }
         public DbSet<TipoOrdenPago> TipoOrdenPagos { get; set; }
@@ -120,6 +120,128 @@ namespace ERPKardex.Data
 
             modelBuilder.Entity<DocumentoPagar>().ToTable(tb => tb.HasTrigger("trg_Audit_documento_pagar"));
             modelBuilder.Entity<OrdenPago>().ToTable(tb => tb.HasTrigger("trg_Audit_orden_pago"));
+
+            // grupo_activo -> tipo_activo
+            modelBuilder.Entity<GrupoActivo>()
+                .HasOne<TipoActivo>()
+                .WithMany()
+                .HasForeignKey(g => g.TipoActivoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // activo -> tipo_activo
+            modelBuilder.Entity<Activo>()
+                .HasOne<TipoActivo>()
+                .WithMany()
+                .HasForeignKey(a => a.TipoActivoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // activo -> grupo_activo
+            modelBuilder.Entity<Activo>()
+                .HasOne<GrupoActivo>()
+                .WithMany()
+                .HasForeignKey(a => a.GrupoActivoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // activo -> empresa
+            modelBuilder.Entity<Activo>()
+                .HasOne<Empresa>()
+                .WithMany()
+                .HasForeignKey(a => a.EmpresaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // activo_detalle -> activo
+            modelBuilder.Entity<ActivoDetalle>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(d => d.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // activo_documento -> activo
+            modelBuilder.Entity<ActivoDocumento>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(d => d.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // activo_documento -> tipo_documento_activo
+            modelBuilder.Entity<ActivoDocumento>()
+                .HasOne<TipoDocumentoActivo>()
+                .WithMany()
+                .HasForeignKey(d => d.TipoDocumentoActivoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // movimiento_activo -> empresa
+            modelBuilder.Entity<MovimientoActivo>()
+                .HasOne<Empresa>()
+                .WithMany()
+                .HasForeignKey(m => m.EmpresaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // movimiento_activo -> personal
+            modelBuilder.Entity<MovimientoActivo>()
+                .HasOne<Personal>()
+                .WithMany()
+                .HasForeignKey(m => m.PersonalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // dmovimiento_activo -> movimiento_activo
+            modelBuilder.Entity<DMovimientoActivo>()
+                .HasOne<MovimientoActivo>()
+                .WithMany()
+                .HasForeignKey(d => d.MovimientoActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // dmovimiento_activo -> activo
+            modelBuilder.Entity<DMovimientoActivo>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(d => d.ActivoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // bitacora_kilometraje -> activo
+            modelBuilder.Entity<BitacoraKilometraje>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(b => b.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // mantenimiento_vehiculo -> activo
+            modelBuilder.Entity<MantenimientoVehiculo>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(m => m.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // infraccion_vehiculo -> activo
+            modelBuilder.Entity<InfraccionVehiculo>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(i => i.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // seguro_vehiculo -> activo
+            modelBuilder.Entity<SeguroVehiculo>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(s => s.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // gps_vehiculo -> activo
+            modelBuilder.Entity<GpsVehiculo>()
+                .HasOne<Activo>()
+                .WithMany()
+                .HasForeignKey(g => g.ActivoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Índice único: activo.codigo
+            modelBuilder.Entity<Activo>()
+                .HasIndex(a => a.Codigo)
+                .IsUnique();
+
+            // Índice único: movimiento_activo.codigo
+            modelBuilder.Entity<MovimientoActivo>()
+                .HasIndex(m => m.Codigo)
+                .IsUnique();
         }
     }
 }

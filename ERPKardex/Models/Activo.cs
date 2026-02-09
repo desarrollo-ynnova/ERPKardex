@@ -7,70 +7,63 @@ namespace ERPKardex.Models
     public class Activo
     {
         [Key]
-        [Column("id")]
         public int Id { get; set; }
 
-        // Identificación
-        [Column("codigo_interno")]
-        public string? CodigoInterno { get; set; } // Placa
+        [Column("codigo")]
+        [StringLength(30)]
+        public string Codigo { get; set; }
 
-        [Column("serie")]
-        public string? Serie { get; set; } // VIN
+        [Column("tipo_activo_id")]
+        public int TipoActivoId { get; set; }
 
-        // Clasificación
-        [Column("activo_grupo_id")]
-        public int? ActivoGrupoId { get; set; }
+        [Column("grupo_activo_id")]
+        public int? GrupoActivoId { get; set; }
 
-        [Column("activo_tipo_id")]
-        public int? ActivoTipoId { get; set; }
+        [Column("empresa_id")]
+        public int EmpresaId { get; set; }
 
-        [Column("marca_id")]
-        public int? MarcaId { get; set; }
+        [Column("descripcion")]
+        [StringLength(500)]
+        public string? Descripcion { get; set; }
 
-        [Column("modelo_id")]
-        public int? ModeloId { get; set; }
+        [Column("marca")]
+        [StringLength(100)]
+        public string? Marca { get; set; }
 
-        // Datos Operativos
-        [Column("condicion")]
-        public string? Condicion { get; set; }
+        [Column("modelo")]
+        [StringLength(100)]
+        public string? Modelo { get; set; }
 
-        [Column("situacion")]
-        public string? Situacion { get; set; }
+        [Column("numero_serie")]
+        [StringLength(100)]
+        public string? NumeroSerie { get; set; }
 
-        // Datos Vehiculares
+        [Column("placa")]
+        [StringLength(20)]
+        public string? Placa { get; set; }
+
+        [Column("subtipo")]
+        [StringLength(50)]
+        public string? Subtipo { get; set; }
+
         [Column("anio_fabricacion")]
         public int? AnioFabricacion { get; set; }
 
-        [Column("color")]
-        public string? Color { get; set; }
+        [Column("estado_uso")]
+        [StringLength(20)]
+        public string EstadoUso { get; set; }
 
-        [Column("modalidad_adquisicion")]
-        public string? ModalidadAdquisicion { get; set; }
-
-        // Mantenimiento y Kilometraje
-        [Column("medida_actual")]
-        public decimal MedidaActual { get; set; }
-
-        [Column("unidad_medida_uso")]
-        public string? UnidadMedidaUso { get; set; }
-
-        [Column("prox_mantenimiento")]
-        public decimal ProxMantenimiento { get; set; }
-
-        [Column("frecuencia_mant")]
-        public decimal FrecuenciaMant { get; set; }
-
-        // Auditoría
-        [Column("empresa_id")]
-        public int? EmpresaId { get; set; }
-
-        [Column("sucursal_id")]
-        public int? SucursalId { get; set; }
-
-        [Column("fecha_registro")]
-        public DateTime? FechaRegistro { get; set; }
+        [Column("condicion")]
+        [StringLength(20)]
+        public string? Condicion { get; set; }
 
         [Column("estado")]
-        public bool? Estado { get; set; }
+        public bool Estado { get; set; }
+
+        [Column("fecha_registro")]
+        public DateTime FechaRegistro { get; set; }
+
+        [Column("usuario_registro")]
+        public int? UsuarioRegistro { get; set; }
     }
 }

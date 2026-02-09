@@ -3,25 +3,25 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERPKardex.Models
 {
-    [Table("dmovimiento_activo")]
-    public class DMovimientoActivo
+    [Table("activo_detalle")]
+    public class ActivoDetalle
     {
         [Key]
         public int Id { get; set; }
 
-        [Column("movimiento_activo_id")]
-        public int MovimientoActivoId { get; set; }
-
         [Column("activo_id")]
         public int ActivoId { get; set; }
 
-        [Column("ubicacion")]
-        [StringLength(500)]
-        public string? Ubicacion { get; set; }
+        [Column("clave")]
+        [StringLength(100)]
+        public string Clave { get; set; }
 
-        [Column("observacion")]
-        [StringLength(500)]
-        public string? Observacion { get; set; }
+        [Column("valor")]
+        [StringLength(1000)]
+        public string? Valor { get; set; }
+
+        [Column("orden")]
+        public int? Orden { get; set; }
 
         [Column("estado")]
         public bool Estado { get; set; }

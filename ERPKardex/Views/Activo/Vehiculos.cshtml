@@ -1,0 +1,994 @@
+@{
+    ViewData["Title"] = "Flota Vehicular";
+}
+
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fas fa-truck me-2"></i>Flota Vehicular</h4>
+        <button class="btn btn-primary" onclick="abrirModalActivo(0)">
+            <i class="fas fa-plus me-1"></i> Nuevo Vehículo
+        </button>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Empresa</label>
+                <select id="filtroEmpresa" class="form-select form-select-sm" onchange="cargarActivos()">
+                    <option value="">-- Todas --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Grupo</label>
+                <select id="filtroGrupo" class="form-select form-select-sm" onchange="cargarActivos()">
+                    <option value="">-- Todos --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-1 small">Buscar</label>
+                <input type="text" id="filtroBuscar" class="form-control form-control-sm" placeholder="Placa, marca, modelo..."
+                       onkeyup="if(event.key==='Enter') cargarActivos()">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="cargarActivos()">
+                    <i class="fas fa-search me-1"></i>Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABLA DE VEHÍCULOS -->
+<div class="card" id="panelListado">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Placa</th>
+                        <th>Empresa</th>
+                        <th>Grupo</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Año</th>
+                        <th>Estado</th>
+                        <th class="text-center" style="width:150px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyActivos">
+                    <tr><td colspan="9" class="text-center text-muted py-4">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- PANEL FICHA DEL VEHÍCULO (se muestra al hacer clic en "Ver ficha") -->
+<div class="card d-none" id="panelFicha">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+        <h5 class="mb-0" id="fichaTitle"><i class="fas fa-id-card me-2"></i>Ficha del Vehículo</h5>
+        <button class="btn btn-sm btn-outline-light" onclick="cerrarFicha()">
+            <i class="fas fa-arrow-left me-1"></i>Volver al listado
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Datos principales -->
+        <div class="row mb-3" id="fichaResumen"></div>
+
+        <!-- Asignación -->
+        <div id="fichaAsignacion" class="mb-3"></div>
+
+        <!-- TABS -->
+        <ul class="nav nav-tabs" id="fichaTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#tabEspec" role="tab">Datos Técnicos</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabMtto" role="tab">Mantenimientos</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabKm" role="tab">Kilometraje</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabInfr" role="tab">Infracciones</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabSeg" role="tab">Seguros</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabGps" role="tab">GPS</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#tabDocs" role="tab">Documentos</a>
+            </li>
+        </ul>
+        <div class="tab-content border border-top-0 p-3">
+            <!-- TAB: Datos Técnicos -->
+            <div class="tab-pane fade show active" id="tabEspec" role="tabpanel">
+                <div id="fichaEspec"></div>
+            </div>
+            <!-- TAB: Mantenimientos -->
+            <div class="tab-pane fade" id="tabMtto">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Cartilla de Mantenimiento</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalMtto(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered" id="tblMtto">
+                    <thead class="table-secondary"><tr>
+                        <th>Fecha</th><th>Tipo</th><th>Km Prog.</th><th>Km Real</th>
+                        <th>Trabajos</th><th>Precio</th><th>Conductor</th><th width="80">Acc.</th>
+                    </tr></thead><tbody id="bodyMtto"></tbody>
+                </table></div>
+            </div>
+            <!-- TAB: Kilometraje -->
+            <div class="tab-pane fade" id="tabKm">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Bitácora de Kilometraje</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalKm(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered">
+                    <thead class="table-secondary"><tr><th>Fecha</th><th>Kilometraje</th><th>Observación</th><th width="80">Acc.</th></tr></thead>
+                    <tbody id="bodyKm"></tbody>
+                </table></div>
+            </div>
+            <!-- TAB: Infracciones -->
+            <div class="tab-pane fade" id="tabInfr">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Infracciones</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalInfr(0)"><i class="fas fa-plus me-1"></i>Nueva</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered">
+                    <thead class="table-secondary"><tr>
+                        <th>Fecha</th><th>Entidad</th><th>Papeleta</th><th>Código</th>
+                        <th>Falta</th><th>Conductor</th><th>Importe</th><th>Situación</th><th width="80">Acc.</th>
+                    </tr></thead><tbody id="bodyInfr"></tbody>
+                </table></div>
+            </div>
+            <!-- TAB: Seguros -->
+            <div class="tab-pane fade" id="tabSeg">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Seguros</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalSeg(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered">
+                    <thead class="table-secondary"><tr>
+                        <th>Aseguradora</th><th>Póliza</th><th>Suma Aseg.</th><th>Prima+IGV</th>
+                        <th>Clase</th><th>Uso</th><th>Vigencia</th><th width="80">Acc.</th>
+                    </tr></thead><tbody id="bodySeg"></tbody>
+                </table></div>
+            </div>
+            <!-- TAB: GPS -->
+            <div class="tab-pane fade" id="tabGps">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">GPS</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalGps(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered">
+                    <thead class="table-secondary"><tr>
+                        <th>Empresa GPS</th><th>URL</th><th>Usuario</th><th>Contraseña</th>
+                        <th>Vencimiento</th><th>Constancia</th><th>Endoso</th><th width="80">Acc.</th>
+                    </tr></thead><tbody id="bodyGps"></tbody>
+                </table></div>
+            </div>
+            <!-- TAB: Documentos -->
+            <div class="tab-pane fade" id="tabDocs">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Documentos</h6>
+                    <button class="btn btn-sm btn-primary" onclick="abrirModalDoc(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-bordered">
+                    <thead class="table-secondary"><tr>
+                        <th>Tipo</th><th>Número</th><th>Emisión</th><th>Vencimiento</th><th>Observación</th><th width="80">Acc.</th>
+                    </tr></thead><tbody id="bodyDocs"></tbody>
+                </table></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== MODALES ======================== -->
+
+<!-- MODAL: Vehículo (Crear/Editar) -->
+<div class="modal fade" id="modalActivo" tabindex="-1" data-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title" id="modalActivoTitulo">Nuevo Vehículo</h5>                
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="activoId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-2"><label class="form-label">Código <span class="text-danger">*</span></label>
+                        <input type="text" id="activoCodigo" class="form-control" placeholder="VEH-0023"></div>
+                    <div class="col-md-3"><label class="form-label">Empresa <span class="text-danger">*</span></label>
+                        <select id="activoEmpresa" class="form-select"></select></div>
+                    <div class="col-md-2"><label class="form-label">Grupo</label>
+                        <select id="activoGrupo" class="form-select"></select></div>
+                    <div class="col-md-2"><label class="form-label">Placa <span class="text-danger">*</span></label>
+                        <input type="text" id="activoPlaca" class="form-control" placeholder="ABC123"></div>
+                    <div class="col-md-3"><label class="form-label">Marca</label>
+                        <input type="text" id="activoMarca" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-3"><label class="form-label">Modelo</label>
+                        <input type="text" id="activoModelo" class="form-control"></div>
+                    <div class="col-md-2"><label class="form-label">Año Fab.</label>
+                        <input type="number" id="activoAnio" class="form-control"></div>
+                    <div class="col-md-2"><label class="form-label">Estado</label>
+                        <select id="activoEstadoUso" class="form-select">
+                            <option value="OPERATIVO">OPERATIVO</option>
+                            <option value="TALLER">TALLER</option>
+                            <option value="INACTIVO">INACTIVO</option>
+                            <option value="BAJA">BAJA</option>
+                        </select></div>
+                    <div class="col-md-2"><label class="form-label">Condición</label>
+                        <select id="activoCondicion" class="form-select">
+                            <option value="BUENA">BUENA</option>
+                            <option value="REGULAR">REGULAR</option>
+                            <option value="MALA">MALA</option>
+                        </select></div>
+                    <div class="col-md-3"><label class="form-label">Descripción</label>
+                        <input type="text" id="activoDescripcion" class="form-control"></div>
+                </div>
+                <!-- Especificaciones -->
+                <hr class="my-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Datos Técnicos del Vehículo</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="agregarEspecificacion()"><i class="fas fa-plus me-1"></i>Agregar</button>
+                </div>
+                <div id="contenedorEspecificaciones"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarActivo()"><i class="fas fa-save me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Mantenimiento -->
+<div class="modal fade" id="modalMtto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning py-2"><h5 class="modal-title" id="modalMttoTitulo">Mantenimiento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mttoId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-4"><label class="form-label">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" id="mttoFecha" class="form-control"></div>
+                    <div class="col-md-4"><label class="form-label">Tipo <span class="text-danger">*</span></label>
+                        <select id="mttoTipo" class="form-select"><option value="PREVENTIVO">PREVENTIVO</option><option value="CORRECTIVO">CORRECTIVO</option></select></div>
+                    <div class="col-md-4"><label class="form-label">Moneda</label>
+                        <select id="mttoMoneda" class="form-select"><option value="PEN">PEN</option><option value="USD">USD</option></select></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-3"><label class="form-label">Km Programado</label><input type="number" step="0.01" id="mttoKmProg" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Km al Servicio</label><input type="number" step="0.01" id="mttoKmReal" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Precio</label><input type="number" step="0.01" id="mttoPrecio" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Conductor</label><input type="text" id="mttoConductor" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-8"><label class="form-label">Trabajos Ejecutados</label><textarea id="mttoTrabajos" class="form-control" rows="2"></textarea></div>
+                    <div class="col-md-4"><label class="form-label">Observación</label><textarea id="mttoObs" class="form-control" rows="2"></textarea></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarMtto()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Kilometraje -->
+<div class="modal fade" id="modalKm" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white py-2"><h5 class="modal-title">Registro de Kilometraje</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="kmId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Fecha</label><input type="date" id="kmFecha" class="form-control"></div>
+                    <div class="col-md-6"><label class="form-label">Kilometraje</label><input type="number" step="0.01" id="kmValor" class="form-control"></div>
+                </div>
+                <div class="mt-3"><label class="form-label">Observación</label><input type="text" id="kmObs" class="form-control"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarKm()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Infracción -->
+<div class="modal fade" id="modalInfr" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white py-2"><h5 class="modal-title" id="modalInfrTitulo">Infracción</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="infrId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Entidad <span class="text-danger">*</span></label>
+                        <select id="infrEntidad" class="form-select"><option value="SUTRAN">SUTRAN</option><option value="SAT">SAT</option><option value="MPC">MPC</option><option value="PNP">PNP</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Nro. Papeleta</label><input type="text" id="infrPapeleta" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Fecha</label><input type="date" id="infrFecha" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Código</label><input type="text" id="infrCodigo" class="form-control" placeholder="M20, G04..."></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-6"><label class="form-label">Descripción de la Falta</label><input type="text" id="infrDescripcion" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Conductor</label><input type="text" id="infrConductor" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">RUC/DNI Infractor</label><input type="text" id="infrRucDni" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-4"><label class="form-label">Importe (S/)</label><input type="number" step="0.01" id="infrImporte" class="form-control"></div>
+                    <div class="col-md-4"><label class="form-label">Situación</label>
+                        <select id="infrSituacion" class="form-select"><option value="PENDIENTE DE PAGO">PENDIENTE DE PAGO</option><option value="PAGADO">PAGADO</option></select></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarInfr()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Seguro -->
+<div class="modal fade" id="modalSeg" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white py-2"><h5 class="modal-title" id="modalSegTitulo">Seguro</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="segId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-4"><label class="form-label">Aseguradora</label><input type="text" id="segAseguradora" class="form-control" placeholder="RIMAC, LA POSITIVA..."></div>
+                    <div class="col-md-4"><label class="form-label">Nro. Póliza</label><input type="text" id="segPoliza" class="form-control"></div>
+                    <div class="col-md-2"><label class="form-label">Suma Aseg.</label><input type="number" step="0.01" id="segSuma" class="form-control"></div>
+                    <div class="col-md-2"><label class="form-label">Moneda</label>
+                        <select id="segMoneda" class="form-select"><option value="USD">USD</option><option value="PEN">PEN</option></select></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-3"><label class="form-label">Prima + IGV</label><input type="number" step="0.01" id="segPrima" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Clase</label><input type="text" id="segClase" class="form-control" placeholder="CMTA PICKUP"></div>
+                    <div class="col-md-3"><label class="form-label">Uso</label><input type="text" id="segUso" class="form-control" placeholder="COMERCIAL"></div>
+                    <div class="col-md-3"><label class="form-label">Ajuste Rimac</label><input type="number" step="0.01" id="segAjusteRimac" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-3"><label class="form-label">Fecha Inicio</label><input type="date" id="segFechaInicio" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Fecha Vigencia</label><input type="date" id="segFechaVigencia" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Póliza La Positiva</label><input type="text" id="segPolPositiva" class="form-control"></div>
+                    <div class="col-md-3"><label class="form-label">Póliza Rimac</label><input type="text" id="segPolRimac" class="form-control"></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarSeg()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: GPS -->
+<div class="modal fade" id="modalGps" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2"><h5 class="modal-title" id="modalGpsTitulo">GPS</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="gpsId" value="0">
+                <div class="row g-3">
+                    <div class="col-md-4"><label class="form-label">Empresa GPS</label><input type="text" id="gpsEmpresa" class="form-control"></div>
+                    <div class="col-md-8"><label class="form-label">URL de Acceso</label><input type="text" id="gpsUrl" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-4"><label class="form-label">Usuario</label><input type="text" id="gpsUsuario" class="form-control"></div>
+                    <div class="col-md-4"><label class="form-label">Contraseña</label><input type="text" id="gpsContrasena" class="form-control"></div>
+                    <div class="col-md-4"><label class="form-label">Vencimiento</label><input type="date" id="gpsVencimiento" class="form-control"></div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-4"><label class="form-label">Constancia</label>
+                        <select id="gpsConstancia" class="form-select"><option value="">-- Seleccione --</option><option value="SÍ">SÍ</option><option value="NO">NO</option></select></div>
+                    <div class="col-md-8"><label class="form-label">Endoso</label><input type="text" id="gpsEndoso" class="form-control"></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarGps()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Documento -->
+<div class="modal fade" id="modalDoc" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white py-2"><h5 class="modal-title">Documento del Vehículo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+                <div class="modal-body">
+                <input type="hidden" id="docId" value="0">
+                <div class="mb-3"><label class="form-label">Tipo Documento <span class="text-danger">*</span></label>
+                    <select id="docTipo" class="form-select"></select></div>
+                <div class="mb-3"><label class="form-label">Número</label><input type="text" id="docNumero" class="form-control"></div>
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Emisión</label><input type="date" id="docEmision" class="form-control"></div>
+                    <div class="col-md-6"><label class="form-label">Vencimiento</label><input type="date" id="docVencimiento" class="form-control"></div>
+                </div>
+                <div class="mt-3"><label class="form-label">Observación</label><input type="text" id="docObs" class="form-control"></div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarDoc()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const TIPO_CODIGO = 'VEHICULO';
+    let tipoActivoIdVehiculo = 0;
+    let fichaActivoId = 0;
+    let fichaData = null;
+
+    document.addEventListener('DOMContentLoaded', () => { cargarCombos(); cargarActivos(); });
+
+    // ======================== COMBOS ========================
+    async function cargarCombos() {
+        let res = await fetch('/Activo/GetEmpresas');
+        let json = await res.json();
+        if (json.status) {
+            let s1 = document.getElementById('filtroEmpresa');
+            let s2 = document.getElementById('activoEmpresa');
+            s2.innerHTML = '<option value="">-- Seleccione --</option>';
+            json.data.forEach(e => {
+                s1.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                s2.innerHTML += `<option value="${e.id}">${e.nombre} (${e.ruc})</option>`;
+            });
+        }
+        res = await fetch('/Activo/GetTiposActivo');
+        json = await res.json();
+        if (json.status) { let v = json.data.find(t => t.codigo === TIPO_CODIGO); if (v) tipoActivoIdVehiculo = v.id; }
+        if (tipoActivoIdVehiculo > 0) {
+            res = await fetch(`/Activo/GetGrupos?tipoActivoId=${tipoActivoIdVehiculo}`);
+            json = await res.json();
+            if (json.status) {
+                let s1 = document.getElementById('filtroGrupo');
+                let s2 = document.getElementById('activoGrupo');
+                s2.innerHTML = '<option value="">-- Seleccione --</option>';
+                json.data.forEach(g => {
+                    s1.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
+                    s2.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
+                });
+            }
+        }
+        // Tipos de documento (para modal doc)
+        res = await fetch('/Activo/GetTiposDocumentoActivo');
+        json = await res.json();
+        if (json.status) {
+            let sel = document.getElementById('docTipo');
+            sel.innerHTML = '<option value="">-- Seleccione --</option>';
+            json.data.forEach(t => sel.innerHTML += `<option value="${t.id}">${t.nombre}</option>`);
+        }
+    }
+
+    // ======================== LISTADO ========================
+    async function cargarActivos() {
+        let url = `/Activo/GetActivos?tipoCodigo=${TIPO_CODIGO}`;
+        let emp = document.getElementById('filtroEmpresa').value;
+        let grp = document.getElementById('filtroGrupo').value;
+        let bus = document.getElementById('filtroBuscar').value;
+        if (emp) url += `&empresaId=${emp}`;
+        if (grp) url += `&grupoId=${grp}`;
+        if (bus) url += `&buscar=${encodeURIComponent(bus)}`;
+
+        let res = await fetch(url);
+        let json = await res.json();
+        let tbody = document.getElementById('bodyActivos');
+
+        if (!json.status || json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No se encontraron vehículos.</td></tr>';
+            return;
+        }
+        let html = '';
+        json.data.forEach(a => {
+            let badge = a.estadoUso === 'OPERATIVO' ? 'bg-success' : a.estadoUso === 'TALLER' ? 'bg-warning text-dark' : 'bg-secondary';
+            html += `<tr>
+                <td>${a.codigo}</td>
+                <td><strong>${a.placa || ''}</strong></td>
+                <td>${a.empresa}</td>
+                <td>${a.grupo}</td>
+                <td>${a.marca || ''}</td>
+                <td>${a.modelo || ''}</td>
+                <td>${a.anioFabricacion || ''}</td>
+                <td><span class="badge ${badge}">${a.estadoUso}</span></td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info" onclick="verFicha(${a.id})" title="Ver ficha"><i class="fas fa-folder-open"></i></button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="abrirModalActivo(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarActivo(${a.id}, '${a.placa}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ======================== CREAR/EDITAR VEHÍCULO ========================
+    async function abrirModalActivo(id) {
+        document.getElementById('activoId').value = id;
+        document.getElementById('contenedorEspecificaciones').innerHTML = '';
+
+        if (id === 0) {
+            document.getElementById('modalActivoTitulo').textContent = 'Nuevo Vehículo';
+            ['activoCodigo','activoPlaca','activoMarca','activoModelo','activoAnio','activoDescripcion'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('activoEmpresa').value = '';
+            document.getElementById('activoGrupo').value = '';
+            document.getElementById('activoEstadoUso').value = 'OPERATIVO';
+            document.getElementById('activoCondicion').value = 'BUENA';
+            ['color','carroceria','chasis_nro_vin','motor','combustible','rango_km_mantenimiento'].forEach(c => agregarEspecificacion(c, ''));
+        } else {
+            document.getElementById('modalActivoTitulo').textContent = 'Editar Vehículo';
+            let res = await fetch(`/Activo/GetActivoById?id=${id}`);
+            let json = await res.json();
+            if (!json.status) { alert(json.message); return; }
+            let a = json.activo;
+            document.getElementById('activoCodigo').value = a.codigo;
+            document.getElementById('activoEmpresa').value = a.empresaId;
+            document.getElementById('activoGrupo').value = a.grupoActivoId || '';
+            document.getElementById('activoPlaca').value = a.placa || '';
+            document.getElementById('activoMarca').value = a.marca || '';
+            document.getElementById('activoModelo').value = a.modelo || '';
+            document.getElementById('activoAnio').value = a.anioFabricacion || '';
+            document.getElementById('activoDescripcion').value = a.descripcion || '';
+            document.getElementById('activoEstadoUso').value = a.estadoUso;
+            document.getElementById('activoCondicion').value = a.condicion || 'BUENA';
+            json.especificaciones.forEach(e => agregarEspecificacion(e.clave, e.valor));
+        }
+        $('#modalActivo').modal('show');
+    }
+
+    function agregarEspecificacion(clave = '', valor = '') {
+        let cont = document.getElementById('contenedorEspecificaciones');
+        let div = document.createElement('div');
+        div.className = 'row g-2 mb-2 fila-spec';
+        div.innerHTML = `<div class="col-md-4"><input type="text" class="form-control form-control-sm spec-clave" value="${clave}" placeholder="Ej: color, motor, combustible..."></div>
+            <div class="col-md-7"><input type="text" class="form-control form-control-sm spec-valor" value="${valor}" placeholder="Valor"></div>
+            <div class="col-md-1"><button class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.fila-spec').remove()"><i class="fas fa-times"></i></button></div>`;
+        cont.appendChild(div);
+    }
+
+    async function guardarActivo() {
+        let id = parseInt(document.getElementById('activoId').value);
+        let codigo = document.getElementById('activoCodigo').value.trim();
+        let empresaId = document.getElementById('activoEmpresa').value;
+        let placa = document.getElementById('activoPlaca').value.trim();
+        if (!codigo || !empresaId) { alert('Complete código y empresa.'); return; }
+
+        let especificaciones = [];
+        document.querySelectorAll('.fila-spec').forEach(f => {
+            let c = f.querySelector('.spec-clave').value.trim();
+            let v = f.querySelector('.spec-valor').value.trim();
+            if (c) especificaciones.push({ clave: c, valor: v });
+        });
+
+        let params = new URLSearchParams();
+        params.append('id', id);
+        params.append('codigo', codigo);
+        params.append('tipoActivoId', tipoActivoIdVehiculo);
+        params.append('grupoActivoId', document.getElementById('activoGrupo').value || '');
+        params.append('empresaId', empresaId);
+        params.append('placa', placa);
+        params.append('marca', document.getElementById('activoMarca').value);
+        params.append('modelo', document.getElementById('activoModelo').value);
+        params.append('anioFabricacion', document.getElementById('activoAnio').value || '');
+        params.append('descripcion', document.getElementById('activoDescripcion').value);
+        params.append('estadoUso', document.getElementById('activoEstadoUso').value);
+        params.append('condicion', document.getElementById('activoCondicion').value);
+        params.append('especificacionesJson', JSON.stringify(especificaciones));
+
+        let res = await fetch('/Activo/GuardarActivo', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) {
+            $('#modalActivo').modal('hide');
+            cargarActivos();
+            alert(json.message);
+        } else alert(json.message);
+    }
+
+    async function eliminarActivo(id, placa) {
+        if (!confirm(`¿Eliminar el vehículo ${placa}?`)) return;
+        let res = await fetch('/Activo/EliminarActivo', { method: 'POST', body: new URLSearchParams({ id }) });
+        let json = await res.json();
+        alert(json.message);
+        if (json.status) cargarActivos();
+    }
+
+    // ======================== FICHA DEL VEHÍCULO ========================
+    async function verFicha(id) {
+        fichaActivoId = id;
+        let res = await fetch(`/Activo/GetVehiculoFicha?activoId=${id}`);
+        let json = await res.json();
+        if (!json.status) { alert(json.message); return; }
+        fichaData = json;
+
+        // Mostrar panel ficha, ocultar listado
+        document.getElementById('panelListado').classList.add('d-none');
+        document.getElementById('panelFicha').classList.remove('d-none');
+
+        let a = json.activo;
+        document.getElementById('fichaTitle').innerHTML = `<i class="fas fa-id-card me-2"></i>${a.placa} — ${a.marca} ${a.modelo}`;
+
+        // Resumen
+        document.getElementById('fichaResumen').innerHTML = `
+            <div class="col-md-2"><small class="text-muted">Código</small><div><strong>${a.codigo}</strong></div></div>
+            <div class="col-md-2"><small class="text-muted">Placa</small><div><strong class="fs-5">${a.placa}</strong></div></div>
+            <div class="col-md-2"><small class="text-muted">Marca / Modelo</small><div>${a.marca} ${a.modelo}</div></div>
+            <div class="col-md-2"><small class="text-muted">Año</small><div>${a.anioFabricacion || '-'}</div></div>
+            <div class="col-md-2"><small class="text-muted">Empresa</small><div>${a.empresa}</div></div>
+            <div class="col-md-2"><small class="text-muted">Estado</small><div><span class="badge ${a.estadoUso === 'OPERATIVO' ? 'bg-success' : 'bg-warning text-dark'}">${a.estadoUso}</span></div></div>`;
+
+        // Asignación
+        if (json.asignacion) {
+            let as = json.asignacion;
+            document.getElementById('fichaAsignacion').innerHTML = `<div class="alert alert-info py-2 mb-0">
+                <i class="fas fa-user me-1"></i><strong>Asignado a:</strong> ${as.personalNombre} ${as.personalDni ? '(DNI: ' + as.personalDni + ')' : ''} — Desde: ${as.fechaEntrega} ${as.ubicacion ? '— ' + as.ubicacion : ''}</div>`;
+        } else {
+            document.getElementById('fichaAsignacion').innerHTML = '<div class="alert alert-secondary py-2 mb-0"><i class="fas fa-exclamation-circle me-1"></i>Sin asignación actual</div>';
+        }
+
+        renderEspec(json.especificaciones);
+        renderMtto(json.mantenimientos);
+        renderKm(json.bitacoraKm);
+        renderInfr(json.infracciones);
+        renderSeg(json.seguros);
+        renderGps(json.gps);
+        renderDocs(json.documentos);
+    }
+
+    function cerrarFicha() {
+        document.getElementById('panelFicha').classList.add('d-none');
+        document.getElementById('panelListado').classList.remove('d-none');
+        fichaActivoId = 0;
+    }
+
+    // ---- Render helpers ----
+    function renderEspec(data) {
+        if (!data.length) { document.getElementById('fichaEspec').innerHTML = '<p class="text-muted">Sin datos técnicos registrados.</p>'; return; }
+        let html = '<table class="table table-sm table-bordered"><tbody>';
+        data.forEach(e => {
+            let label = e.clave.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            html += `<tr><th class="bg-light" width="30%">${label}</th><td>${e.valor || '-'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        document.getElementById('fichaEspec').innerHTML = html;
+    }
+
+    function renderMtto(data) {
+        let tbody = document.getElementById('bodyMtto');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Sin mantenimientos</td></tr>'; return; }
+        tbody.innerHTML = data.map(m => `<tr>
+            <td>${m.fecha}</td><td><span class="badge ${m.tipoMantenimiento === 'PREVENTIVO' ? 'bg-primary' : 'bg-warning text-dark'}">${m.tipoMantenimiento}</span></td>
+            <td>${m.kmMantenimiento ?? '-'}</td><td>${m.kmAlServicio ?? '-'}</td>
+            <td><small>${m.trabajosEjecutados || '-'}</small></td><td>${m.precio != null ? 'S/ ' + m.precio.toFixed(2) : '-'}</td>
+            <td><small>${m.conductor || '-'}</small></td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalMtto(${m.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarMantenimiento',${m.id})"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function renderKm(data) {
+        let tbody = document.getElementById('bodyKm');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin registros</td></tr>'; return; }
+        tbody.innerHTML = data.map(k => `<tr>
+            <td>${k.fecha}</td><td><strong>${k.kilometraje != null ? k.kilometraje.toLocaleString() + ' km' : '-'}</strong></td><td>${k.observacion || '-'}</td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalKm(${k.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarBitacoraKm',${k.id})"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function renderInfr(data) {
+        let tbody = document.getElementById('bodyInfr');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Sin infracciones</td></tr>'; return; }
+        tbody.innerHTML = data.map(i => `<tr>
+            <td>${i.fechaOcurrencia}</td><td>${i.entidad}</td><td>${i.nroPapeleta || '-'}</td><td>${i.codigoInfraccion || '-'}</td>
+            <td><small>${i.descripcionFalta || '-'}</small></td><td><small>${i.conductorDatos || '-'}</small></td>
+            <td>${i.importe != null ? 'S/ ' + i.importe.toFixed(2) : '-'}</td>
+            <td><span class="badge ${i.situacionPago === 'PAGADO' ? 'bg-success' : 'bg-danger'}">${i.situacionPago || '-'}</span></td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalInfr(${i.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarInfraccion',${i.id})"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function renderSeg(data) {
+        let tbody = document.getElementById('bodySeg');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Sin seguros</td></tr>'; return; }
+        tbody.innerHTML = data.map(s => `<tr>
+            <td>${s.aseguradora || '-'}</td><td>${s.nroPoliza || '-'}</td>
+            <td>${s.sumaAsegurada != null ? s.monedaSuma + ' ' + s.sumaAsegurada.toLocaleString() : '-'}</td>
+            <td>${s.primaIgv != null ? s.primaIgv.toFixed(2) : '-'}</td>
+            <td>${s.clase || '-'}</td><td>${s.uso || '-'}</td><td>${s.fechaVigencia || '-'}</td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalSeg(${s.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarSeguro',${s.id})"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function renderGps(data) {
+        let tbody = document.getElementById('bodyGps');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Sin GPS registrado</td></tr>'; return; }
+        tbody.innerHTML = data.map(g => `<tr>
+            <td>${g.empresaGps || '-'}</td><td><a href="${g.urlAcceso}" target="_blank">${g.urlAcceso || '-'}</a></td>
+            <td>${g.usuario || '-'}</td><td>${g.contrasena || '-'}</td>
+            <td>${g.fechaVencimiento || '-'}</td><td>${g.constancia || '-'}</td><td>${g.endoso || '-'}</td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalGps(${g.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarGps',${g.id})"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function renderDocs(data) {
+        let tbody = document.getElementById('bodyDocs');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin documentos</td></tr>'; return; }
+        tbody.innerHTML = data.map(d => {
+            let vencido = d.fechaVencimiento && new Date(d.fechaVencimiento) < new Date();
+            return `<tr class="${vencido ? 'table-danger' : ''}">
+                <td>${d.tipoDocumento}</td><td>${d.numeroDocumento || '-'}</td>
+                <td>${d.fechaEmision || '-'}</td><td>${d.fechaVencimiento || '-'} ${vencido ? '<span class="badge bg-danger">VENCIDO</span>' : ''}</td>
+                <td>${d.observacion || '-'}</td>
+                <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalDoc(${d.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarDocumento',${d.id})"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ======================== MODALES CRUD SUB-TABLAS ========================
+
+    // -- Mantenimiento --
+    function abrirModalMtto(id) {
+        document.getElementById('mttoId').value = id;
+        if (id === 0) {
+            document.getElementById('modalMttoTitulo').textContent = 'Nuevo Mantenimiento';
+            ['mttoFecha','mttoKmProg','mttoKmReal','mttoPrecio','mttoConductor','mttoTrabajos','mttoObs'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('mttoTipo').value = 'PREVENTIVO';
+            document.getElementById('mttoMoneda').value = 'PEN';
+        } else {
+            document.getElementById('modalMttoTitulo').textContent = 'Editar Mantenimiento';
+            let m = fichaData.mantenimientos.find(x => x.id === id);
+            if (m) {
+                document.getElementById('mttoFecha').value = m.fechaISO;
+                document.getElementById('mttoTipo').value = m.tipoMantenimiento;
+                document.getElementById('mttoKmProg').value = m.kmMantenimiento ?? '';
+                document.getElementById('mttoKmReal').value = m.kmAlServicio ?? '';
+                document.getElementById('mttoPrecio').value = m.precio ?? '';
+                document.getElementById('mttoMoneda').value = m.moneda || 'PEN';
+                document.getElementById('mttoConductor').value = m.conductor || '';
+                document.getElementById('mttoTrabajos').value = m.trabajosEjecutados || '';
+                document.getElementById('mttoObs').value = m.observacion || '';
+            }
+        }
+        $('#modalMtto').modal('show');
+    }
+    async function guardarMtto() {
+        let params = new URLSearchParams({
+            id: document.getElementById('mttoId').value,
+            activoId: fichaActivoId,
+            fecha: document.getElementById('mttoFecha').value,
+            tipoMantenimiento: document.getElementById('mttoTipo').value,
+            kmMantenimiento: document.getElementById('mttoKmProg').value || '',
+            kmAlServicio: document.getElementById('mttoKmReal').value || '',
+            trabajosEjecutados: document.getElementById('mttoTrabajos').value,
+            precio: document.getElementById('mttoPrecio').value || '',
+            moneda: document.getElementById('mttoMoneda').value,
+            conductor: document.getElementById('mttoConductor').value,
+            observacion: document.getElementById('mttoObs').value
+        });
+        let res = await fetch('/Activo/GuardarMantenimiento', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalMtto').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // -- Kilometraje --
+    function abrirModalKm(id) {
+        document.getElementById('kmId').value = id;
+        if (id === 0) { ['kmFecha','kmValor','kmObs'].forEach(f => document.getElementById(f).value = ''); }
+        else {
+            let k = fichaData.bitacoraKm.find(x => x.id === id);
+            if (k) { document.getElementById('kmFecha').value = k.fechaISO; document.getElementById('kmValor').value = k.kilometraje ?? ''; document.getElementById('kmObs').value = k.observacion || ''; }
+        }
+        $('#modalKm').modal('show');
+    }
+    async function guardarKm() {
+        let params = new URLSearchParams({
+            id: document.getElementById('kmId').value, activoId: fichaActivoId,
+            fecha: document.getElementById('kmFecha').value,
+            kilometraje: document.getElementById('kmValor').value || '',
+            observacion: document.getElementById('kmObs').value
+        });
+        let res = await fetch('/Activo/GuardarBitacoraKm', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalKm').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // -- Infracción --
+    function abrirModalInfr(id) {
+        document.getElementById('infrId').value = id;
+        if (id === 0) {
+            document.getElementById('modalInfrTitulo').textContent = 'Nueva Infracción';
+            ['infrPapeleta','infrFecha','infrCodigo','infrDescripcion','infrConductor','infrRucDni','infrImporte'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('infrEntidad').value = 'SUTRAN';
+            document.getElementById('infrSituacion').value = 'PENDIENTE DE PAGO';
+        } else {
+            document.getElementById('modalInfrTitulo').textContent = 'Editar Infracción';
+            let i = fichaData.infracciones.find(x => x.id === id);
+            if (i) {
+                document.getElementById('infrEntidad').value = i.entidad;
+                document.getElementById('infrPapeleta').value = i.nroPapeleta || '';
+                document.getElementById('infrFecha').value = i.fechaOcurrenciaISO;
+                document.getElementById('infrCodigo').value = i.codigoInfraccion || '';
+                document.getElementById('infrDescripcion').value = i.descripcionFalta || '';
+                document.getElementById('infrConductor').value = i.conductorDatos || '';
+                document.getElementById('infrRucDni').value = i.rucDniInfractor || '';
+                document.getElementById('infrImporte').value = i.importe ?? '';
+                document.getElementById('infrSituacion').value = i.situacionPago || 'PENDIENTE DE PAGO';
+            }
+        }
+        $('#modalInfr').modal('show');
+    }
+    async function guardarInfr() {
+        let params = new URLSearchParams({
+            id: document.getElementById('infrId').value, activoId: fichaActivoId,
+            entidad: document.getElementById('infrEntidad').value,
+            nroPapeleta: document.getElementById('infrPapeleta').value,
+            fechaOcurrencia: document.getElementById('infrFecha').value || '',
+            codigoInfraccion: document.getElementById('infrCodigo').value,
+            descripcionFalta: document.getElementById('infrDescripcion').value,
+            conductorDatos: document.getElementById('infrConductor').value,
+            rucDniInfractor: document.getElementById('infrRucDni').value,
+            importe: document.getElementById('infrImporte').value || '',
+            situacionPago: document.getElementById('infrSituacion').value
+        });
+        let res = await fetch('/Activo/GuardarInfraccion', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalInfr').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // -- Seguro --
+    function abrirModalSeg(id) {
+        document.getElementById('segId').value = id;
+        if (id === 0) {
+            document.getElementById('modalSegTitulo').textContent = 'Nuevo Seguro';
+            ['segAseguradora','segPoliza','segSuma','segPrima','segClase','segUso','segFechaInicio','segFechaVigencia','segPolPositiva','segPolRimac','segAjusteRimac'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('segMoneda').value = 'USD';
+        } else {
+            document.getElementById('modalSegTitulo').textContent = 'Editar Seguro';
+            let s = fichaData.seguros.find(x => x.id === id);
+            if (s) {
+                document.getElementById('segAseguradora').value = s.aseguradora || '';
+                document.getElementById('segPoliza').value = s.nroPoliza || '';
+                document.getElementById('segSuma').value = s.sumaAsegurada ?? '';
+                document.getElementById('segMoneda').value = s.monedaSuma || 'USD';
+                document.getElementById('segPrima').value = s.primaIgv ?? '';
+                document.getElementById('segClase').value = s.clase || '';
+                document.getElementById('segUso').value = s.uso || '';
+                document.getElementById('segFechaInicio').value = s.fechaInicio;
+                document.getElementById('segFechaVigencia').value = s.fechaVigencia;
+                document.getElementById('segPolPositiva').value = s.nroPolizaLaPositiva || '';
+                document.getElementById('segPolRimac').value = s.nroPolizaRimac || '';
+                document.getElementById('segAjusteRimac').value = s.ajusteRimac ?? '';
+            }
+        }
+        $('#modalSeg').modal('show');
+    }
+    async function guardarSeg() {
+        let params = new URLSearchParams({
+            id: document.getElementById('segId').value, activoId: fichaActivoId,
+            aseguradora: document.getElementById('segAseguradora').value,
+            nroPoliza: document.getElementById('segPoliza').value,
+            sumaAsegurada: document.getElementById('segSuma').value || '',
+            monedaSuma: document.getElementById('segMoneda').value,
+            primaIgv: document.getElementById('segPrima').value || '',
+            clase: document.getElementById('segClase').value,
+            uso: document.getElementById('segUso').value,
+            fechaInicio: document.getElementById('segFechaInicio').value || '',
+            fechaVigencia: document.getElementById('segFechaVigencia').value || '',
+            nroPolizaLaPositiva: document.getElementById('segPolPositiva').value,
+            nroPolizaRimac: document.getElementById('segPolRimac').value,
+            ajusteRimac: document.getElementById('segAjusteRimac').value || ''
+        });
+        let res = await fetch('/Activo/GuardarSeguro', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalSeg').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // -- GPS --
+    function abrirModalGps(id) {
+        document.getElementById('gpsId').value = id;
+        if (id === 0) {
+            document.getElementById('modalGpsTitulo').textContent = 'Nuevo GPS';
+            ['gpsEmpresa','gpsUrl','gpsUsuario','gpsContrasena','gpsVencimiento','gpsEndoso'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('gpsConstancia').value = '';
+        } else {
+            document.getElementById('modalGpsTitulo').textContent = 'Editar GPS';
+            let g = fichaData.gps.find(x => x.id === id);
+            if (g) {
+                document.getElementById('gpsEmpresa').value = g.empresaGps || '';
+                document.getElementById('gpsUrl').value = g.urlAcceso || '';
+                document.getElementById('gpsUsuario').value = g.usuario || '';
+                document.getElementById('gpsContrasena').value = g.contrasena || '';
+                document.getElementById('gpsVencimiento').value = g.fechaVencimiento;
+                document.getElementById('gpsConstancia').value = g.constancia || '';
+                document.getElementById('gpsEndoso').value = g.endoso || '';
+            }
+        }
+        $('#modalGps').modal('show');
+    }
+    async function guardarGps() {
+        let params = new URLSearchParams({
+            id: document.getElementById('gpsId').value, activoId: fichaActivoId,
+            empresaGps: document.getElementById('gpsEmpresa').value,
+            urlAcceso: document.getElementById('gpsUrl').value,
+            usuario: document.getElementById('gpsUsuario').value,
+            contrasena: document.getElementById('gpsContrasena').value,
+            fechaVencimiento: document.getElementById('gpsVencimiento').value || '',
+            constancia: document.getElementById('gpsConstancia').value,
+            endoso: document.getElementById('gpsEndoso').value
+        });
+        let res = await fetch('/Activo/GuardarGps', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalGps').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // -- Documento --
+    function abrirModalDoc(id) {
+        document.getElementById('docId').value = id;
+        if (id === 0) {
+            ['docNumero','docEmision','docVencimiento','docObs'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('docTipo').value = '';
+        } else {
+            let d = fichaData.documentos.find(x => x.id === id);
+            if (d) {
+                document.getElementById('docTipo').value = d.tipoDocumentoActivoId;
+                document.getElementById('docNumero').value = d.numeroDocumento || '';
+                document.getElementById('docEmision').value = d.fechaEmision;
+                document.getElementById('docVencimiento').value = d.fechaVencimiento;
+                document.getElementById('docObs').value = d.observacion || '';
+            }
+        }
+        $('#modalDoc').modal('show');
+    }
+    async function guardarDoc() {
+        let params = new URLSearchParams({
+            id: document.getElementById('docId').value, activoId: fichaActivoId,
+            tipoDocumentoActivoId: document.getElementById('docTipo').value,
+            numeroDocumento: document.getElementById('docNumero').value,
+            fechaEmision: document.getElementById('docEmision').value || '',
+            fechaVencimiento: document.getElementById('docVencimiento').value || '',
+            observacion: document.getElementById('docObs').value
+        });
+        let res = await fetch('/Activo/GuardarDocumento', { method: 'POST', body: params });
+        let json = await res.json();
+        if (json.status) { $('#modalDoc').modal('hide'); verFicha(fichaActivoId); }
+        alert(json.message);
+    }
+
+    // ======================== ELIMINAR GENÉRICO ========================
+    async function eliminar(accion, id) {
+        if (!confirm('¿Está seguro de eliminar este registro?')) return;
+        let res = await fetch(`/Activo/${accion}`, { method: 'POST', body: new URLSearchParams({ id }) });
+        let json = await res.json();
+        alert(json.message);
+        if (json.status) verFicha(fichaActivoId);
+    }
+</script>
+}

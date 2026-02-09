@@ -7,40 +7,40 @@ namespace ERPKardex.Models
     public class MovimientoActivo
     {
         [Key]
-        [Column("id")]
         public int Id { get; set; }
 
-        [Column("codigo_acta")]
-        public string? CodigoActa { get; set; }
+        [Column("codigo")]
+        [StringLength(30)]
+        public string Codigo { get; set; }
 
         [Column("tipo_movimiento")]
-        public string? TipoMovimiento { get; set; } // ENTREGA, DEVOLUCION
-
-        [Column("fecha_movimiento")]
-        public DateTime? FechaMovimiento { get; set; }
+        [StringLength(20)]
+        public string TipoMovimiento { get; set; }
 
         [Column("empresa_id")]
-        public int? EmpresaId { get; set; }
+        public int EmpresaId { get; set; }
 
         [Column("personal_id")]
-        public int? PersonalId { get; set; }
+        public int PersonalId { get; set; }
 
-        [Column("empresa_usuario_registro_id")]
-        public int? EmpresaUsuarioRegistroId { get; set; }
+        [Column("fecha_movimiento")]
+        public DateTime FechaMovimiento { get; set; }
 
-        [Column("usuario_registro_id")]
-        public int? UsuarioRegistroId { get; set; }
-
-        [Column("ubicacion_destino")]
-        public string? UbicacionDestino { get; set; }
+        [Column("ruta_acta")]
+        [StringLength(500)]
+        public string? RutaActa { get; set; }
 
         [Column("observacion")]
+        [StringLength(1000)]
         public string? Observacion { get; set; }
 
-        [Column("ruta_acta_pdf")]
-        public string? RutaActaPdf { get; set; }
-
         [Column("estado")]
-        public bool? Estado { get; set; }
+        public bool Estado { get; set; }
+
+        [Column("fecha_registro")]
+        public DateTime FechaRegistro { get; set; }
+
+        [Column("usuario_registro")]
+        public int? UsuarioRegistro { get; set; }
     }
 }
