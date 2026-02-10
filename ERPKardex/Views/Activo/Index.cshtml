@@ -3,167 +3,204 @@
 }
 
 <div class="content-header">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0"><i class="fas fa-laptop me-2"></i>Activos de Cómputo</h4>
-        <button class="btn btn-primary" onclick="abrirModalActivo(0)">
-            <i class="fas fa-plus me-1"></i> Nuevo Activo
-        </button>
-    </div>
-</div>
-
-<!-- FILTROS -->
-<div class="card mb-3">
-    <div class="card-body py-2">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label mb-1 small">Empresa</label>
-                <select id="filtroEmpresa" class="form-control" onchange="cargarActivos()">
-                    <option value="">-- Todas --</option>
-                </select>
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h4 class="m-0 text-dark"><i class="fas fa-laptop mr-2"></i>Activos de Cómputo</h4>
             </div>
-            <div class="col-md-3">
-                <label class="form-label mb-1 small">Grupo</label>
-                <select id="filtroGrupo" class="form-control" onchange="cargarActivos()">
-                    <option value="">-- Todos --</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label mb-1 small">Buscar</label>
-                <input type="text" id="filtroBuscar" class="form-control form-control-sm" placeholder="Código, marca, modelo, serie..."
-                       onkeyup="if(event.key==='Enter') cargarActivos()">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-sm btn-outline-secondary w-100" onclick="cargarActivos()">
-                    <i class="fas fa-search me-1"></i>Filtrar
+            <div class="col-sm-6 text-right">
+                <button class="btn btn-primary" onclick="abrirModalActivo(0)">
+                    <i class="fas fa-plus mr-1"></i> Nuevo Activo
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- TABLA -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0" id="tblActivos">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Código</th>
-                        <th>Empresa</th>
-                        <th>Grupo</th>
-                        <th>Tipo Equipo</th>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Nro. Serie</th>
-                        <th>Estado</th>
-                        <th>Condición</th>
-                        <th class="text-center" style="width:120px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyActivos">
-                    <tr><td colspan="10" class="text-center text-muted py-4">Cargando...</td></tr>
-                </tbody>
-            </table>
+<div class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary mb-3">
+            <div class="card-body py-2">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Empresa</label>
+                            <select id="filtroEmpresa" class="form-control form-control-sm" onchange="cargarActivos()">
+                                <option value="">-- Todas --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Grupo</label>
+                            <select id="filtroGrupo" class="form-control form-control-sm" onchange="cargarActivos()">
+                                <option value="">-- Todos --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Buscar</label>
+                            <input type="text" id="filtroBuscar" class="form-control form-control-sm" placeholder="Código, marca, modelo, serie..."
+                                   onkeyup="if(event.key==='Enter') cargarActivos()">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-2">
+                            <button class="btn btn-sm btn-outline-secondary btn-block" onclick="cargarActivos()">
+                                <i class="fas fa-search mr-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-outline card-primary">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" id="tblActivos">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Empresa</th>
+                                <th>Grupo</th>
+                                <th>Tipo Equipo</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Nro. Serie</th>
+                                <th>Estado</th>
+                                <th>Condición</th>
+                                <th class="text-center" style="width:120px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyActivos">
+                            <tr><td colspan="10" class="text-center text-muted py-4">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL ACTIVO (CREAR/EDITAR) -->
-<div class="modal fade" id="modalActivo" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl">
+<div class="modal fade" id="modalActivo" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white py-2">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="modalActivoTitulo">Nuevo Activo de Cómputo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="activoId" value="0">
 
-                <div class="row g-3">
+                <div class="row">
                     <div class="col-md-3">
-                        <label class="form-label">Código <span class="text-danger">*</span></label>
-                        <input type="text" id="activoCodigo" class="form-control" placeholder="COMP-0304">
+                        <div class="form-group">
+                            <label>Código <span class="text-danger">*</span></label>
+                            <input type="text" id="activoCodigo" class="form-control" placeholder="COMP-0304">
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Empresa <span class="text-danger">*</span></label>
-                        <select id="activoEmpresa" class="form-select"></select>
+                        <div class="form-group">
+                            <label>Empresa <span class="text-danger">*</span></label>
+                            <select id="activoEmpresa" class="form-control"></select>
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Grupo <span class="text-danger">*</span></label>
-                        <select id="activoGrupo" class="form-select"></select>
+                        <div class="form-group">
+                            <label>Grupo <span class="text-danger">*</span></label>
+                            <select id="activoGrupo" class="form-control"></select>
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Tipo Equipo</label>
-                        <input type="text" id="activoSubtipo" class="form-control" placeholder="LAPTOP, PC, CELULAR...">
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-0">
-                    <div class="col-md-3">
-                        <label class="form-label">Marca</label>
-                        <input type="text" id="activoMarca" class="form-control">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Modelo</label>
-                        <input type="text" id="activoModelo" class="form-control">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Nro. Serie</label>
-                        <input type="text" id="activoNumeroSerie" class="form-control">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Descripción</label>
-                        <input type="text" id="activoDescripcion" class="form-control">
+                        <div class="form-group">
+                            <label>Tipo Equipo</label>
+                            <input type="text" id="activoSubtipo" class="form-control" placeholder="LAPTOP, PC, CELULAR...">
+                        </div>
                     </div>
                 </div>
 
-                <div class="row g-3 mt-0">
+                <div class="row">
                     <div class="col-md-3">
-                        <label class="form-label">Estado Uso</label>
-                        <select id="activoEstadoUso" class="form-select">
-                            <option value="ACTIVO">ACTIVO</option>
-                            <option value="INACTIVO">INACTIVO</option>
-                            <option value="BAJA">BAJA</option>
-                            <option value="STOCK">STOCK</option>
-                        </select>
+                        <div class="form-group">
+                            <label>Marca</label>
+                            <input type="text" id="activoMarca" class="form-control">
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Condición</label>
-                        <select id="activoCondicion" class="form-select">
-                            <option value="BUENA">BUENA</option>
-                            <option value="REGULAR">REGULAR</option>
-                            <option value="MALA">MALA</option>
-                        </select>
+                        <div class="form-group">
+                            <label>Modelo</label>
+                            <input type="text" id="activoModelo" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Nro. Serie</label>
+                            <input type="text" id="activoNumeroSerie" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <input type="text" id="activoDescripcion" class="form-control">
+                        </div>
                     </div>
                 </div>
 
-                <!-- ESPECIFICACIONES EAV (dinámicas) -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Estado Uso</label>
+                            <select id="activoEstadoUso" class="form-control">
+                                <option value="ACTIVO">ACTIVO</option>
+                                <option value="INACTIVO">INACTIVO</option>
+                                <option value="BAJA">BAJA</option>
+                                <option value="STOCK">STOCK</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Condición</label>
+                            <select id="activoCondicion" class="form-control">
+                                <option value="BUENA">BUENA</option>
+                                <option value="REGULAR">REGULAR</option>
+                                <option value="MALA">MALA</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <hr class="my-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0"><i class="fas fa-list-ul me-1"></i>Especificaciones Técnicas</h6>
+                    <h6 class="mb-0"><i class="fas fa-list-ul mr-1"></i>Especificaciones Técnicas</h6>
                     <button class="btn btn-sm btn-outline-primary" onclick="agregarEspecificacion()">
-                        <i class="fas fa-plus me-1"></i>Agregar
+                        <i class="fas fa-plus mr-1"></i>Agregar
                     </button>
                 </div>
                 <div id="contenedorEspecificaciones"></div>
             </div>
             <div class="modal-footer py-2">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                 <button class="btn btn-primary" onclick="guardarActivo()">
-                    <i class="fas fa-save me-1"></i>Guardar
+                    <i class="fas fa-save mr-1"></i>Guardar
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL DETALLE (solo visualización) -->
-<div class="modal fade" id="modalDetalle" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white py-2">
+            <div class="modal-header bg-info text-white">
                 <h5 class="modal-title" id="modalDetalleTitulo">Detalle del Activo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body" id="detalleContenido">
                 <p class="text-muted">Cargando...</p>
@@ -173,300 +210,285 @@
 </div>
 
 @section Scripts {
-<script>
-    const TIPO_CODIGO = 'COMPUTO';
-    let tipoActivoIdComputo = 0;
+    <script>
+        const TIPO_CODIGO = 'COMPUTO';
+        let tipoActivoIdComputo = 0;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        cargarCombos();
-        cargarActivos();
-    });
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarCombos();
+            cargarActivos();
+        });
 
-    // ======================== COMBOS ========================
-
-    async function cargarCombos() {
-        // Empresas
-        let res = await fetch('/Activo/GetEmpresas');
-        let json = await res.json();
-        if (json.status) {
-            let sel = document.getElementById('filtroEmpresa');
-            let selM = document.getElementById('activoEmpresa');
-            selM.innerHTML = '<option value="">-- Seleccione --</option>';
-            json.data.forEach(e => {
-                sel.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
-                selM.innerHTML += `<option value="${e.id}">${e.nombre} (${e.ruc})</option>`;
-            });
-        }
-
-        // Tipos de activo (para obtener el ID de COMPUTO)
-        res = await fetch('/Activo/GetTiposActivo');
-        json = await res.json();
-        if (json.status) {
-            let comp = json.data.find(t => t.codigo === TIPO_CODIGO);
-            if (comp) tipoActivoIdComputo = comp.id;
-        }
-
-        // Grupos de cómputo
-        if (tipoActivoIdComputo > 0) {
-            res = await fetch(`/Activo/GetGrupos?tipoActivoId=${tipoActivoIdComputo}`);
-            json = await res.json();
+        // ======================== COMBOS ========================
+        async function cargarCombos() {
+            let res = await fetch('/Activo/GetEmpresas');
+            let json = await res.json();
             if (json.status) {
-                let sel = document.getElementById('filtroGrupo');
-                let selM = document.getElementById('activoGrupo');
+                let sel = document.getElementById('filtroEmpresa');
+                let selM = document.getElementById('activoEmpresa');
                 selM.innerHTML = '<option value="">-- Seleccione --</option>';
-                json.data.forEach(g => {
-                    sel.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
-                    selM.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
+                json.data.forEach(e => {
+                    sel.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                    selM.innerHTML += `<option value="${e.id}">${e.nombre} (${e.ruc})</option>`;
                 });
             }
+
+            res = await fetch('/Activo/GetTiposActivo');
+            json = await res.json();
+            if (json.status) {
+                let comp = json.data.find(t => t.codigo === TIPO_CODIGO);
+                if (comp) tipoActivoIdComputo = comp.id;
+            }
+
+            if (tipoActivoIdComputo > 0) {
+                res = await fetch(`/Activo/GetGrupos?tipoActivoId=${tipoActivoIdComputo}`);
+                json = await res.json();
+                if (json.status) {
+                    let sel = document.getElementById('filtroGrupo');
+                    let selM = document.getElementById('activoGrupo');
+                    selM.innerHTML = '<option value="">-- Seleccione --</option>';
+                    json.data.forEach(g => {
+                        sel.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
+                        selM.innerHTML += `<option value="${g.id}">${g.nombre}</option>`;
+                    });
+                }
+            }
         }
-    }
 
-    // ======================== LISTADO ========================
+        // ======================== LISTADO ========================
+        async function cargarActivos() {
+            let empresaId = document.getElementById('filtroEmpresa').value;
+            let grupoId = document.getElementById('filtroGrupo').value;
+            let buscar = document.getElementById('filtroBuscar').value;
 
-    async function cargarActivos() {
-        let empresaId = document.getElementById('filtroEmpresa').value;
-        let grupoId = document.getElementById('filtroGrupo').value;
-        let buscar = document.getElementById('filtroBuscar').value;
+            let url = `/Activo/GetActivos?tipoCodigo=${TIPO_CODIGO}`;
+            if (empresaId) url += `&empresaId=${empresaId}`;
+            if (grupoId) url += `&grupoId=${grupoId}`;
+            if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
 
-        let url = `/Activo/GetActivos?tipoCodigo=${TIPO_CODIGO}`;
-        if (empresaId) url += `&empresaId=${empresaId}`;
-        if (grupoId) url += `&grupoId=${grupoId}`;
-        if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+            let res = await fetch(url);
+            let json = await res.json();
+            let tbody = document.getElementById('bodyActivos');
 
-        let res = await fetch(url);
-        let json = await res.json();
-        let tbody = document.getElementById('bodyActivos');
+            if (!json.status || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No se encontraron activos.</td></tr>';
+                return;
+            }
 
-        if (!json.status || json.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No se encontraron activos.</td></tr>';
-            return;
+            let html = '';
+            json.data.forEach(a => {
+                let badgeEstado = a.estadoUso === 'ACTIVO' ? 'badge-success' :
+                                  a.estadoUso === 'STOCK' ? 'badge-warning' :
+                                  a.estadoUso === 'BAJA' ? 'badge-danger' : 'badge-secondary';
+
+                let badgeCond = a.condicion === 'BUENA' ? 'badge-success' :
+                                a.condicion === 'REGULAR' ? 'badge-warning' : 'badge-danger';
+
+                html += `<tr>
+                    <td><strong>${a.codigo}</strong></td>
+                    <td>${a.empresa}</td>
+                    <td>${a.grupo}</td>
+                    <td>${a.subtipo || ''}</td>
+                    <td>${a.marca || ''}</td>
+                    <td>${a.modelo || ''}</td>
+                    <td><small>${a.numeroSerie || ''}</small></td>
+                    <td><span class="badge ${badgeEstado}">${a.estadoUso}</span></td>
+                    <td><span class="badge ${badgeCond}">${a.condicion || ''}</span></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-info" onclick="verDetalle(${a.id})" title="Ver detalle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="abrirModalActivo(${a.id})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarActivo(${a.id}, '${a.codigo}')" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
         }
 
-        let html = '';
-        json.data.forEach(a => {
-            let badgeEstado = a.estadoUso === 'ACTIVO' ? 'bg-success' :
-                              a.estadoUso === 'STOCK' ? 'bg-warning text-dark' :
-                              a.estadoUso === 'BAJA' ? 'bg-danger' : 'bg-secondary';
-            let badgeCond = a.condicion === 'BUENA' ? 'bg-success' :
-                            a.condicion === 'REGULAR' ? 'bg-warning text-dark' : 'bg-danger';
+        // ======================== MODAL CREAR/EDITAR ========================
+        async function abrirModalActivo(id) {
+            document.getElementById('activoId').value = id;
+            document.getElementById('contenedorEspecificaciones').innerHTML = '';
 
-            html += `<tr>
-                <td><strong>${a.codigo}</strong></td>
-                <td>${a.empresa}</td>
-                <td>${a.grupo}</td>
-                <td>${a.subtipo || ''}</td>
-                <td>${a.marca || ''}</td>
-                <td>${a.modelo || ''}</td>
-                <td><small>${a.numeroSerie || ''}</small></td>
-                <td><span class="badge ${badgeEstado}">${a.estadoUso}</span></td>
-                <td><span class="badge ${badgeCond}">${a.condicion || ''}</span></td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-info" onclick="verDetalle(${a.id})" title="Ver detalle">
-                        <i class="fas fa-eye"></i>
+            if (id === 0) {
+                document.getElementById('modalActivoTitulo').textContent = 'Nuevo Activo de Cómputo';
+                document.getElementById('activoCodigo').value = '';
+                document.getElementById('activoEmpresa').value = '';
+                document.getElementById('activoGrupo').value = '';
+                document.getElementById('activoSubtipo').value = '';
+                document.getElementById('activoMarca').value = '';
+                document.getElementById('activoModelo').value = '';
+                document.getElementById('activoNumeroSerie').value = '';
+                document.getElementById('activoDescripcion').value = '';
+                document.getElementById('activoEstadoUso').value = 'ACTIVO';
+                document.getElementById('activoCondicion').value = 'BUENA';
+                // Default specs
+                ['sistema_operativo', 'caracteristica'].forEach(c => agregarEspecificacion(c, ''));
+            } else {
+                document.getElementById('modalActivoTitulo').textContent = 'Editar Activo de Cómputo';
+                let res = await fetch(`/Activo/GetActivoById?id=${id}`);
+                let json = await res.json();
+                if (!json.status) { alert(json.message); return; }
+
+                let a = json.activo;
+                document.getElementById('activoCodigo').value = a.codigo;
+                document.getElementById('activoEmpresa').value = a.empresaId;
+                document.getElementById('activoGrupo').value = a.grupoActivoId || '';
+                document.getElementById('activoSubtipo').value = a.subtipo || '';
+                document.getElementById('activoMarca').value = a.marca || '';
+                document.getElementById('activoModelo').value = a.modelo || '';
+                document.getElementById('activoNumeroSerie').value = a.numeroSerie || '';
+                document.getElementById('activoDescripcion').value = a.descripcion || '';
+                document.getElementById('activoEstadoUso').value = a.estadoUso;
+                document.getElementById('activoCondicion').value = a.condicion || 'BUENA';
+
+                json.especificaciones.forEach(e => agregarEspecificacion(e.clave, e.valor));
+            }
+
+            // JS BOOTSTRAP 4
+            $('#modalActivo').modal('show');
+        }
+
+        function agregarEspecificacion(clave = '', valor = '') {
+            let cont = document.getElementById('contenedorEspecificaciones');
+            let div = document.createElement('div');
+            div.className = 'row mb-2 fila-spec';
+            div.innerHTML = `
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm spec-clave" value="${clave}" placeholder="Ej: procesador, ram...">
+                </div>
+                <div class="col-md-7">
+                    <input type="text" class="form-control form-control-sm spec-valor" value="${valor}" placeholder="Valor">
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-sm btn-outline-danger btn-block" onclick="this.closest('.fila-spec').remove()">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-warning" onclick="abrirModalActivo(${a.id})" title="Editar">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarActivo(${a.id}, '${a.codigo}')" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
+                </div>`;
+            cont.appendChild(div);
+        }
 
-    // ======================== MODAL CREAR/EDITAR ========================
+        // ======================== GUARDAR ========================
+        async function guardarActivo() {
+            let id = parseInt(document.getElementById('activoId').value);
+            let codigo = document.getElementById('activoCodigo').value.trim();
+            let empresaId = document.getElementById('activoEmpresa').value;
+            let grupoId = document.getElementById('activoGrupo').value;
 
-    async function abrirModalActivo(id) {
-        document.getElementById('activoId').value = id;
-        document.getElementById('contenedorEspecificaciones').innerHTML = '';
+            if (!codigo) { alert('Ingrese el código del activo.'); return; }
+            if (!empresaId) { alert('Seleccione una empresa.'); return; }
 
-        if (id === 0) {
-            document.getElementById('modalActivoTitulo').textContent = 'Nuevo Activo de Cómputo';
-            document.getElementById('activoCodigo').value = '';
-            document.getElementById('activoEmpresa').value = '';
-            document.getElementById('activoGrupo').value = '';
-            document.getElementById('activoSubtipo').value = '';
-            document.getElementById('activoMarca').value = '';
-            document.getElementById('activoModelo').value = '';
-            document.getElementById('activoNumeroSerie').value = '';
-            document.getElementById('activoDescripcion').value = '';
-            document.getElementById('activoEstadoUso').value = 'ACTIVO';
-            document.getElementById('activoCondicion').value = 'BUENA';
+            let especificaciones = [];
+            document.querySelectorAll('.fila-spec').forEach(fila => {
+                let clave = fila.querySelector('.spec-clave').value.trim();
+                let valor = fila.querySelector('.spec-valor').value.trim();
+                if (clave) especificaciones.push({ clave, valor });
+            });
 
-            // Agregar especificaciones default para cómputo
-            ['sistema_operativo', 'caracteristica'].forEach(c => agregarEspecificacion(c, ''));
-        } else {
-            document.getElementById('modalActivoTitulo').textContent = 'Editar Activo de Cómputo';
+            let params = new URLSearchParams();
+            params.append('id', id);
+            params.append('codigo', codigo);
+            params.append('tipoActivoId', tipoActivoIdComputo);
+            params.append('grupoActivoId', grupoId || '');
+            params.append('empresaId', empresaId);
+            params.append('descripcion', document.getElementById('activoDescripcion').value);
+            params.append('marca', document.getElementById('activoMarca').value);
+            params.append('modelo', document.getElementById('activoModelo').value);
+            params.append('numeroSerie', document.getElementById('activoNumeroSerie').value);
+            params.append('subtipo', document.getElementById('activoSubtipo').value);
+            params.append('estadoUso', document.getElementById('activoEstadoUso').value);
+            params.append('condicion', document.getElementById('activoCondicion').value);
+            params.append('especificacionesJson', JSON.stringify(especificaciones));
+
+            let res = await fetch('/Activo/GuardarActivo', { method: 'POST', body: params });
+            let json = await res.json();
+            if (json.status) {
+                $('#modalActivo').modal('hide');
+                cargarActivos();
+                alert(json.message);
+            } else {
+                alert(json.message);
+            }
+        }
+
+        // ======================== ELIMINAR ========================
+        async function eliminarActivo(id, codigo) {
+            if (!confirm(`¿Está seguro de eliminar el activo ${codigo}?`)) return;
+            let params = new URLSearchParams();
+            params.append('id', id);
+            let res = await fetch('/Activo/EliminarActivo', { method: 'POST', body: params });
+            let json = await res.json();
+            alert(json.message);
+            if (json.status) cargarActivos();
+        }
+
+        // ======================== VER DETALLE ========================
+        async function verDetalle(id) {
             let res = await fetch(`/Activo/GetActivoById?id=${id}`);
             let json = await res.json();
             if (!json.status) { alert(json.message); return; }
 
             let a = json.activo;
-            document.getElementById('activoCodigo').value = a.codigo;
-            document.getElementById('activoEmpresa').value = a.empresaId;
-            document.getElementById('activoGrupo').value = a.grupoActivoId || '';
-            document.getElementById('activoSubtipo').value = a.subtipo || '';
-            document.getElementById('activoMarca').value = a.marca || '';
-            document.getElementById('activoModelo').value = a.modelo || '';
-            document.getElementById('activoNumeroSerie').value = a.numeroSerie || '';
-            document.getElementById('activoDescripcion').value = a.descripcion || '';
-            document.getElementById('activoEstadoUso').value = a.estadoUso;
-            document.getElementById('activoCondicion').value = a.condicion || 'BUENA';
+            let html = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr><th class="bg-light" width="40%">Código</th><td><strong>${a.codigo}</strong></td></tr>
+                            <tr><th class="bg-light">Empresa</th><td>${a.empresaNombre} (${a.empresaRuc})</td></tr>
+                            <tr><th class="bg-light">Grupo</th><td>${a.grupoNombre}</td></tr>
+                            <tr><th class="bg-light">Tipo Equipo</th><td>${a.subtipo || '-'}</td></tr>
+                            <tr><th class="bg-light">Estado</th><td>${a.estadoUso}</td></tr>
+                            <tr><th class="bg-light">Condición</th><td>${a.condicion || '-'}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr><th class="bg-light" width="40%">Marca</th><td>${a.marca || '-'}</td></tr>
+                            <tr><th class="bg-light">Modelo</th><td>${a.modelo || '-'}</td></tr>
+                            <tr><th class="bg-light">Nro. Serie</th><td>${a.numeroSerie || '-'}</td></tr>
+                            <tr><th class="bg-light">Descripción</th><td>${a.descripcion || '-'}</td></tr>
+                        </table>
+                    </div>
+                </div>`;
 
-            // Cargar especificaciones
-            json.especificaciones.forEach(e => agregarEspecificacion(e.clave, e.valor));
+            if (json.asignacion) {
+                let asig = json.asignacion;
+                html += `<div class="alert alert-info py-2 mb-3">
+                    <strong><i class="fas fa-user mr-1"></i>Asignado a:</strong> ${asig.personalNombre} ${asig.personalDni ? '(DNI: ' + asig.personalDni + ')' : ''}
+                    — Empresa: ${asig.empresa} — Fecha: ${asig.fechaEntrega} ${asig.ubicacion ? '— Ubicación: ' + asig.ubicacion : ''}
+                </div>`;
+            }
+
+            if (json.especificaciones.length > 0) {
+                html += `<h6 class="mt-3"><i class="fas fa-list-ul mr-1"></i>Especificaciones Técnicas</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light"><tr><th>Atributo</th><th>Valor</th></tr></thead><tbody>`;
+                json.especificaciones.forEach(e => {
+                    let label = e.clave.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    html += `<tr><td><strong>${label}</strong></td><td>${e.valor || '-'}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+
+            if (json.documentos.length > 0) {
+                html += `<h6 class="mt-3"><i class="fas fa-file-alt mr-1"></i>Documentos</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light"><tr><th>Tipo</th><th>Nro.</th><th>Emisión</th><th>Vencimiento</th><th>Obs.</th></tr></thead><tbody>`;
+                json.documentos.forEach(d => {
+                    html += `<tr><td>${d.tipoDocumento}</td><td>${d.numeroDocumento || '-'}</td>
+                        <td>${d.fechaEmision || '-'}</td><td>${d.fechaVencimiento || '-'}</td><td>${d.observacion || '-'}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
+
+            document.getElementById('modalDetalleTitulo').textContent = `Detalle: ${a.codigo}`;
+            document.getElementById('detalleContenido').innerHTML = html;
+            $('#modalDetalle').modal('show');
         }
-
-        new bootstrap.Modal(document.getElementById('modalActivo')).show();
-    }
-
-    function agregarEspecificacion(clave = '', valor = '') {
-        let cont = document.getElementById('contenedorEspecificaciones');
-        let div = document.createElement('div');
-        div.className = 'row g-2 mb-2 fila-spec';
-        div.innerHTML = `
-            <div class="col-md-4">
-                <input type="text" class="form-control form-control-sm spec-clave" value="${clave}" placeholder="Ej: procesador, ram, gpu, imei1...">
-            </div>
-            <div class="col-md-7">
-                <input type="text" class="form-control form-control-sm spec-valor" value="${valor}" placeholder="Valor">
-            </div>
-            <div class="col-md-1">
-                <button class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.fila-spec').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>`;
-        cont.appendChild(div);
-    }
-
-    // ======================== GUARDAR ========================
-
-    async function guardarActivo() {
-        let id = parseInt(document.getElementById('activoId').value);
-        let codigo = document.getElementById('activoCodigo').value.trim();
-        let empresaId = document.getElementById('activoEmpresa').value;
-        let grupoId = document.getElementById('activoGrupo').value;
-
-        if (!codigo) { alert('Ingrese el código del activo.'); return; }
-        if (!empresaId) { alert('Seleccione una empresa.'); return; }
-
-        // Recoger especificaciones
-        let especificaciones = [];
-        document.querySelectorAll('.fila-spec').forEach(fila => {
-            let clave = fila.querySelector('.spec-clave').value.trim();
-            let valor = fila.querySelector('.spec-valor').value.trim();
-            if (clave) especificaciones.push({ clave, valor });
-        });
-
-        let params = new URLSearchParams();
-        params.append('id', id);
-        params.append('codigo', codigo);
-        params.append('tipoActivoId', tipoActivoIdComputo);
-        params.append('grupoActivoId', grupoId || '');
-        params.append('empresaId', empresaId);
-        params.append('descripcion', document.getElementById('activoDescripcion').value);
-        params.append('marca', document.getElementById('activoMarca').value);
-        params.append('modelo', document.getElementById('activoModelo').value);
-        params.append('numeroSerie', document.getElementById('activoNumeroSerie').value);
-        params.append('subtipo', document.getElementById('activoSubtipo').value);
-        params.append('estadoUso', document.getElementById('activoEstadoUso').value);
-        params.append('condicion', document.getElementById('activoCondicion').value);
-        params.append('especificacionesJson', JSON.stringify(especificaciones));
-
-        let res = await fetch('/Activo/GuardarActivo', { method: 'POST', body: params });
-        let json = await res.json();
-
-        if (json.status) {
-            bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
-            cargarActivos();
-            alert(json.message);
-        } else {
-            alert(json.message);
-        }
-    }
-
-    // ======================== ELIMINAR ========================
-
-    async function eliminarActivo(id, codigo) {
-        if (!confirm(`¿Está seguro de eliminar el activo ${codigo}?`)) return;
-
-        let params = new URLSearchParams();
-        params.append('id', id);
-        let res = await fetch('/Activo/EliminarActivo', { method: 'POST', body: params });
-        let json = await res.json();
-        alert(json.message);
-        if (json.status) cargarActivos();
-    }
-
-    // ======================== VER DETALLE ========================
-
-    async function verDetalle(id) {
-        let res = await fetch(`/Activo/GetActivoById?id=${id}`);
-        let json = await res.json();
-        if (!json.status) { alert(json.message); return; }
-
-        let a = json.activo;
-        let html = `
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr><th class="bg-light" width="40%">Código</th><td><strong>${a.codigo}</strong></td></tr>
-                        <tr><th class="bg-light">Empresa</th><td>${a.empresaNombre} (${a.empresaRuc})</td></tr>
-                        <tr><th class="bg-light">Grupo</th><td>${a.grupoNombre}</td></tr>
-                        <tr><th class="bg-light">Tipo Equipo</th><td>${a.subtipo || '-'}</td></tr>
-                        <tr><th class="bg-light">Estado</th><td>${a.estadoUso}</td></tr>
-                        <tr><th class="bg-light">Condición</th><td>${a.condicion || '-'}</td></tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-sm table-bordered mb-0">
-                        <tr><th class="bg-light" width="40%">Marca</th><td>${a.marca || '-'}</td></tr>
-                        <tr><th class="bg-light">Modelo</th><td>${a.modelo || '-'}</td></tr>
-                        <tr><th class="bg-light">Nro. Serie</th><td>${a.numeroSerie || '-'}</td></tr>
-                        <tr><th class="bg-light">Descripción</th><td>${a.descripcion || '-'}</td></tr>
-                    </table>
-                </div>
-            </div>`;
-
-        // Asignación actual
-        if (json.asignacion) {
-            let asig = json.asignacion;
-            html += `<div class="alert alert-info py-2 mb-3">
-                <strong><i class="fas fa-user me-1"></i>Asignado a:</strong> ${asig.personalNombre} ${asig.personalDni ? '(DNI: ' + asig.personalDni + ')' : ''}
-                — Empresa: ${asig.empresa} — Fecha: ${asig.fechaEntrega} ${asig.ubicacion ? '— Ubicación: ' + asig.ubicacion : ''}
-            </div>`;
-        }
-
-        // Especificaciones
-        if (json.especificaciones.length > 0) {
-            html += `<h6 class="mt-3"><i class="fas fa-list-ul me-1"></i>Especificaciones Técnicas</h6>
-            <table class="table table-sm table-bordered">
-                <thead class="table-secondary"><tr><th>Atributo</th><th>Valor</th></tr></thead><tbody>`;
-            json.especificaciones.forEach(e => {
-                let label = e.clave.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                html += `<tr><td><strong>${label}</strong></td><td>${e.valor || '-'}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-        }
-
-        // Documentos
-        if (json.documentos.length > 0) {
-            html += `<h6 class="mt-3"><i class="fas fa-file-alt me-1"></i>Documentos</h6>
-            <table class="table table-sm table-bordered">
-                <thead class="table-secondary"><tr><th>Tipo</th><th>Nro.</th><th>Emisión</th><th>Vencimiento</th><th>Obs.</th></tr></thead><tbody>`;
-            json.documentos.forEach(d => {
-                html += `<tr><td>${d.tipoDocumento}</td><td>${d.numeroDocumento || '-'}</td>
-                    <td>${d.fechaEmision || '-'}</td><td>${d.fechaVencimiento || '-'}</td><td>${d.observacion || '-'}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-        }
-
-        document.getElementById('modalDetalleTitulo').textContent = `Detalle: ${a.codigo}`;
-        document.getElementById('detalleContenido').innerHTML = html;
-        new bootstrap.Modal(document.getElementById('modalDetalle')).show();
-    }
-</script>
+    </script>
 }

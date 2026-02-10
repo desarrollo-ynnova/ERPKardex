@@ -3,432 +3,540 @@
 }
 
 <div class="content-header">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0"><i class="fas fa-truck me-2"></i>Flota Vehicular</h4>
-        <button class="btn btn-primary" onclick="abrirModalActivo(0)">
-            <i class="fas fa-plus me-1"></i> Nuevo Vehículo
-        </button>
-    </div>
-</div>
-
-<!-- FILTROS -->
-<div class="card mb-3">
-    <div class="card-body py-2">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label mb-1 small">Empresa</label>
-                <select id="filtroEmpresa" class="form-select form-select-sm" onchange="cargarActivos()">
-                    <option value="">-- Todas --</option>
-                </select>
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h4 class="m-0 text-dark"><i class="fas fa-truck mr-2"></i>Flota Vehicular</h4>
             </div>
-            <div class="col-md-3">
-                <label class="form-label mb-1 small">Grupo</label>
-                <select id="filtroGrupo" class="form-select form-select-sm" onchange="cargarActivos()">
-                    <option value="">-- Todos --</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label mb-1 small">Buscar</label>
-                <input type="text" id="filtroBuscar" class="form-control form-control-sm" placeholder="Placa, marca, modelo..."
-                       onkeyup="if(event.key==='Enter') cargarActivos()">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-sm btn-outline-secondary w-100" onclick="cargarActivos()">
-                    <i class="fas fa-search me-1"></i>Filtrar
+            <div class="col-sm-6 text-right">
+                <button class="btn btn-primary" onclick="abrirModalActivo(0)">
+                    <i class="fas fa-plus mr-1"></i> Nuevo Vehículo
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- TABLA DE VEHÍCULOS -->
-<div class="card" id="panelListado">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Código</th>
-                        <th>Placa</th>
-                        <th>Empresa</th>
-                        <th>Grupo</th>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Año</th>
-                        <th>Estado</th>
-                        <th class="text-center" style="width:150px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="bodyActivos">
-                    <tr><td colspan="9" class="text-center text-muted py-4">Cargando...</td></tr>
-                </tbody>
-            </table>
+<div class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary mb-3">
+            <div class="card-body py-2">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Empresa</label>
+                            <select id="filtroEmpresa" class="form-control form-control-sm" onchange="cargarActivos()">
+                                <option value="">-- Todas --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Grupo</label>
+                            <select id="filtroGrupo" class="form-control form-control-sm" onchange="cargarActivos()">
+                                <option value="">-- Todos --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Buscar</label>
+                            <input type="text" id="filtroBuscar" class="form-control form-control-sm" placeholder="Placa, marca, modelo..."
+                                   onkeyup="if(event.key==='Enter') cargarActivos()">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-2">
+                            <button class="btn btn-sm btn-outline-secondary btn-block" onclick="cargarActivos()">
+                                <i class="fas fa-search mr-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-outline card-primary" id="panelListado">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Placa</th>
+                                <th>Empresa</th>
+                                <th>Grupo</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Año</th>
+                                <th>Estado</th>
+                                <th class="text-center" style="width:150px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyActivos">
+                            <tr><td colspan="9" class="text-center text-muted py-4">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-outline card-info d-none" id="panelFicha">
+            <div class="card-header">
+                <h3 class="card-title" id="fichaTitle"><i class="fas fa-id-card mr-2"></i>Ficha del Vehículo</h3>
+                <div class="card-tools">
+                    <button class="btn btn-sm btn-tool" onclick="cerrarFicha()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3" id="fichaResumen"></div>
+
+                <div id="fichaAsignacion" class="mb-3"></div>
+
+                <ul class="nav nav-tabs" id="fichaTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#tabEspec" role="tab">Datos Técnicos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabMtto" role="tab">Mantenimientos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabKm" role="tab">Kilometraje</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabInfr" role="tab">Infracciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabSeg" role="tab">Seguros</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabGps" role="tab">GPS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#tabDocs" role="tab">Documentos</a>
+                    </li>
+                </ul>
+                <div class="tab-content border border-top-0 p-3">
+                    <div class="tab-pane fade show active" id="tabEspec" role="tabpanel">
+                        <div id="fichaEspec"></div>
+                    </div>
+                    <div class="tab-pane fade" id="tabMtto">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">Cartilla de Mantenimiento</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalMtto(0)"><i class="fas fa-plus mr-1"></i>Nuevo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered" id="tblMtto">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Km Prog.</th>
+                                        <th>Km Real</th>
+                                        <th>Trabajos</th>
+                                        <th>Precio</th>
+                                        <th>Conductor</th>
+                                        <th width="80">Acc.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyMtto"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabKm">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">Bitácora de Kilometraje</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalKm(0)"><i class="fas fa-plus mr-1"></i>Nuevo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light"><tr><th>Fecha</th><th>Kilometraje</th><th>Observación</th><th width="80">Acc.</th></tr></thead>
+                                <tbody id="bodyKm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabInfr">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">Infracciones</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalInfr(0)"><i class="fas fa-plus mr-1"></i>Nueva</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Entidad</th>
+                                        <th>Papeleta</th>
+                                        <th>Código</th>
+                                        <th>Falta</th>
+                                        <th>Conductor</th>
+                                        <th>Importe</th>
+                                        <th>Situación</th>
+                                        <th width="80">Acc.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyInfr"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabSeg">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">Seguros</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalSeg(0)"><i class="fas fa-plus mr-1"></i>Nuevo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Aseguradora</th>
+                                        <th>Póliza</th>
+                                        <th>Suma Aseg.</th>
+                                        <th>Prima+IGV</th>
+                                        <th>Clase</th>
+                                        <th>Uso</th>
+                                        <th>Vigencia</th>
+                                        <th width="80">Acc.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodySeg"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabGps">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">GPS</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalGps(0)"><i class="fas fa-plus mr-1"></i>Nuevo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Empresa GPS</th>
+                                        <th>URL</th>
+                                        <th>Usuario</th>
+                                        <th>Contraseña</th>
+                                        <th>Vencimiento</th>
+                                        <th>Constancia</th>
+                                        <th>Endoso</th>
+                                        <th width="80">Acc.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyGps"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tabDocs">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0">Documentos</h6>
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalDoc(0)"><i class="fas fa-plus mr-1"></i>Nuevo</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Número</th>
+                                        <th>Emisión</th>
+                                        <th>Vencimiento</th>
+                                        <th>Observación</th>
+                                        <th width="80">Acc.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyDocs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-secondary" onclick="cerrarFicha()">Volver</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- PANEL FICHA DEL VEHÍCULO (se muestra al hacer clic en "Ver ficha") -->
-<div class="card d-none" id="panelFicha">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
-        <h5 class="mb-0" id="fichaTitle"><i class="fas fa-id-card me-2"></i>Ficha del Vehículo</h5>
-        <button class="btn btn-sm btn-outline-light" onclick="cerrarFicha()">
-            <i class="fas fa-arrow-left me-1"></i>Volver al listado
-        </button>
-    </div>
-    <div class="card-body">
-        <!-- Datos principales -->
-        <div class="row mb-3" id="fichaResumen"></div>
-
-        <!-- Asignación -->
-        <div id="fichaAsignacion" class="mb-3"></div>
-
-        <!-- TABS -->
-        <ul class="nav nav-tabs" id="fichaTabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" data-toggle="tab" href="#tabEspec" role="tab">Datos Técnicos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabMtto" role="tab">Mantenimientos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabKm" role="tab">Kilometraje</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabInfr" role="tab">Infracciones</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabSeg" role="tab">Seguros</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabGps" role="tab">GPS</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#tabDocs" role="tab">Documentos</a>
-            </li>
-        </ul>
-        <div class="tab-content border border-top-0 p-3">
-            <!-- TAB: Datos Técnicos -->
-            <div class="tab-pane fade show active" id="tabEspec" role="tabpanel">
-                <div id="fichaEspec"></div>
-            </div>
-            <!-- TAB: Mantenimientos -->
-            <div class="tab-pane fade" id="tabMtto">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">Cartilla de Mantenimiento</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalMtto(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered" id="tblMtto">
-                    <thead class="table-secondary"><tr>
-                        <th>Fecha</th><th>Tipo</th><th>Km Prog.</th><th>Km Real</th>
-                        <th>Trabajos</th><th>Precio</th><th>Conductor</th><th width="80">Acc.</th>
-                    </tr></thead><tbody id="bodyMtto"></tbody>
-                </table></div>
-            </div>
-            <!-- TAB: Kilometraje -->
-            <div class="tab-pane fade" id="tabKm">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">Bitácora de Kilometraje</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalKm(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered">
-                    <thead class="table-secondary"><tr><th>Fecha</th><th>Kilometraje</th><th>Observación</th><th width="80">Acc.</th></tr></thead>
-                    <tbody id="bodyKm"></tbody>
-                </table></div>
-            </div>
-            <!-- TAB: Infracciones -->
-            <div class="tab-pane fade" id="tabInfr">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">Infracciones</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalInfr(0)"><i class="fas fa-plus me-1"></i>Nueva</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered">
-                    <thead class="table-secondary"><tr>
-                        <th>Fecha</th><th>Entidad</th><th>Papeleta</th><th>Código</th>
-                        <th>Falta</th><th>Conductor</th><th>Importe</th><th>Situación</th><th width="80">Acc.</th>
-                    </tr></thead><tbody id="bodyInfr"></tbody>
-                </table></div>
-            </div>
-            <!-- TAB: Seguros -->
-            <div class="tab-pane fade" id="tabSeg">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">Seguros</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalSeg(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered">
-                    <thead class="table-secondary"><tr>
-                        <th>Aseguradora</th><th>Póliza</th><th>Suma Aseg.</th><th>Prima+IGV</th>
-                        <th>Clase</th><th>Uso</th><th>Vigencia</th><th width="80">Acc.</th>
-                    </tr></thead><tbody id="bodySeg"></tbody>
-                </table></div>
-            </div>
-            <!-- TAB: GPS -->
-            <div class="tab-pane fade" id="tabGps">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">GPS</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalGps(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered">
-                    <thead class="table-secondary"><tr>
-                        <th>Empresa GPS</th><th>URL</th><th>Usuario</th><th>Contraseña</th>
-                        <th>Vencimiento</th><th>Constancia</th><th>Endoso</th><th width="80">Acc.</th>
-                    </tr></thead><tbody id="bodyGps"></tbody>
-                </table></div>
-            </div>
-            <!-- TAB: Documentos -->
-            <div class="tab-pane fade" id="tabDocs">
-                <div class="d-flex justify-content-between mb-2">
-                    <h6 class="mb-0">Documentos</h6>
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalDoc(0)"><i class="fas fa-plus me-1"></i>Nuevo</button>
-                </div>
-                <div class="table-responsive"><table class="table table-sm table-bordered">
-                    <thead class="table-secondary"><tr>
-                        <th>Tipo</th><th>Número</th><th>Emisión</th><th>Vencimiento</th><th>Observación</th><th width="80">Acc.</th>
-                    </tr></thead><tbody id="bodyDocs"></tbody>
-                </table></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ======================== MODALES ======================== -->
-
-<!-- MODAL: Vehículo (Crear/Editar) -->
-<div class="modal fade" id="modalActivo" tabindex="-1" data-backdrop="static">
-    <div class="modal-dialog modal-xl">
+<div class="modal fade" id="modalActivo" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white py-2">
-                <h5 class="modal-title" id="modalActivoTitulo">Nuevo Vehículo</h5>                
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalActivoTitulo">Nuevo Vehículo</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="activoId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-2"><label class="form-label">Código <span class="text-danger">*</span></label>
-                        <input type="text" id="activoCodigo" class="form-control" placeholder="VEH-0023"></div>
-                    <div class="col-md-3"><label class="form-label">Empresa <span class="text-danger">*</span></label>
-                        <select id="activoEmpresa" class="form-select"></select></div>
-                    <div class="col-md-2"><label class="form-label">Grupo</label>
-                        <select id="activoGrupo" class="form-select"></select></div>
-                    <div class="col-md-2"><label class="form-label">Placa <span class="text-danger">*</span></label>
-                        <input type="text" id="activoPlaca" class="form-control" placeholder="ABC123"></div>
-                    <div class="col-md-3"><label class="form-label">Marca</label>
-                        <input type="text" id="activoMarca" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-2 form-group">
+                        <label>Código <span class="text-danger">*</span></label>
+                        <input type="text" id="activoCodigo" class="form-control" placeholder="VEH-0023">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Empresa <span class="text-danger">*</span></label>
+                        <select id="activoEmpresa" class="form-control"></select>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Grupo</label>
+                        <select id="activoGrupo" class="form-control"></select>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Placa <span class="text-danger">*</span></label>
+                        <input type="text" id="activoPlaca" class="form-control" placeholder="ABC123">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Marca</label>
+                        <input type="text" id="activoMarca" class="form-control">
+                    </div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-3"><label class="form-label">Modelo</label>
-                        <input type="text" id="activoModelo" class="form-control"></div>
-                    <div class="col-md-2"><label class="form-label">Año Fab.</label>
-                        <input type="number" id="activoAnio" class="form-control"></div>
-                    <div class="col-md-2"><label class="form-label">Estado</label>
-                        <select id="activoEstadoUso" class="form-select">
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label>Modelo</label>
+                        <input type="text" id="activoModelo" class="form-control">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Año Fab.</label>
+                        <input type="number" id="activoAnio" class="form-control">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Estado</label>
+                        <select id="activoEstadoUso" class="form-control">
                             <option value="OPERATIVO">OPERATIVO</option>
                             <option value="TALLER">TALLER</option>
                             <option value="INACTIVO">INACTIVO</option>
                             <option value="BAJA">BAJA</option>
-                        </select></div>
-                    <div class="col-md-2"><label class="form-label">Condición</label>
-                        <select id="activoCondicion" class="form-select">
+                        </select>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Condición</label>
+                        <select id="activoCondicion" class="form-control">
                             <option value="BUENA">BUENA</option>
                             <option value="REGULAR">REGULAR</option>
                             <option value="MALA">MALA</option>
-                        </select></div>
-                    <div class="col-md-3"><label class="form-label">Descripción</label>
-                        <input type="text" id="activoDescripcion" class="form-control"></div>
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Descripción</label>
+                        <input type="text" id="activoDescripcion" class="form-control">
+                    </div>
                 </div>
-                <!-- Especificaciones -->
                 <hr class="my-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Datos Técnicos del Vehículo</h6>
-                    <button class="btn btn-sm btn-outline-primary" onclick="agregarEspecificacion()"><i class="fas fa-plus me-1"></i>Agregar</button>
+                    <h6 class="mb-0"><i class="fas fa-cogs mr-1"></i>Datos Técnicos del Vehículo</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="agregarEspecificacion()"><i class="fas fa-plus mr-1"></i>Agregar</button>
                 </div>
                 <div id="contenedorEspecificaciones"></div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarActivo()"><i class="fas fa-save me-1"></i>Guardar</button>
+                <button class="btn btn-primary" onclick="guardarActivo()"><i class="fas fa-save mr-1"></i>Guardar</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Mantenimiento -->
-<div class="modal fade" id="modalMtto" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalMtto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-warning py-2"><h5 class="modal-title" id="modalMttoTitulo">Mantenimiento</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="modalMttoTitulo">Mantenimiento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="mttoId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-4"><label class="form-label">Fecha <span class="text-danger">*</span></label>
-                        <input type="date" id="mttoFecha" class="form-control"></div>
-                    <div class="col-md-4"><label class="form-label">Tipo <span class="text-danger">*</span></label>
-                        <select id="mttoTipo" class="form-select"><option value="PREVENTIVO">PREVENTIVO</option><option value="CORRECTIVO">CORRECTIVO</option></select></div>
-                    <div class="col-md-4"><label class="form-label">Moneda</label>
-                        <select id="mttoMoneda" class="form-select"><option value="PEN">PEN</option><option value="USD">USD</option></select></div>
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Fecha <span class="text-danger">*</span></label>
+                        <input type="date" id="mttoFecha" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Tipo <span class="text-danger">*</span></label>
+                        <select id="mttoTipo" class="form-control"><option value="PREVENTIVO">PREVENTIVO</option><option value="CORRECTIVO">CORRECTIVO</option></select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Moneda</label>
+                        <select id="mttoMoneda" class="form-control"><option value="PEN">PEN</option><option value="USD">USD</option></select>
+                    </div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-3"><label class="form-label">Km Programado</label><input type="number" step="0.01" id="mttoKmProg" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Km al Servicio</label><input type="number" step="0.01" id="mttoKmReal" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Precio</label><input type="number" step="0.01" id="mttoPrecio" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Conductor</label><input type="text" id="mttoConductor" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-3 form-group"><label>Km Programado</label><input type="number" step="0.01" id="mttoKmProg" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Km al Servicio</label><input type="number" step="0.01" id="mttoKmReal" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Precio</label><input type="number" step="0.01" id="mttoPrecio" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Conductor</label><input type="text" id="mttoConductor" class="form-control"></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-8"><label class="form-label">Trabajos Ejecutados</label><textarea id="mttoTrabajos" class="form-control" rows="2"></textarea></div>
-                    <div class="col-md-4"><label class="form-label">Observación</label><textarea id="mttoObs" class="form-control" rows="2"></textarea></div>
+                <div class="row">
+                    <div class="col-md-8 form-group"><label>Trabajos Ejecutados</label><textarea id="mttoTrabajos" class="form-control" rows="2"></textarea></div>
+                    <div class="col-md-4 form-group"><label>Observación</label><textarea id="mttoObs" class="form-control" rows="2"></textarea></div>
                 </div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarMtto()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarMtto()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Kilometraje -->
-<div class="modal fade" id="modalKm" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="modalKm" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white py-2"><h5 class="modal-title">Registro de Kilometraje</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Registro de Kilometraje</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="kmId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Fecha</label><input type="date" id="kmFecha" class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Kilometraje</label><input type="number" step="0.01" id="kmValor" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-6 form-group"><label>Fecha</label><input type="date" id="kmFecha" class="form-control"></div>
+                    <div class="col-md-6 form-group"><label>Kilometraje</label><input type="number" step="0.01" id="kmValor" class="form-control"></div>
                 </div>
-                <div class="mt-3"><label class="form-label">Observación</label><input type="text" id="kmObs" class="form-control"></div>
+                <div class="form-group"><label>Observación</label><input type="text" id="kmObs" class="form-control"></div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarKm()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarKm()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Infracción -->
-<div class="modal fade" id="modalInfr" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalInfr" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white py-2"><h5 class="modal-title" id="modalInfrTitulo">Infracción</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalInfrTitulo">Infracción</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="infrId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-3"><label class="form-label">Entidad <span class="text-danger">*</span></label>
-                        <select id="infrEntidad" class="form-select"><option value="SUTRAN">SUTRAN</option><option value="SAT">SAT</option><option value="MPC">MPC</option><option value="PNP">PNP</option></select></div>
-                    <div class="col-md-3"><label class="form-label">Nro. Papeleta</label><input type="text" id="infrPapeleta" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Fecha</label><input type="date" id="infrFecha" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Código</label><input type="text" id="infrCodigo" class="form-control" placeholder="M20, G04..."></div>
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label>Entidad <span class="text-danger">*</span></label>
+                        <select id="infrEntidad" class="form-control"><option value="SUTRAN">SUTRAN</option><option value="SAT">SAT</option><option value="MPC">MPC</option><option value="PNP">PNP</option></select>
+                    </div>
+                    <div class="col-md-3 form-group"><label>Nro. Papeleta</label><input type="text" id="infrPapeleta" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Fecha</label><input type="date" id="infrFecha" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Código</label><input type="text" id="infrCodigo" class="form-control" placeholder="M20, G04..."></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-6"><label class="form-label">Descripción de la Falta</label><input type="text" id="infrDescripcion" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Conductor</label><input type="text" id="infrConductor" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">RUC/DNI Infractor</label><input type="text" id="infrRucDni" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-6 form-group"><label>Descripción de la Falta</label><input type="text" id="infrDescripcion" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Conductor</label><input type="text" id="infrConductor" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>RUC/DNI Infractor</label><input type="text" id="infrRucDni" class="form-control"></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-4"><label class="form-label">Importe (S/)</label><input type="number" step="0.01" id="infrImporte" class="form-control"></div>
-                    <div class="col-md-4"><label class="form-label">Situación</label>
-                        <select id="infrSituacion" class="form-select"><option value="PENDIENTE DE PAGO">PENDIENTE DE PAGO</option><option value="PAGADO">PAGADO</option></select></div>
+                <div class="row">
+                    <div class="col-md-4 form-group"><label>Importe (S/)</label><input type="number" step="0.01" id="infrImporte" class="form-control"></div>
+                    <div class="col-md-4 form-group">
+                        <label>Situación</label>
+                        <select id="infrSituacion" class="form-control"><option value="PENDIENTE DE PAGO">PENDIENTE DE PAGO</option><option value="PAGADO">PAGADO</option></select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarInfr()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarInfr()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Seguro -->
-<div class="modal fade" id="modalSeg" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalSeg" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white py-2"><h5 class="modal-title" id="modalSegTitulo">Seguro</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalSegTitulo">Seguro</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="segId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-4"><label class="form-label">Aseguradora</label><input type="text" id="segAseguradora" class="form-control" placeholder="RIMAC, LA POSITIVA..."></div>
-                    <div class="col-md-4"><label class="form-label">Nro. Póliza</label><input type="text" id="segPoliza" class="form-control"></div>
-                    <div class="col-md-2"><label class="form-label">Suma Aseg.</label><input type="number" step="0.01" id="segSuma" class="form-control"></div>
-                    <div class="col-md-2"><label class="form-label">Moneda</label>
-                        <select id="segMoneda" class="form-select"><option value="USD">USD</option><option value="PEN">PEN</option></select></div>
+                <div class="row">
+                    <div class="col-md-4 form-group"><label>Aseguradora</label><input type="text" id="segAseguradora" class="form-control" placeholder="RIMAC, LA POSITIVA..."></div>
+                    <div class="col-md-4 form-group"><label>Nro. Póliza</label><input type="text" id="segPoliza" class="form-control"></div>
+                    <div class="col-md-2 form-group"><label>Suma Aseg.</label><input type="number" step="0.01" id="segSuma" class="form-control"></div>
+                    <div class="col-md-2 form-group">
+                        <label>Moneda</label>
+                        <select id="segMoneda" class="form-control"><option value="USD">USD</option><option value="PEN">PEN</option></select>
+                    </div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-3"><label class="form-label">Prima + IGV</label><input type="number" step="0.01" id="segPrima" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Clase</label><input type="text" id="segClase" class="form-control" placeholder="CMTA PICKUP"></div>
-                    <div class="col-md-3"><label class="form-label">Uso</label><input type="text" id="segUso" class="form-control" placeholder="COMERCIAL"></div>
-                    <div class="col-md-3"><label class="form-label">Ajuste Rimac</label><input type="number" step="0.01" id="segAjusteRimac" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-3 form-group"><label>Prima + IGV</label><input type="number" step="0.01" id="segPrima" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Clase</label><input type="text" id="segClase" class="form-control" placeholder="CMTA PICKUP"></div>
+                    <div class="col-md-3 form-group"><label>Uso</label><input type="text" id="segUso" class="form-control" placeholder="COMERCIAL"></div>
+                    <div class="col-md-3 form-group"><label>Ajuste Rimac</label><input type="number" step="0.01" id="segAjusteRimac" class="form-control"></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-3"><label class="form-label">Fecha Inicio</label><input type="date" id="segFechaInicio" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Fecha Vigencia</label><input type="date" id="segFechaVigencia" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Póliza La Positiva</label><input type="text" id="segPolPositiva" class="form-control"></div>
-                    <div class="col-md-3"><label class="form-label">Póliza Rimac</label><input type="text" id="segPolRimac" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-3 form-group"><label>Fecha Inicio</label><input type="date" id="segFechaInicio" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Fecha Vigencia</label><input type="date" id="segFechaVigencia" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Póliza La Positiva</label><input type="text" id="segPolPositiva" class="form-control"></div>
+                    <div class="col-md-3 form-group"><label>Póliza Rimac</label><input type="text" id="segPolRimac" class="form-control"></div>
                 </div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarSeg()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarSeg()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: GPS -->
-<div class="modal fade" id="modalGps" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalGps" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2"><h5 class="modal-title" id="modalGpsTitulo">GPS</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="modalGpsTitulo">GPS</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="gpsId" value="0">
-                <div class="row g-3">
-                    <div class="col-md-4"><label class="form-label">Empresa GPS</label><input type="text" id="gpsEmpresa" class="form-control"></div>
-                    <div class="col-md-8"><label class="form-label">URL de Acceso</label><input type="text" id="gpsUrl" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-4 form-group"><label>Empresa GPS</label><input type="text" id="gpsEmpresa" class="form-control"></div>
+                    <div class="col-md-8 form-group"><label>URL de Acceso</label><input type="text" id="gpsUrl" class="form-control"></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-4"><label class="form-label">Usuario</label><input type="text" id="gpsUsuario" class="form-control"></div>
-                    <div class="col-md-4"><label class="form-label">Contraseña</label><input type="text" id="gpsContrasena" class="form-control"></div>
-                    <div class="col-md-4"><label class="form-label">Vencimiento</label><input type="date" id="gpsVencimiento" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-4 form-group"><label>Usuario</label><input type="text" id="gpsUsuario" class="form-control"></div>
+                    <div class="col-md-4 form-group"><label>Contraseña</label><input type="text" id="gpsContrasena" class="form-control"></div>
+                    <div class="col-md-4 form-group"><label>Vencimiento</label><input type="date" id="gpsVencimiento" class="form-control"></div>
                 </div>
-                <div class="row g-3 mt-0">
-                    <div class="col-md-4"><label class="form-label">Constancia</label>
-                        <select id="gpsConstancia" class="form-select"><option value="">-- Seleccione --</option><option value="SÍ">SÍ</option><option value="NO">NO</option></select></div>
-                    <div class="col-md-8"><label class="form-label">Endoso</label><input type="text" id="gpsEndoso" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Constancia</label>
+                        <select id="gpsConstancia" class="form-control"><option value="">-- Seleccione --</option><option value="SÍ">SÍ</option><option value="NO">NO</option></select>
+                    </div>
+                    <div class="col-md-8 form-group"><label>Endoso</label><input type="text" id="gpsEndoso" class="form-control"></div>
                 </div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarGps()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarGps()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODAL: Documento -->
-<div class="modal fade" id="modalDoc" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="modalDoc" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-secondary text-white py-2"><h5 class="modal-title">Documento del Vehículo</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">×</span> </button>
-                <div class="modal-body">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">Documento del Vehículo</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
                 <input type="hidden" id="docId" value="0">
-                <div class="mb-3"><label class="form-label">Tipo Documento <span class="text-danger">*</span></label>
-                    <select id="docTipo" class="form-select"></select></div>
-                <div class="mb-3"><label class="form-label">Número</label><input type="text" id="docNumero" class="form-control"></div>
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Emisión</label><input type="date" id="docEmision" class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Vencimiento</label><input type="date" id="docVencimiento" class="form-control"></div>
+                <div class="form-group">
+                    <label>Tipo Documento <span class="text-danger">*</span></label>
+                    <select id="docTipo" class="form-control"></select>
                 </div>
-                <div class="mt-3"><label class="form-label">Observación</label><input type="text" id="docObs" class="form-control"></div>
+                <div class="form-group"><label>Número</label><input type="text" id="docNumero" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-6 form-group"><label>Emisión</label><input type="date" id="docEmision" class="form-control"></div>
+                    <div class="col-md-6 form-group"><label>Vencimiento</label><input type="date" id="docVencimiento" class="form-control"></div>
+                </div>
+                <div class="form-group"><label>Observación</label><input type="text" id="docObs" class="form-control"></div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button class="btn btn-primary" onclick="guardarDoc()"><i class="fas fa-save me-1"></i>Guardar</button></div>
+                <button class="btn btn-primary" onclick="guardarDoc()"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -441,7 +549,6 @@
     let fichaData = null;
 
     document.addEventListener('DOMContentLoaded', () => { cargarCombos(); cargarActivos(); });
-
     // ======================== COMBOS ========================
     async function cargarCombos() {
         let res = await fetch('/Activo/GetEmpresas');
@@ -457,7 +564,9 @@
         }
         res = await fetch('/Activo/GetTiposActivo');
         json = await res.json();
-        if (json.status) { let v = json.data.find(t => t.codigo === TIPO_CODIGO); if (v) tipoActivoIdVehiculo = v.id; }
+        if (json.status) {
+            let v = json.data.find(t => t.codigo === TIPO_CODIGO); if (v) tipoActivoIdVehiculo = v.id;
+        }
         if (tipoActivoIdVehiculo > 0) {
             res = await fetch(`/Activo/GetGrupos?tipoActivoId=${tipoActivoIdVehiculo}`);
             json = await res.json();
@@ -471,7 +580,7 @@
                 });
             }
         }
-        // Tipos de documento (para modal doc)
+        // Tipos de documento
         res = await fetch('/Activo/GetTiposDocumentoActivo');
         json = await res.json();
         if (json.status) {
@@ -501,7 +610,7 @@
         }
         let html = '';
         json.data.forEach(a => {
-            let badge = a.estadoUso === 'OPERATIVO' ? 'bg-success' : a.estadoUso === 'TALLER' ? 'bg-warning text-dark' : 'bg-secondary';
+            let badge = a.estadoUso === 'OPERATIVO' ? 'badge-success' : a.estadoUso === 'TALLER' ? 'badge-warning' : 'badge-secondary';
             html += `<tr>
                 <td>${a.codigo}</td>
                 <td><strong>${a.placa || ''}</strong></td>
@@ -528,12 +637,12 @@
 
         if (id === 0) {
             document.getElementById('modalActivoTitulo').textContent = 'Nuevo Vehículo';
-            ['activoCodigo','activoPlaca','activoMarca','activoModelo','activoAnio','activoDescripcion'].forEach(f => document.getElementById(f).value = '');
+            ['activoCodigo', 'activoPlaca', 'activoMarca', 'activoModelo', 'activoAnio', 'activoDescripcion'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('activoEmpresa').value = '';
             document.getElementById('activoGrupo').value = '';
             document.getElementById('activoEstadoUso').value = 'OPERATIVO';
             document.getElementById('activoCondicion').value = 'BUENA';
-            ['color','carroceria','chasis_nro_vin','motor','combustible','rango_km_mantenimiento'].forEach(c => agregarEspecificacion(c, ''));
+            ['color', 'carroceria', 'chasis_nro_vin', 'motor', 'combustible', 'rango_km_mantenimiento'].forEach(c => agregarEspecificacion(c, ''));
         } else {
             document.getElementById('modalActivoTitulo').textContent = 'Editar Vehículo';
             let res = await fetch(`/Activo/GetActivoById?id=${id}`);
@@ -558,10 +667,10 @@
     function agregarEspecificacion(clave = '', valor = '') {
         let cont = document.getElementById('contenedorEspecificaciones');
         let div = document.createElement('div');
-        div.className = 'row g-2 mb-2 fila-spec';
-        div.innerHTML = `<div class="col-md-4"><input type="text" class="form-control form-control-sm spec-clave" value="${clave}" placeholder="Ej: color, motor, combustible..."></div>
+        div.className = 'row mb-2 fila-spec';
+        div.innerHTML = `<div class="col-md-4"><input type="text" class="form-control form-control-sm spec-clave" value="${clave}" placeholder="Ej: color, motor..."></div>
             <div class="col-md-7"><input type="text" class="form-control form-control-sm spec-valor" value="${valor}" placeholder="Valor"></div>
-            <div class="col-md-1"><button class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.fila-spec').remove()"><i class="fas fa-times"></i></button></div>`;
+            <div class="col-md-1"><button class="btn btn-sm btn-outline-danger btn-block" onclick="this.closest('.fila-spec').remove()"><i class="fas fa-times"></i></button></div>`;
         cont.appendChild(div);
     }
 
@@ -578,7 +687,6 @@
             let v = f.querySelector('.spec-valor').value.trim();
             if (c) especificaciones.push({ clave: c, valor: v });
         });
-
         let params = new URLSearchParams();
         params.append('id', id);
         params.append('codigo', codigo);
@@ -593,7 +701,6 @@
         params.append('estadoUso', document.getElementById('activoEstadoUso').value);
         params.append('condicion', document.getElementById('activoCondicion').value);
         params.append('especificacionesJson', JSON.stringify(especificaciones));
-
         let res = await fetch('/Activo/GuardarActivo', { method: 'POST', body: params });
         let json = await res.json();
         if (json.status) {
@@ -618,30 +725,28 @@
         let json = await res.json();
         if (!json.status) { alert(json.message); return; }
         fichaData = json;
-
         // Mostrar panel ficha, ocultar listado
         document.getElementById('panelListado').classList.add('d-none');
         document.getElementById('panelFicha').classList.remove('d-none');
 
         let a = json.activo;
-        document.getElementById('fichaTitle').innerHTML = `<i class="fas fa-id-card me-2"></i>${a.placa} — ${a.marca} ${a.modelo}`;
+        document.getElementById('fichaTitle').innerHTML = `<i class="fas fa-id-card mr-2"></i>${a.placa} — ${a.marca} ${a.modelo}`;
 
         // Resumen
         document.getElementById('fichaResumen').innerHTML = `
             <div class="col-md-2"><small class="text-muted">Código</small><div><strong>${a.codigo}</strong></div></div>
-            <div class="col-md-2"><small class="text-muted">Placa</small><div><strong class="fs-5">${a.placa}</strong></div></div>
+            <div class="col-md-2"><small class="text-muted">Placa</small><div><strong class="h5">${a.placa}</strong></div></div>
             <div class="col-md-2"><small class="text-muted">Marca / Modelo</small><div>${a.marca} ${a.modelo}</div></div>
             <div class="col-md-2"><small class="text-muted">Año</small><div>${a.anioFabricacion || '-'}</div></div>
             <div class="col-md-2"><small class="text-muted">Empresa</small><div>${a.empresa}</div></div>
-            <div class="col-md-2"><small class="text-muted">Estado</small><div><span class="badge ${a.estadoUso === 'OPERATIVO' ? 'bg-success' : 'bg-warning text-dark'}">${a.estadoUso}</span></div></div>`;
-
+            <div class="col-md-2"><small class="text-muted">Estado</small><div><span class="badge ${a.estadoUso === 'OPERATIVO' ? 'badge-success' : 'badge-warning'}">${a.estadoUso}</span></div></div>`;
         // Asignación
         if (json.asignacion) {
             let as = json.asignacion;
             document.getElementById('fichaAsignacion').innerHTML = `<div class="alert alert-info py-2 mb-0">
-                <i class="fas fa-user me-1"></i><strong>Asignado a:</strong> ${as.personalNombre} ${as.personalDni ? '(DNI: ' + as.personalDni + ')' : ''} — Desde: ${as.fechaEntrega} ${as.ubicacion ? '— ' + as.ubicacion : ''}</div>`;
+                <i class="fas fa-user mr-1"></i><strong>Asignado a:</strong> ${as.personalNombre} ${as.personalDni ? '(DNI: ' + as.personalDni + ')' : ''} — Desde: ${as.fechaEntrega} ${as.ubicacion ? '— ' + as.ubicacion : ''}</div>`;
         } else {
-            document.getElementById('fichaAsignacion').innerHTML = '<div class="alert alert-secondary py-2 mb-0"><i class="fas fa-exclamation-circle me-1"></i>Sin asignación actual</div>';
+            document.getElementById('fichaAsignacion').innerHTML = '<div class="alert alert-secondary py-2 mb-0"><i class="fas fa-exclamation-circle mr-1"></i>Sin asignación actual</div>';
         }
 
         renderEspec(json.especificaciones);
@@ -675,7 +780,7 @@
         let tbody = document.getElementById('bodyMtto');
         if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Sin mantenimientos</td></tr>'; return; }
         tbody.innerHTML = data.map(m => `<tr>
-            <td>${m.fecha}</td><td><span class="badge ${m.tipoMantenimiento === 'PREVENTIVO' ? 'bg-primary' : 'bg-warning text-dark'}">${m.tipoMantenimiento}</span></td>
+            <td>${m.fecha}</td><td><span class="badge ${m.tipoMantenimiento === 'PREVENTIVO' ? 'badge-primary' : 'badge-warning'}">${m.tipoMantenimiento}</span></td>
             <td>${m.kmMantenimiento ?? '-'}</td><td>${m.kmAlServicio ?? '-'}</td>
             <td><small>${m.trabajosEjecutados || '-'}</small></td><td>${m.precio != null ? 'S/ ' + m.precio.toFixed(2) : '-'}</td>
             <td><small>${m.conductor || '-'}</small></td>
@@ -701,7 +806,7 @@
             <td>${i.fechaOcurrencia}</td><td>${i.entidad}</td><td>${i.nroPapeleta || '-'}</td><td>${i.codigoInfraccion || '-'}</td>
             <td><small>${i.descripcionFalta || '-'}</small></td><td><small>${i.conductorDatos || '-'}</small></td>
             <td>${i.importe != null ? 'S/ ' + i.importe.toFixed(2) : '-'}</td>
-            <td><span class="badge ${i.situacionPago === 'PAGADO' ? 'bg-success' : 'bg-danger'}">${i.situacionPago || '-'}</span></td>
+            <td><span class="badge ${i.situacionPago === 'PAGADO' ? 'badge-success' : 'badge-danger'}">${i.situacionPago || '-'}</span></td>
             <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalInfr(${i.id})"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarInfraccion',${i.id})"><i class="fas fa-trash"></i></button></td>
         </tr>`).join('');
@@ -739,7 +844,7 @@
             let vencido = d.fechaVencimiento && new Date(d.fechaVencimiento) < new Date();
             return `<tr class="${vencido ? 'table-danger' : ''}">
                 <td>${d.tipoDocumento}</td><td>${d.numeroDocumento || '-'}</td>
-                <td>${d.fechaEmision || '-'}</td><td>${d.fechaVencimiento || '-'} ${vencido ? '<span class="badge bg-danger">VENCIDO</span>' : ''}</td>
+                <td>${d.fechaEmision || '-'}</td><td>${d.fechaVencimiento || '-'} ${vencido ? '<span class="badge badge-danger">VENCIDO</span>' : ''}</td>
                 <td>${d.observacion || '-'}</td>
                 <td><button class="btn btn-sm btn-outline-warning" onclick="abrirModalDoc(${d.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="eliminar('EliminarDocumento',${d.id})"><i class="fas fa-trash"></i></button></td>
@@ -754,7 +859,7 @@
         document.getElementById('mttoId').value = id;
         if (id === 0) {
             document.getElementById('modalMttoTitulo').textContent = 'Nuevo Mantenimiento';
-            ['mttoFecha','mttoKmProg','mttoKmReal','mttoPrecio','mttoConductor','mttoTrabajos','mttoObs'].forEach(f => document.getElementById(f).value = '');
+            ['mttoFecha', 'mttoKmProg', 'mttoKmReal', 'mttoPrecio', 'mttoConductor', 'mttoTrabajos', 'mttoObs'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('mttoTipo').value = 'PREVENTIVO';
             document.getElementById('mttoMoneda').value = 'PEN';
         } else {
@@ -797,10 +902,14 @@
     // -- Kilometraje --
     function abrirModalKm(id) {
         document.getElementById('kmId').value = id;
-        if (id === 0) { ['kmFecha','kmValor','kmObs'].forEach(f => document.getElementById(f).value = ''); }
+        if (id === 0) {
+            ['kmFecha', 'kmValor', 'kmObs'].forEach(f => document.getElementById(f).value = '');
+        }
         else {
             let k = fichaData.bitacoraKm.find(x => x.id === id);
-            if (k) { document.getElementById('kmFecha').value = k.fechaISO; document.getElementById('kmValor').value = k.kilometraje ?? ''; document.getElementById('kmObs').value = k.observacion || ''; }
+            if (k) {
+                document.getElementById('kmFecha').value = k.fechaISO; document.getElementById('kmValor').value = k.kilometraje ?? ''; document.getElementById('kmObs').value = k.observacion || '';
+            }
         }
         $('#modalKm').modal('show');
     }
@@ -822,7 +931,7 @@
         document.getElementById('infrId').value = id;
         if (id === 0) {
             document.getElementById('modalInfrTitulo').textContent = 'Nueva Infracción';
-            ['infrPapeleta','infrFecha','infrCodigo','infrDescripcion','infrConductor','infrRucDni','infrImporte'].forEach(f => document.getElementById(f).value = '');
+            ['infrPapeleta', 'infrFecha', 'infrCodigo', 'infrDescripcion', 'infrConductor', 'infrRucDni', 'infrImporte'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('infrEntidad').value = 'SUTRAN';
             document.getElementById('infrSituacion').value = 'PENDIENTE DE PAGO';
         } else {
@@ -866,7 +975,7 @@
         document.getElementById('segId').value = id;
         if (id === 0) {
             document.getElementById('modalSegTitulo').textContent = 'Nuevo Seguro';
-            ['segAseguradora','segPoliza','segSuma','segPrima','segClase','segUso','segFechaInicio','segFechaVigencia','segPolPositiva','segPolRimac','segAjusteRimac'].forEach(f => document.getElementById(f).value = '');
+            ['segAseguradora', 'segPoliza', 'segSuma', 'segPrima', 'segClase', 'segUso', 'segFechaInicio', 'segFechaVigencia', 'segPolPositiva', 'segPolRimac', 'segAjusteRimac'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('segMoneda').value = 'USD';
         } else {
             document.getElementById('modalSegTitulo').textContent = 'Editar Seguro';
@@ -915,7 +1024,7 @@
         document.getElementById('gpsId').value = id;
         if (id === 0) {
             document.getElementById('modalGpsTitulo').textContent = 'Nuevo GPS';
-            ['gpsEmpresa','gpsUrl','gpsUsuario','gpsContrasena','gpsVencimiento','gpsEndoso'].forEach(f => document.getElementById(f).value = '');
+            ['gpsEmpresa', 'gpsUrl', 'gpsUsuario', 'gpsContrasena', 'gpsVencimiento', 'gpsEndoso'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('gpsConstancia').value = '';
         } else {
             document.getElementById('modalGpsTitulo').textContent = 'Editar GPS';
@@ -953,7 +1062,7 @@
     function abrirModalDoc(id) {
         document.getElementById('docId').value = id;
         if (id === 0) {
-            ['docNumero','docEmision','docVencimiento','docObs'].forEach(f => document.getElementById(f).value = '');
+            ['docNumero', 'docEmision', 'docVencimiento', 'docObs'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('docTipo').value = '';
         } else {
             let d = fichaData.documentos.find(x => x.id === id);

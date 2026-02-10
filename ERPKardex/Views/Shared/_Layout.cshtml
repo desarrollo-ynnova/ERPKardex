@@ -444,45 +444,71 @@
                             }
                         }
 
-                        @* @if (await _permisos.TienePermiso("MOD_ACTIVOS"))
+                        @if (await _permisos.TienePermiso("MOD_ACTIVOS"))
                         {
                             <li class="nav-header font-weight-bold">MÓDULO ACTIVO FIJO</li>
-                            <li class="nav-item @(controllerName == "Activo" ? "menu-open" : "")">
-                                <a href="#" class="nav-link @(controllerName == "Activo" ? "active" : "")">
+
+                            // Capturamos el parámetro 'tipo' de la URL para saber qué sub-menú activar
+                            string currentTipo = Context.Request.Query["tipo"].ToString().ToUpper();
+                            // Variables auxiliares para limpieza
+                            bool isActivoController = controllerName == "Activo";
+
+                            <li class="nav-item @(isActivoController ? "menu-open" : "")">
+                                <a href="#" class="nav-link @(isActivoController ? "active" : "")">
                                     <i class="nav-icon fas fa-cubes"></i>
-                                    <p>Activos Fijos <i class="right fas fa-angle-left"></i></p>
+                                    <p>
+                                        Activos Fijos
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
                                 </a>
-                                @{
-                                    string currentTipo = Context.Request.Query["tipo"].ToString().ToUpper();
-                                }
                                 <ul class="nav nav-treeview">
+            
+                                    @* 1. DASHBOARD (Si aplica) 
                                     @if (await _permisos.TienePermiso("ACT_DASH_VER"))
                                     {
                                         <li class="nav-item">
-                                            <a href="/Activo/Dashboard" class="nav-link @(controllerName == "Activo" && actionName == "Dashboard" ? "active" : "")">
-                                                <i class="nav-icon fas fa-tachometer-alt text-danger"></i><p>Dashboard</p>
+                                            <a href="/Activo/Dashboard" class="nav-link @(isActivoController && actionName == "Dashboard" ? "active" : "")">
+                                                <i class="nav-icon fas fa-tachometer-alt text-danger"></i>
+                                                <p>Dashboard</p>
                                             </a>
                                         </li>
-                                    }
+                                    }*@
+
+                                    @* 2. INVENTARIO CÓMPUTO *@
                                     @if (await _permisos.TienePermiso("ACT_COMPUTO_VER"))
                                     {
                                         <li class="nav-item">
-                                            <a href="/Activo/Index?tipo=COMPUTO" class="nav-link @(controllerName == "Activo" && (currentTipo == "COMPUTO" || string.IsNullOrEmpty(currentTipo)) && actionName != "Dashboard" ? "active" : "")">
-                                                <i class="fas fa-laptop nav-icon text-primary"></i><p>Activos Cómputo</p>
+                                            <a href="/Activo/Index" class="nav-link @(isActivoController && actionName == "Index" ? "active" : "")">
+                                                <i class="fas fa-laptop nav-icon text-primary"></i>
+                                                <p>Inventario Cómputo</p>
                                             </a>
                                         </li>
                                     }
+
+                                    @* 4. INVENTARIO FLOTA *@
                                     @if (await _permisos.TienePermiso("ACT_FLOTA_VER"))
                                     {
                                         <li class="nav-item">
-                                            <a href="/Activo/Index?tipo=VEHICULOS" class="nav-link @(controllerName == "Activo" && currentTipo == "VEHICULOS" ? "active" : "")">
-                                                <i class="fas fa-truck-pickup nav-icon text-warning"></i><p>Flota Vehicular</p>
+                                            <a href="/Activo/Vehiculos" class="nav-link @(isActivoController && actionName == "Vehiculos" ? "active" : "")">
+                                                <i class="fas fa-truck nav-icon text-warning"></i>
+                                                <p>Flota Vehicular</p>
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @* 5. MOVIMIENTOS FLOTA (Usa acción Movimientos con param) *@
+                                    @if (await _permisos.TienePermiso("ACT_MOV"))
+                                    {
+                                        <li class="nav-item">
+                                            <a href="/Activo/Movimientos" class="nav-link @(isActivoController && actionName == "Movimientos" ? "active" : "")">
+                                                <i class="fas fa-exchange-alt nav-icon text-warning"></i>
+                                                <p>Movimientos</p>
                                             </a>
                                         </li>
                                     }
                                 </ul>
                             </li>
-                        } *@
+                        }
 
                     </ul>
                 </nav>

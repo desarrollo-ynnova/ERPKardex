@@ -535,6 +535,7 @@ namespace ERPKardex.Controllers
                         x.m.Id,
                         x.m.Codigo,
                         x.m.TipoMovimiento,
+                        x.m.Estado,
                         Empresa = x.e.Nombre,
                         Personal = x.p.NombresCompletos,
                         PersonalDni = x.p.Dni,
@@ -549,6 +550,55 @@ namespace ERPKardex.Controllers
             catch (Exception ex)
             {
                 return Json(new { status = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetMovimientoDetalle(int id)
+        {
+            try
+            {
+                // 1. Obtener Cabecera
+                var cabecera = await (from m in _context.MovimientoActivo
+                                      join e in _context.Empresas on m.EmpresaId equals e.Id
+                                      join p in _context.Personal on m.PersonalId equals p.Id
+                                      where m.Id == id
+                                      select new
+                                      {
+                                          m.Codigo,
+                                          m.TipoMovimiento,
+                                          Fecha = m.FechaMovimiento.ToString("dd/MM/yyyy"),
+                                          Empresa = e.Nombre,
+                                          Personal = p.NombresCompletos,
+                                          m.Observacion,
+                                          m.RutaActa
+                                      }).FirstOrDefaultAsync();
+
+                if (cabecera == null) return Json(new { status = false, message = "Movimiento no encontrado" });
+
+                // 2. Obtener Detalles
+                var detalle = await (from d in _context.DMovimientoActivo
+                                     join a in _context.Activo on d.ActivoId equals a.Id
+                                     join t in _context.TipoActivo on a.TipoActivoId equals t.Id
+                                     where d.MovimientoActivoId == id && d.Estado
+                                     select new
+                                     {
+                                         a.Codigo,
+                                         Tipo = t.Nombre,
+                                         Marca = a.Marca ?? "",
+                                         Modelo = a.Modelo ?? "",
+                                         // Lógica visual: Si tiene serie la muestra, sino muestra placa, sino guión
+                                         Serie = !string.IsNullOrEmpty(a.NumeroSerie) ? a.NumeroSerie : (!string.IsNullOrEmpty(a.Placa) ? a.Placa : "-"),
+                                         Subtipo = a.Subtipo ?? "",
+                                         d.Ubicacion,
+                                         d.Observacion
+                                     }).ToListAsync();
+
+                return Json(new { status = true, cabecera, detalle });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { status = false, message = "Error al obtener detalles: " + ex.Message });
             }
         }
 
@@ -1333,12 +1383,12 @@ namespace ERPKardex.Controllers
                                       select new
                                       {
                                           // Concatenamos Tipo + Marca para el nombre del equipo
-                                          Equipo = t.Nombre + " " + (a.Marca ?? ""),
+                                          Equipo = a.Subtipo + " " + (a.Marca ?? ""),
                                           Modelo = a.Modelo,
                                           // Si es vehículo usa placa, si es cómputo usa serie
                                           Serie = a.NumeroSerie ?? a.Placa,
                                           // Priorizamos la observación del movimiento, si no hay, usamos la descripción del activo
-                                          Caracteristicas = dm.Observacion ?? a.Descripcion,
+                                          Caracteristicas = dm.Observacion ?? a.Descripcion ?? "",
                                           Condicion = a.Condicion,
                                           dm.Ubicacion
                                       }).ToListAsync();
