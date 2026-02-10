@@ -1,272 +1,138 @@
-﻿@{
+@{
     Layout = null;
-    int idMovimiento = ViewBag.IdMovimiento;
+    var idMov = ViewBag.IdMovimiento;
 }
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Impresión de Acta</title>
+    <meta charset="utf-8">
+    <title>Acta de Entrega/Devolución</title>
     <style>
-        body {
-            font-family: 'Calibri', 'Arial', sans-serif;
-            font-size: 11pt;
-            padding: 40px;
-            max-width: 900px;
-            margin: auto;
-            line-height: 1.3;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            max-width: 200px;
-            margin-bottom: 10px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .titulo-doc {
-            font-size: 16pt;
-            font-weight: bold;
-            text-decoration: underline;
-            text-transform: uppercase;
-            margin-top: 10px;
-        }
-
-        .fecha-doc {
-            text-align: right;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .info-grid {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .info-row {
-            display: flex;
-            margin-bottom: 5px;
-        }
-
-        .label {
-            font-weight: bold;
-            width: 160px;
-        }
-
-        .value {
-            flex: 1;
-            border-bottom: 1px dotted #ccc;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            margin-bottom: 30px;
-        }
-
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 10pt;
-        }
-
-        th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .signatures {
-            margin-top: 80px;
-            display: flex;
-            justify-content: space-between;
-            page-break-inside: avoid;
-        }
-
-        .sig-block {
-            text-align: center;
-            width: 45%;
-        }
-
-        .line {
-            border-top: 1px solid black;
-            margin-bottom: 5px;
-        }
-
-        .sig-detail {
-            font-size: 9pt;
-            text-transform: uppercase;
-        }
-
-        @@media print {
-            body {
-                padding: 0;
-                margin: 1.5cm;
-            }
-
-            .no-print {
-                display: none;
-            }
-        }
+        @@page { size: A4; margin: 1.5cm 2cm; }
+        @@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display:none !important; } }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 15px; }
+        .header-acta { text-align: center; margin-bottom: 10px; }
+        .header-acta h2 { margin: 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .header-acta .codigo { font-size: 11px; color: #555; margin-top: 2px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .info-row span { font-size: 11px; }
+        .info-row .label { font-weight: bold; }
+        table.acta-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+        table.acta-table th, table.acta-table td { border: 1px solid #333; padding: 4px 6px; }
+        table.acta-table th { background-color: #2c3e50; color: #fff; font-weight: bold; text-align: center; text-transform: uppercase; font-size: 9px; }
+        table.acta-table td { vertical-align: top; }
+        .firma-container { display: flex; justify-content: space-around; margin-top: 50px; }
+        .firma-box { width: 40%; text-align: center; }
+        .firma-box .linea { border-top: 1px solid #000; margin-top: 60px; padding-top: 4px; font-weight: bold; font-size: 11px; }
+        .firma-box .cargo { font-size: 10px; color: #555; }
+        .firma-box .dni { font-size: 9px; color: #777; }
+        .nota-legal { margin-top: 20px; font-size: 9px; color: #555; text-align: justify; border-top: 1px dashed #999; padding-top: 6px; }
+        .btn-print { position: fixed; top: 10px; right: 10px; background: #2196F3; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-size: 12px; z-index: 999; }
+        .btn-print:hover { background: #1976D2; }
     </style>
 </head>
 <body>
-    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
-        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px;">🖨️ IMPRIMIR</button>
-    </div>
+    <button class="btn-print no-print" onclick="window.print()"><i class="fas"></i> Imprimir</button>
 
-    <div class="header">
-        <img src="/uploads/logo/logo_ynnova.png" alt="LOGO" class="logo" onerror="this.style.display='none'">
-        <div class="titulo-doc" id="txt_Titulo">ACTA</div>
-    </div>
-
-    <div class="fecha-doc" id="txt_Fecha"></div>
-
-    <div class="info-grid">
-        <div class="info-row">
-            <div class="label" id="lbl_Emisor">ENTREGADO POR:</div>
-            <div class="value" id="txt_EmisorNombre"></div>
-        </div>
-        <div class="info-row">
-            <div class="label">CARGO:</div>
-            <div class="value" id="txt_EmisorCargo"></div>
-        </div>
-        <div class="info-row">
-            <div class="label">EMPRESA:</div>
-            <div class="value" id="txt_EmisorEmpresa"></div>
-        </div>
-
-        <br> <div class="info-row">
-            <div class="label" id="lbl_Receptor">RECEPCIÓN:</div>
-            <div class="value" id="txt_ReceptorNombre"></div>
-        </div>
-        <div class="info-row">
-            <div class="label">CARGO:</div>
-            <div class="value" id="txt_ReceptorCargo"></div>
-        </div>
-        <div class="info-row">
-            <div class="label">EMPRESA:</div>
-            <div class="value" id="txt_ReceptorEmpresa"></div>
-        </div>
-
-        <div class="info-row">
-            <div class="label">UBICACIÓN:</div>
-            <div class="value" id="txt_Ubicacion"></div>
-        </div>
-    </div>
-
-    <p>Por medio del presente, se detallan los equipos involucrados en este movimiento:</p>
-
-    <table>
-        <thead>
-            <tr>
-                <th width="20%">EQUIPO</th>
-                <th width="20%">MODELO / SERIE</th>
-                <th>CARACTERÍSTICAS / OBSERVACIONES</th>
-                <th width="15%">CONDICIÓN</th>
-            </tr>
-        </thead>
-        <tbody id="tbl_Items">
-        </tbody>
-    </table>
-
-    <p style="font-size: 9pt; font-style: italic; text-align: justify;">
-        * El receptor declara haber verificado el estado físico y operativo de los bienes descritos, asumiendo la responsabilidad de su cuidado, custodia y uso exclusivo para fines laborales. Cualquier desperfecto o pérdida deberá ser reportada inmediatamente al área correspondiente.
-    </p>
-
-    <div class="signatures">
-        <div class="sig-block">
-            <div class="line"></div>
-            <div style="font-weight: bold; margin-bottom: 2px;">ENTREGA / DEVUELVE:</div>
-            <div id="sig_EmisorInfo" class="sig-detail"></div>
-        </div>
-
-        <div class="sig-block">
-            <div class="line"></div>
-            <div style="font-weight: bold; margin-bottom: 2px;">RECIBE CONFORME:</div>
-            <div id="sig_ReceptorInfo" class="sig-detail"></div>
-        </div>
+    <div id="contenidoActa">
+        <p class="text-center" style="text-align:center;color:#999;">Cargando datos del acta...</p>
     </div>
 
     <script>
-        const idMovimiento = @idMovimiento;
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                let res = await fetch('/Activo/GetDatosActa?idMovimiento=@idMov');
+                let json = await res.json();
+                if (!json.status) { document.getElementById('contenidoActa').innerHTML = '<p style="color:red;">' + json.message + '</p>'; return; }
+                let d = json.data;
 
-        document.addEventListener("DOMContentLoaded", () => {
-            fetch('/Activo/GetDatosActa?idMovimiento=' + idMovimiento)
-                .then(r => r.json())
-                .then(res => {
-                    if(res.status) {
-                        const d = res.data;
+                let itemsHtml = '';
+                if (d.items && d.items.length > 0) {
+                    d.items.forEach((item, i) => {
+                        itemsHtml += `<tr>
+                            <td style="text-align:center;">${i + 1}</td>
+                            <td>${item.equipo || ''}</td>
+                            <td>${item.modelo || ''}</td>
+                            <td>${item.serie || ''}</td>
+                            <td style="font-size:9px;">${item.caracteristicas || ''}</td>
+                            <td style="text-align:center;">${item.condicion || ''}</td>
+                        </tr>`;
+                    });
+                }
 
-                        document.getElementById('txt_Titulo').innerText = d.titulo;
-                        document.getElementById('txt_Fecha').innerText = "Fecha: " + d.fecha;
+                let ubicacion = d.ubicacion || '';
+                let ubicacionHtml = ubicacion ? `<div class="info-row"><span class="label">UBICACIÓN:</span><span>${ubicacion}</span></div>` : '';
 
-                        if(d.titulo.includes("DEVOLUCIÓN")) {
-                            document.getElementById('lbl_Emisor').innerText = "DEVUELTO POR:";
-                            document.getElementById('lbl_Receptor').innerText = "RECIBIDO POR (TI):";
-                        }
+                let html = `
+                    <div class="header-acta">
+                        <h2>${d.titulo || 'ACTA DE ENTREGA'}</h2>
+                        <div class="codigo">${d.codigo || ''}</div>
+                    </div>
 
-                        // Llenar Datos Emisor
-                        document.getElementById('txt_EmisorNombre').innerText = d.emisor.nombre || "";
-                        document.getElementById('txt_EmisorCargo').innerText = d.emisor.cargo || "";
-                        document.getElementById('txt_EmisorEmpresa').innerText = d.emisor.empresa || "";
+                    <div class="info-row"><span class="label">FECHA:</span><span>${d.fecha || ''}</span></div>
+                    ${ubicacionHtml}
 
-                        // Llenar Datos Receptor (Completo)
-                        document.getElementById('txt_ReceptorNombre').innerText = d.receptor.nombre || "";
-                        document.getElementById('txt_ReceptorCargo').innerText = d.receptor.cargo || "";
-                        document.getElementById('txt_ReceptorEmpresa').innerText = d.receptor.empresa || "";
+                    <div style="margin:10px 0;">
+                        <table style="width:100%;font-size:11px;">
+                            <tr>
+                                <td style="width:50%;vertical-align:top;padding-right:10px;">
+                                    <strong>ENTREGA:</strong><br>
+                                    ${d.emisor ? d.emisor.nombre : ''}<br>
+                                    <small>${d.emisor ? d.emisor.cargo : ''}</small>
+                                    ${d.emisor && d.emisor.dni ? '<br><small>DNI: ' + d.emisor.dni + '</small>' : ''}
+                                </td>
+                                <td style="width:50%;vertical-align:top;">
+                                    <strong>RECIBE:</strong><br>
+                                    ${d.receptor ? d.receptor.nombre : ''}<br>
+                                    <small>${d.receptor ? d.receptor.cargo : ''}</small>
+                                    ${d.receptor && d.receptor.dni ? '<br><small>DNI: ' + d.receptor.dni + '</small>' : ''}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
 
-                        document.getElementById('txt_Ubicacion').innerText = d.ubicacion || "";
+                    <table class="acta-table">
+                        <thead>
+                            <tr>
+                                <th style="width:30px;">N°</th>
+                                <th>EQUIPO</th>
+                                <th>MODELO</th>
+                                <th>SERIE</th>
+                                <th>CARACTERÍSTICAS</th>
+                                <th style="width:70px;">CONDICIÓN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
 
-                        // Llenar Tabla de Items
-                        let htmlItems = '';
-                        if(d.items && d.items.length > 0) {
-                            d.items.forEach(item => {
-                                htmlItems += `
-                                    <tr>
-                                        <td>${item.equipo}</td>
-                                        <td>${item.modelo || ''} <br> <b>S/N: ${item.serie || '-'}</b></td>
-                                        <td style="text-align:left; font-size: 9pt;">${item.caracteristicas}</td>
-                                        <td>${item.condicion}</td>
-                                    </tr>
-                                `;
-                            });
-                        } else {
-                            htmlItems = '<tr><td colspan="4">No hay ítems registrados</td></tr>';
-                        }
-                        document.getElementById('tbl_Items').innerHTML = htmlItems;
+                    <div class="nota-legal">
+                        El receptor declara haber recibido los bienes descritos en buen estado de conservación y funcionamiento,
+                        comprometiéndose a su uso adecuado y a su devolución cuando le sea requerido o al término de su vínculo laboral.
+                        El incumplimiento de esta obligación generará la responsabilidad correspondiente conforme a las políticas de la empresa.
+                    </div>
 
-                        // --- BLOQUE DE FIRMAS DINÁMICO ---
+                    <div class="firma-container">
+                        <div class="firma-box">
+                            <div class="linea">${d.emisor ? d.emisor.nombre : ''}</div>
+                            <div class="cargo">${d.emisor ? d.emisor.cargo : ''}</div>
+                            <div class="dni">${d.emisor && d.emisor.dni ? 'DNI: ' + d.emisor.dni : ''}</div>
+                            <div class="cargo">ENTREGA</div>
+                        </div>
+                        <div class="firma-box">
+                            <div class="linea">${d.receptor ? d.receptor.nombre : ''}</div>
+                            <div class="cargo">${d.receptor ? d.receptor.cargo : ''}</div>
+                            <div class="dni">${d.receptor && d.receptor.dni ? 'DNI: ' + d.receptor.dni : ''}</div>
+                            <div class="cargo">RECIBE</div>
+                        </div>
+                    </div>
+                `;
 
-                        // Firma Emisor (Izquierda)
-                        let infoEmisor = `<b>${d.emisor.nombre}</b><br>`;
-                        if(d.emisor.dni && d.emisor.dni !== '-') infoEmisor += `DNI: ${d.emisor.dni}<br>`;
-                        infoEmisor += `${d.emisor.cargo || ""}<br>${d.emisor.empresa || ""}`;
-                        document.getElementById('sig_EmisorInfo').innerHTML = infoEmisor;
-
-                        // Firma Receptor (Derecha)
-                        let infoReceptor = `<b>${d.receptor.nombre}</b><br>`;
-                        if(d.receptor.dni && d.receptor.dni !== '-') infoReceptor += `DNI: ${d.receptor.dni}<br>`;
-                        infoReceptor += `${d.receptor.cargo || ""}<br>${d.receptor.empresa || ""}`;
-                        document.getElementById('sig_ReceptorInfo').innerHTML = infoReceptor;
-
-                        // Imprimir automático
-                        setTimeout(() => window.print(), 1000);
-                    } else {
-                        alert("Error cargando datos: " + res.message);
-                    }
-                })
-                .catch(err => alert("Error de conexión al generar acta."));
+                document.getElementById('contenidoActa').innerHTML = html;
+            } catch (e) {
+                document.getElementById('contenidoActa').innerHTML = '<p style="color:red;">Error al cargar el acta: ' + e.message + '</p>';
+            }
         });
     </script>
 </body>

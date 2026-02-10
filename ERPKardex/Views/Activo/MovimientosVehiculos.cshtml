@@ -1,0 +1,432 @@
+@{
+    ViewData["Title"] = "Movimientos de Vehículos";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h4 class="m-0 text-dark"><i class="fas fa-truck mr-2"></i>Movimientos de Vehículos (Entregas / Devoluciones)</h4>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button class="btn btn-warning" onclick="abrirModalMovimiento()"><i class="fas fa-plus mr-1"></i> Nuevo Movimiento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary mb-3">
+            <div class="card-body py-2">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Empresa</label>
+                            <select id="filtroEmpresa" class="form-control form-control-sm" onchange="cargarMovimientos()">
+                                <option value="">-- Todas --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-group mb-2">
+                            <label class="small mb-1">Buscar</label>
+                            <input type="text" id="filtroBuscar" class="form-control form-control-sm"
+                                   placeholder="Código movimiento, personal, DNI..."
+                                   onkeyup="if(event.key==='Enter') cargarMovimientos()">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mb-2">
+                            <button class="btn btn-sm btn-outline-secondary btn-block" onclick="cargarMovimientos()">
+                                <i class="fas fa-search mr-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-outline card-warning">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Empresa</th>
+                                <th>Personal</th>
+                                <th>Vehículos</th>
+                                <th class="text-center" style="width:160px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyMovimientos">
+                            <tr><td colspan="7" class="text-center text-muted py-4">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Movimiento -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Nuevo Movimiento de Vehículos</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="card mb-3">
+                    <div class="card-body py-2 bg-light">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Tipo Movimiento</label>
+                                    <select id="movTipo" class="form-control form-control-sm">
+                                        <option value="ENTREGA">ENTREGA</option>
+                                        <option value="DEVOLUCION">DEVOLUCIÓN</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Fecha</label>
+                                    <input type="date" id="movFecha" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Empresa</label>
+                                    <select id="movEmpresa" class="form-control form-control-sm" onchange="cargarPersonal()"></select>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Personal (Conductor)</label>
+                                    <select id="movPersonal" class="form-control form-control-sm"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="card card-outline card-secondary h-100">
+                            <div class="card-header py-1">
+                                <h6 class="card-title font-weight-bold" style="font-size:1rem;">Buscar Vehículos</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" id="busquedaActivo" class="form-control" placeholder="Placa, marca, modelo..." onkeyup="if(event.key==='Enter') buscarActivosParaAgregar()">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-secondary" onclick="buscarActivosParaAgregar()"><i class="fas fa-search"></i></button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive" style="height:250px;overflow-y:auto;">
+                                    <table class="table table-sm table-bordered table-hover">
+                                        <thead class="thead-light"><tr><th>Vehículo</th><th width="40"></th></tr></thead>
+                                        <tbody id="listaActivosBusqueda">
+                                            <tr><td colspan="2" class="text-center text-muted small">Use el buscador...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="card card-outline card-success h-100">
+                            <div class="card-header py-1">
+                                <h6 class="card-title font-weight-bold" style="font-size:1rem;">Vehículos Seleccionados</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive" style="height:290px;overflow-y:auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="thead-light"><tr><th>Placa/Código</th><th>Descripción</th><th>Ubicación</th><th width="40"></th></tr></thead>
+                                        <tbody id="listaActivosSeleccionados"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mt-3">
+                    <label>Observación General</label>
+                    <textarea id="movObservacion" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="guardarMovimiento()"><i class="fas fa-save mr-1"></i>Generar Movimiento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle -->
+<div class="modal fade" id="modalDetalleMov" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalDetalleMovTitulo">Detalle Movimiento</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="contenidoDetalleMov"><p class="text-center">Cargando...</p></div>
+            <div class="modal-footer py-2"><button class="btn btn-secondary" data-dismiss="modal">Cerrar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Subir Acta -->
+<div class="modal fade" id="modalSubirActa" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Subir Acta Firmada</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="uploadMovId">
+                <div class="form-group">
+                    <label>Seleccione el archivo (PDF o Imagen)</label>
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="fileActa" accept=".pdf,.jpg,.png,.jpeg">
+                        <label class="custom-file-label" for="fileActa">Elegir archivo...</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarActaFile()"><i class="fas fa-upload mr-1"></i>Subir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TIPO_CODIGO = 'VEHICULO';
+        let activosSeleccionados = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarCombos();
+            cargarMovimientos();
+            $('#fileActa').on('change', function () {
+                $(this).next('.custom-file-label').html($(this).val().replace('C:\\fakepath\\', ''));
+            });
+        });
+
+        async function cargarCombos() {
+            let res = await fetch('/Activo/GetEmpresas');
+            let json = await res.json();
+            if (json.status) {
+                let s1 = document.getElementById('filtroEmpresa');
+                let s2 = document.getElementById('movEmpresa');
+                s2.innerHTML = '<option value="">-- Seleccione --</option>';
+                json.data.forEach(e => {
+                    s1.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                    s2.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                });
+            }
+        }
+
+        async function cargarPersonal() {
+            let empresaId = document.getElementById('movEmpresa').value;
+            let sel = document.getElementById('movPersonal');
+            sel.innerHTML = '<option value="">Cargando...</option>';
+            if (!empresaId) { sel.innerHTML = ''; return; }
+            let res = await fetch(`/Activo/GetPersonal?empresaId=${empresaId}`);
+            let json = await res.json();
+            sel.innerHTML = '<option value="">-- Seleccione --</option>';
+            if (json.status) json.data.forEach(p => sel.innerHTML += `<option value="${p.id}">${p.nombresCompletos} (${p.dni || '-'})</option>`);
+        }
+
+        async function cargarMovimientos() {
+            let empresa = document.getElementById('filtroEmpresa').value;
+            let buscar = document.getElementById('filtroBuscar').value;
+            let url = `/Activo/GetMovimientos?tipoCodigo=${TIPO_CODIGO}`;
+            if (empresa) url += `&empresaId=${empresa}`;
+            if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+
+            let res = await fetch(url);
+            let json = await res.json();
+            let tbody = document.getElementById('bodyMovimientos');
+
+            if (!json.status || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron movimientos.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            json.data.forEach(m => {
+                let colorTipo = m.tipoMovimiento === 'ENTREGA' ? 'text-success' : 'text-danger';
+                let iconTipo = m.tipoMovimiento === 'ENTREGA' ? 'fa-arrow-right' : 'fa-arrow-left';
+                let btnActa = m.rutaActa
+                    ? `<a href="${m.rutaActa}" target="_blank" class="btn btn-sm btn-outline-success mr-1" title="Ver Acta"><i class="fas fa-file-pdf"></i></a>`
+                    : `<button class="btn btn-sm btn-outline-secondary mr-1" onclick="abrirModalSubir(${m.id})" title="Subir Acta"><i class="fas fa-upload"></i></button>`;
+
+                html += `<tr>
+                    <td><strong>${m.codigo}</strong></td>
+                    <td><span class="${colorTipo} font-weight-bold"><i class="fas ${iconTipo} mr-1"></i>${m.tipoMovimiento}</span></td>
+                    <td>${m.fechaMovimiento}</td>
+                    <td>${m.empresa}</td>
+                    <td>${m.personal}</td>
+                    <td><span class="badge badge-warning">${m.cantidadActivos} veh.</span></td>
+                    <td class="text-center">
+                        <a href="/Activo/ActaImpresion?id=${m.id}" target="_blank" class="btn btn-sm btn-outline-primary mr-1" title="Imprimir Acta"><i class="fas fa-print"></i></a>
+                        ${btnActa}
+                        <button class="btn btn-sm btn-outline-info mr-1" onclick="verDetalleMov(${m.id})"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarMovimiento(${m.id}, '${m.codigo}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function abrirModalMovimiento() {
+            document.getElementById('movTipo').value = 'ENTREGA';
+            document.getElementById('movFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('movEmpresa').value = '';
+            document.getElementById('movPersonal').innerHTML = '';
+            document.getElementById('movObservacion').value = '';
+            document.getElementById('busquedaActivo').value = '';
+            document.getElementById('listaActivosBusqueda').innerHTML = '<tr><td colspan="2" class="text-center text-muted small">Use el buscador...</td></tr>';
+            activosSeleccionados = [];
+            renderizarSeleccionados();
+            $('#modalMovimiento').modal('show');
+        }
+
+        async function buscarActivosParaAgregar() {
+            let texto = document.getElementById('busquedaActivo').value.trim();
+            if (texto.length < 2) { alert("Ingrese al menos 2 caracteres"); return; }
+            let empresaId = document.getElementById('movEmpresa').value;
+            if (!empresaId) { alert("Seleccione primero la empresa"); return; }
+
+            let res = await fetch(`/Activo/BuscarActivosParaMovimiento?tipoCodigo=${TIPO_CODIGO}&empresaId=${empresaId}&buscar=${encodeURIComponent(texto)}`);
+            let json = await res.json();
+            let tbody = document.getElementById('listaActivosBusqueda');
+
+            if (!json.status || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin resultados.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            json.data.forEach(a => {
+                if (activosSeleccionados.some(s => s.id === a.id)) return;
+                let desc = `<strong>${a.placa || a.codigo}</strong> - ${a.marca || ''} ${a.modelo || ''}<br><small class="text-muted">${a.subtipo || a.tipo || ''}</small>`;
+                html += `<tr><td>${desc}</td><td class="text-center">
+                    <button class="btn btn-xs btn-success" onclick="seleccionarActivo(${a.id}, '${a.placa || a.codigo}', '${(a.marca || '')} ${(a.modelo || '')}')"><i class="fas fa-plus"></i></button></td></tr>`;
+            });
+            tbody.innerHTML = html || '<tr><td colspan="2" class="text-center text-muted">Todos seleccionados.</td></tr>';
+        }
+
+        function seleccionarActivo(id, codigo, descripcion) {
+            activosSeleccionados.push({ id, codigo, descripcion, ubicacion: '' });
+            renderizarSeleccionados();
+            buscarActivosParaAgregar();
+        }
+
+        function renderizarSeleccionados() {
+            let tbody = document.getElementById('listaActivosSeleccionados');
+            if (activosSeleccionados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted small">Ningún vehículo seleccionado.</td></tr>';
+                return;
+            }
+            let html = '';
+            activosSeleccionados.forEach((item, i) => {
+                html += `<tr>
+                    <td><small><strong>${item.codigo}</strong></small></td>
+                    <td><small>${item.descripcion}</small></td>
+                    <td class="p-0"><input type="text" class="form-control form-control-sm border-0" placeholder="Ubicación..." value="${item.ubicacion}" onchange="actualizarUbicacion(${i}, this.value)"></td>
+                    <td class="text-center"><button class="btn btn-xs btn-outline-danger" onclick="removerSeleccion(${i})"><i class="fas fa-times"></i></button></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function actualizarUbicacion(i, val) { activosSeleccionados[i].ubicacion = val; }
+        function removerSeleccion(i) { activosSeleccionados.splice(i, 1); renderizarSeleccionados(); }
+
+        async function guardarMovimiento() {
+            let empresaId = document.getElementById('movEmpresa').value;
+            let personalId = document.getElementById('movPersonal').value;
+            let fecha = document.getElementById('movFecha').value;
+            let tipo = document.getElementById('movTipo').value;
+
+            if (!empresaId || !personalId || !fecha) { alert("Complete Empresa, Personal y Fecha"); return; }
+            if (activosSeleccionados.length === 0) { alert("Seleccione al menos un vehículo."); return; }
+
+            let detalle = activosSeleccionados.map(a => ({ activoId: a.id, ubicacion: a.ubicacion, observacion: '' }));
+
+            let params = new URLSearchParams();
+            params.append('tipoMovimiento', tipo);
+            params.append('empresaId', empresaId);
+            params.append('personalId', personalId);
+            params.append('fechaMovimiento', fecha);
+            params.append('observacion', document.getElementById('movObservacion').value);
+            params.append('detalleJson', JSON.stringify(detalle));
+
+            let res = await fetch('/Activo/GuardarMovimiento', { method: 'POST', body: params });
+            let json = await res.json();
+            if (json.status) { alert(json.message); $('#modalMovimiento').modal('hide'); cargarMovimientos(); }
+            else alert(json.message);
+        }
+
+        function abrirModalSubir(id) {
+            document.getElementById('uploadMovId').value = id;
+            document.getElementById('fileActa').value = null;
+            $('.custom-file-label').html('Elegir archivo...');
+            $('#modalSubirActa').modal('show');
+        }
+
+        async function guardarActaFile() {
+            let id = document.getElementById('uploadMovId').value;
+            let fileInput = document.getElementById('fileActa');
+            if (fileInput.files.length === 0) { alert('Seleccione un archivo'); return; }
+            let formData = new FormData();
+            formData.append('id', id);
+            formData.append('archivo', fileInput.files[0]);
+            try {
+                let res = await fetch('/Activo/SubirActa', { method: 'POST', body: formData });
+                let json = await res.json();
+                if (json.status) { alert(json.message); $('#modalSubirActa').modal('hide'); cargarMovimientos(); }
+                else alert(json.message);
+            } catch (e) { alert("Error al subir archivo"); }
+        }
+
+        async function verDetalleMov(id) {
+            let res = await fetch(`/Activo/GetMovimientoDetalle?id=${id}`);
+            let json = await res.json();
+            if (!json.status) { alert(json.message); return; }
+            let m = json.cabecera;
+            let html = `<div class="row mb-3">
+                <div class="col-md-6"><strong>Código:</strong> ${m.codigo}<br><strong>Tipo:</strong> ${m.tipoMovimiento}<br><strong>Fecha:</strong> ${m.fecha}</div>
+                <div class="col-md-6"><strong>Empresa:</strong> ${m.empresa}<br><strong>Personal:</strong> ${m.personal} ${m.personalDni ? '(DNI: ' + m.personalDni + ')' : ''}</div>
+            </div><h6><i class="fas fa-truck mr-1"></i>Vehículos (${json.detalle.length})</h6>
+            <div class="table-responsive"><table class="table table-sm table-bordered">
+                <thead class="thead-light"><tr><th>Código</th><th>Placa</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Ubicación</th></tr></thead><tbody>`;
+            json.detalle.forEach(d => {
+                html += `<tr><td><strong>${d.codigo}</strong></td><td>${d.placa || ''}</td><td>${d.marca || ''}</td><td>${d.modelo || ''}</td><td>${d.numeroSerie || ''}</td><td>${d.ubicacion || '-'}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+            if (m.observacion) html += `<p class="mt-2"><strong>Observación:</strong> ${m.observacion}</p>`;
+            document.getElementById('modalDetalleMovTitulo').textContent = `Movimiento: ${m.codigo}`;
+            document.getElementById('contenidoDetalleMov').innerHTML = html;
+            $('#modalDetalleMov').modal('show');
+        }
+
+        async function eliminarMovimiento(id, codigo) {
+            if (!confirm(`¿Eliminar el movimiento ${codigo}? Se liberarán los vehículos.`)) return;
+            let res = await fetch('/Activo/EliminarMovimiento', { method: 'POST', body: new URLSearchParams({ id }) });
+            let json = await res.json();
+            alert(json.message);
+            if (json.status) cargarMovimientos();
+        }
+    </script>
+}

@@ -1,201 +1,143 @@
-﻿@{
+@{
     Layout = null;
-    int idMovimiento = ViewBag.IdMovimiento;
+    var idMov = ViewBag.IdMovimiento;
 }
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Acta de Vehículo</title>
+    <meta charset="utf-8">
+    <title>Acta de Entrega/Devolución de Vehículo</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            padding: 40px;
-            max-width: 850px;
-            margin: auto;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-bold {
-            font-weight: bold;
-        }
-
-        .mb-4 {
-            margin-bottom: 20px;
-        }
-
-        .uppercase {
-            text-transform: uppercase;
-        }
-
-        .header {
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .titulo {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-
-        th, td {
-            border: 1px solid #999;
-            padding: 6px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            background-color: #f0f0f0;
-            width: 25%;
-        }
-
-        .firmas {
-            margin-top: 80px;
-            width: 100%;
-            border: none;
-        }
-
-            .firmas td {
-                border: none;
-                text-align: center;
-                width: 50%;
-                padding: 0 40px;
-            }
-
-        .linea-firma {
-            border-top: 1px solid #000;
-            margin-top: 50px;
-            padding-top: 5px;
-        }
-
-        .legal {
-            font-size: 10px;
-            text-align: justify;
-            color: #444;
-            margin-top: 10px;
-        }
+        @@page { size: A4 landscape; margin: 1.5cm 2cm; }
+        @@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display:none !important; } }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 15px; }
+        .header-acta { text-align: center; margin-bottom: 10px; }
+        .header-acta h2 { margin: 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .header-acta .codigo { font-size: 11px; color: #555; margin-top: 2px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .info-row span { font-size: 11px; }
+        .info-row .label { font-weight: bold; }
+        table.acta-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+        table.acta-table th, table.acta-table td { border: 1px solid #333; padding: 4px 6px; }
+        table.acta-table th { background-color: #8B4513; color: #fff; font-weight: bold; text-align: center; text-transform: uppercase; font-size: 9px; }
+        table.acta-table td { vertical-align: top; }
+        .firma-container { display: flex; justify-content: space-around; margin-top: 50px; }
+        .firma-box { width: 40%; text-align: center; }
+        .firma-box .linea { border-top: 1px solid #000; margin-top: 60px; padding-top: 4px; font-weight: bold; font-size: 11px; }
+        .firma-box .cargo { font-size: 10px; color: #555; }
+        .firma-box .dni { font-size: 9px; color: #777; }
+        .nota-legal { margin-top: 20px; font-size: 9px; color: #555; text-align: justify; border-top: 1px dashed #999; padding-top: 6px; }
+        .btn-print { position: fixed; top: 10px; right: 10px; background: #E65100; color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-size: 12px; z-index: 999; }
+        .btn-print:hover { background: #BF360C; }
     </style>
 </head>
 <body>
-    <div class="header text-center">
-        <div class="titulo" id="lblTitulo">ACTA DE ENTREGA DE VEHÍCULO</div>
-        <div id="lblCodigo" style="font-size: 14px;"></div>
+    <button class="btn-print no-print" onclick="window.print()">Imprimir</button>
+
+    <div id="contenidoActa">
+        <p style="text-align:center;color:#999;">Cargando datos del acta...</p>
     </div>
-
-    <div class="text-right mb-4">
-        <strong>Fecha:</strong> <span id="lblFecha">--</span>
-    </div>
-
-    <div style="background:#ddd; padding:5px; font-weight:bold; margin-bottom:5px;">1. DATOS DEL CONDUCTOR / RESPONSABLE</div>
-    <table>
-        <tr>
-            <th>Nombre Completo:</th>
-            <td id="usrNombre"></td>
-            <th>DNI:</th>
-            <td id="usrDni"></td>
-        </tr>
-        <tr>
-            <th>Cargo:</th>
-            <td id="usrCargo"></td>
-            <th>Empresa:</th>
-            <td id="usrEmpresa"></td>
-        </tr>
-    </table>
-
-    <div style="background:#ddd; padding:5px; font-weight:bold; margin-bottom:5px;">2. DATOS DE LA UNIDAD</div>
-    <div id="containerVehiculos"></div>
-
-    <div class="legal">
-        <strong>CONDICIONES DE USO:</strong><br>
-        1. El conductor certifica haber recibido el vehículo en las condiciones descritas y se compromete a cuidarlo.<br>
-        2. El vehículo debe ser usado estrictamente para labores de la empresa.<br>
-        3. Cualquier infracción de tránsito cometida durante la tenencia de la unidad será responsabilidad exclusiva del conductor.<br>
-        4. En caso de siniestro, informar inmediatamente al área encargada.
-    </div>
-
-    <table class="firmas">
-        <tr>
-            <td>
-                <div class="linea-firma" id="firmaEmisor"></div>
-                <div style="font-size:11px; margin-top:5px;">ENTREGADO POR</div>
-            </td>
-            <td>
-                <div class="linea-firma" id="firmaReceptor"></div>
-                <div style="font-size:11px; margin-top:5px;">RECIBIDO CONFORME</div>
-            </td>
-        </tr>
-    </table>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            fetch('/Activo/GetDatosActa?idMovimiento=@idMovimiento')
-                .then(r => r.json())
-                .then(res => {
-                    if (res.status) {
-                        const d = res.data;
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                let res = await fetch('/Activo/GetDatosActa?idMovimiento=@idMov');
+                let json = await res.json();
+                if (!json.status) { document.getElementById('contenidoActa').innerHTML = '<p style="color:red;">' + json.message + '</p>'; return; }
+                let d = json.data;
 
-                        document.getElementById('lblTitulo').innerText = d.titulo + " DE VEHÍCULO";
-                        document.getElementById('lblCodigo').innerText = d.codigo;
-                        document.getElementById('lblFecha').innerText = d.fecha;
+                let itemsHtml = '';
+                if (d.items && d.items.length > 0) {
+                    d.items.forEach((item, i) => {
+                        itemsHtml += `<tr>
+                            <td style="text-align:center;">${i + 1}</td>
+                            <td>${item.tipo || ''}</td>
+                            <td>${item.equipo || ''}</td>
+                            <td>${item.modelo || ''}</td>
+                            <td>${item.serie || ''}</td>
+                            <td style="font-size:9px;">${item.caracteristicas || ''}</td>
+                            <td style="text-align:center;">${item.condicion || ''}</td>
+                            <td>${item.ubicacion || ''}</td>
+                        </tr>`;
+                    });
+                }
 
-                        // Receptor siempre es el Conductor en el formato visual (o adaptamos lógica)
-                        // Para simplificar, mostramos quien Recibe en la sección 1
-                        const responsable = d.receptor;
-                        document.getElementById('usrNombre').innerText = responsable.nombre || "";
-                        document.getElementById('usrDni').innerText = responsable.dni || "";
-                        document.getElementById('usrCargo').innerText = responsable.cargo || "";
-                        document.getElementById('usrEmpresa').innerText = responsable.empresa || "";
+                let ubicacion = d.ubicacion || '';
+                let ubicacionHtml = ubicacion ? `<div class="info-row"><span class="label">UBICACIÓN / ZONA:</span><span>${ubicacion}</span></div>` : '';
 
-                        // Renderizar Vehículos
-                        let html = "";
-                        d.items.forEach(item => {
-                            html += `
-                            <table>
-                                <tr>
-                                    <th>Placa:</th><td class="text-bold" style="font-size:14px;">${item.serie}</td>
-                                    <th>Marca/Modelo:</th><td>${item.equipo} ${item.modelo}</td>
-                                </tr>
-                                <tr>
-                                    <th>Datos Técnicos:</th><td colspan="3">${item.caracteristicas}</td>
-                                </tr>
-                                <tr>
-                                    <th>Estado:</th><td>${item.condicion}</td>
-                                    <th>Kilometraje:</th><td>(Ver bitácora)</td>
-                                </tr>
-                                <tr>
-                                    <th>Observaciones:</th><td colspan="3" style="height:40px;"></td>
-                                </tr>
-                            </table>`;
-                        });
-                        document.getElementById('containerVehiculos').innerHTML = html;
+                let html = `
+                    <div class="header-acta">
+                        <h2>${d.titulo || 'ACTA DE ENTREGA DE VEHÍCULO'}</h2>
+                        <div class="codigo">${d.codigo || ''}</div>
+                    </div>
 
-                        // Firmas
-                        document.getElementById('firmaEmisor').innerHTML = `<b>${d.emisor.nombre}</b><br>${d.emisor.cargo}`;
-                        document.getElementById('firmaReceptor').innerHTML = `<b>${d.receptor.nombre}</b><br>DNI: ${d.receptor.dni}`;
+                    <div class="info-row"><span class="label">FECHA:</span><span>${d.fecha || ''}</span></div>
+                    ${ubicacionHtml}
 
-                        setTimeout(() => window.print(), 800);
-                    } else {
-                        alert(res.message);
-                    }
-                });
+                    <div style="margin:10px 0;">
+                        <table style="width:100%;font-size:11px;">
+                            <tr>
+                                <td style="width:50%;vertical-align:top;padding-right:10px;">
+                                    <strong>ENTREGA:</strong><br>
+                                    ${d.emisor ? d.emisor.nombre : ''}<br>
+                                    <small>${d.emisor ? d.emisor.cargo : ''}</small>
+                                    ${d.emisor && d.emisor.dni ? '<br><small>DNI: ' + d.emisor.dni + '</small>' : ''}
+                                </td>
+                                <td style="width:50%;vertical-align:top;">
+                                    <strong>RECIBE (Conductor):</strong><br>
+                                    ${d.receptor ? d.receptor.nombre : ''}<br>
+                                    <small>${d.receptor ? d.receptor.cargo : ''}</small>
+                                    ${d.receptor && d.receptor.dni ? '<br><small>DNI: ' + d.receptor.dni + '</small>' : ''}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <table class="acta-table">
+                        <thead>
+                            <tr>
+                                <th style="width:30px;">N°</th>
+                                <th>TIPO</th>
+                                <th>VEHÍCULO</th>
+                                <th>MODELO</th>
+                                <th>PLACA / SERIE</th>
+                                <th>CARACTERÍSTICAS</th>
+                                <th style="width:70px;">CONDICIÓN</th>
+                                <th>UBICACIÓN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="nota-legal">
+                        El receptor declara haber recibido el/los vehículo(s) descrito(s) en el estado de conservación indicado,
+                        comprometiéndose a su uso exclusivo para fines laborales, a su correcto mantenimiento y a reportar cualquier
+                        incidencia de forma inmediata. La devolución deberá realizarse en las mismas condiciones al término de la asignación.
+                        Cualquier daño atribuible a negligencia será responsabilidad del conductor asignado.
+                    </div>
+
+                    <div class="firma-container">
+                        <div class="firma-box">
+                            <div class="linea">${d.emisor ? d.emisor.nombre : ''}</div>
+                            <div class="cargo">${d.emisor ? d.emisor.cargo : ''}</div>
+                            <div class="dni">${d.emisor && d.emisor.dni ? 'DNI: ' + d.emisor.dni : ''}</div>
+                            <div class="cargo">ENTREGA</div>
+                        </div>
+                        <div class="firma-box">
+                            <div class="linea">${d.receptor ? d.receptor.nombre : ''}</div>
+                            <div class="cargo">${d.receptor ? d.receptor.cargo : ''}</div>
+                            <div class="dni">${d.receptor && d.receptor.dni ? 'DNI: ' + d.receptor.dni : ''}</div>
+                            <div class="cargo">RECIBE</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('contenidoActa').innerHTML = html;
+            } catch (e) {
+                document.getElementById('contenidoActa').innerHTML = '<p style="color:red;">Error al cargar el acta: ' + e.message + '</p>';
+            }
         });
     </script>
 </body>
