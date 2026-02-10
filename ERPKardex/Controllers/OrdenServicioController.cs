@@ -261,7 +261,7 @@ namespace ERPKardex.Controllers
                     var usuarioId = UsuarioActualId;
 
                     if (cabecera.ProveedorId == 0) throw new Exception("Debe seleccionar un proveedor.");
-                    if (cabecera.TipoCambio == null || cabecera.TipoCambio == 0) throw new Exception("Debe seleccionar un proveedor.");
+                    if (cabecera.TipoCambio == null || cabecera.TipoCambio == 0) throw new Exception("El tipo de cambio no es válido.");
 
                     var estadoGenerado = _context.Estados.FirstOrDefault(e => e.Nombre == "Generado" && e.Tabla == "ORDEN");
                     var estadoPendiente = _context.Estados.FirstOrDefault(e => e.Nombre == "Pendiente" && e.Tabla == "DORDEN");
