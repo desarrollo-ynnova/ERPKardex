@@ -444,7 +444,7 @@
                             }
                         }
 
-                        @if (await _permisos.TienePermiso("MOD_ACTIVOS"))
+                        @* @if (await _permisos.TienePermiso("MOD_ACTIVOS"))
                         {
                             <li class="nav-header font-weight-bold">MÓDULO ACTIVO FIJO</li>
 
@@ -463,7 +463,6 @@
                                 </a>
                                 <ul class="nav nav-treeview">
             
-                                    @* 1. DASHBOARD (Si aplica) 
                                     @if (await _permisos.TienePermiso("ACT_DASH_VER"))
                                     {
                                         <li class="nav-item">
@@ -472,9 +471,8 @@
                                                 <p>Dashboard</p>
                                             </a>
                                         </li>
-                                    }*@
+                                    }
 
-                                    @* 2. INVENTARIO CÓMPUTO *@
                                     @if (await _permisos.TienePermiso("ACT_COMPUTO_VER"))
                                     {
                                         <li class="nav-item">
@@ -485,7 +483,6 @@
                                         </li>
                                     }
 
-                                    @* 4. INVENTARIO FLOTA *@
                                     @if (await _permisos.TienePermiso("ACT_FLOTA_VER"))
                                     {
                                         <li class="nav-item">
@@ -496,7 +493,6 @@
                                         </li>
                                     }
 
-                                    @* 5. MOVIMIENTOS FLOTA (Usa acción Movimientos con param) *@
                                     @if (await _permisos.TienePermiso("ACT_MOV"))
                                     {
                                         <li class="nav-item">
@@ -508,7 +504,7 @@
                                     }
                                 </ul>
                             </li>
-                        }
+                        } *@
 
                     </ul>
                 </nav>
