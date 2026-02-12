@@ -84,6 +84,8 @@ namespace ERPKardex.Data
         public DbSet<ConfiguracionGeneral> ConfiguracionesGenerales { get; set; }
         public DbSet<TipoDetraccion> TiposDetracciones { get; set; }
         public DbSet<Detraccion> Detracciones { get; set; }
+        public DbSet<Arrendamiento> Arrendamientos { get; set; }
+        public DbSet<CuotaArrendamiento> CuotaArrendamientos { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -241,6 +243,10 @@ namespace ERPKardex.Data
             // Índice único: movimiento_activo.codigo
             modelBuilder.Entity<MovimientoActivo>()
                 .HasIndex(m => m.Codigo)
+                .IsUnique();
+
+            modelBuilder.Entity<CuotaArrendamiento>()
+                .HasIndex(c => new { c.ArrendamientoId, c.PeriodoAnioMes })
                 .IsUnique();
         }
     }

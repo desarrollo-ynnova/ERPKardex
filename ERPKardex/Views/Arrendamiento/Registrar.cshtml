@@ -1,0 +1,256 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Id == 0 ? "Nuevo Arrendamiento" : "Editar Arrendamiento";
+    int idArr = ViewBag.Id;
+}
+<div class="container-fluid py-4">
+    <div class="card shadow">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="m-0 font-weight-bold">@ViewData["Title"]</h5>
+        </div>
+        <div class="card-body">
+            <input type="hidden" id="hdn_Id" value="@idArr" />
+
+            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                <li class="nav-item"><a class="nav-link active font-weight-bold" data-toggle="tab" href="#general">1. Datos del Contrato</a></li>
+                @if (idArr > 0)
+                {
+                    <li class="nav-item"><a class="nav-link font-weight-bold" data-toggle="tab" href="#pagos" onclick="cargarCuotas()">2. Control de Pagos</a></li>
+                }
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="general">
+
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label class="font-weight-bold text-primary">Empresa Titular del Contrato (*)</label>
+                            <select id="cbx_Empresa" class="form-control">
+                                <option value="">-- Seleccione Empresa --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label class="font-weight-bold">Dirección del Local (*)</label>
+                            <input type="text" id="txt_Direccion" class="form-control">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Tipo de Uso</label>
+                            <select id="cbx_Uso" class="form-control">
+                                <option value="Administrativo">Administrativo</option>
+                                <option value="Almacen">Almacén</option>
+                                <option value="Comercial">Comercial</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">Inicio Contrato</label>
+                            <input type="date" id="txt_FecIni" class="form-control">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">Fin Contrato</label>
+                            <input type="date" id="txt_FecFin" class="form-control">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold text-primary">Monto Alquiler (S/)</label>
+                            <input type="number" id="txt_Monto" class="form-control text-right" step="0.01">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label class="font-weight-bold">Día de Pago</label>
+                            <input type="number" id="txt_Dia" class="form-control" min="1" max="31">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label>Garantía (S/)</label>
+                            <input type="number" id="txt_Garantia" class="form-control text-right" step="0.01">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label>Estado</label>
+                            <select id="cbx_Estado" class="form-control"><option value="1">ACTIVO</option><option value="0">INACTIVO</option></select>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button class="btn btn-success" onclick="guardar()"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pagos">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h6 class="text-primary font-weight-bold">Cronograma de Pagos</h6>
+                        <button class="btn btn-sm btn-primary" onclick="proyectarCuotas()"><i class="fas fa-sync"></i> Proyectar más cuotas</button>
+                    </div>
+                    <table class="table table-sm table-bordered" id="tbl_Cuotas"><thead class="thead-light"><tr><th>Periodo</th><th>Vencimiento</th><th>Monto</th><th>Estado</th><th>Datos Pago</th><th>Acción</th></tr></thead><tbody></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPago" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Registrar Pago</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hdn_IdCuota">
+                <div class="form-group">
+                    <label>Fecha de Pago</label>
+                    <input type="date" id="txt_PagoFecha" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="form-group">
+                    <label>N° Operación / Voucher</label>
+                    <input type="text" id="txt_PagoOperacion" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Adjuntar Comprobante (PDF/Img)</label>
+                    <input type="file" id="file_Pago" class="form-control-file">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="confirmarPago()">Guardar Pago</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $.get('/Arrendamiento/GetEmpresas', function(res) {
+                if(res.status) {
+                    let opts = '<option value="">-- Seleccione --</option>';
+                    res.data.forEach(e => opts += `<option value="${e.id}">${e.razonSocial}</option>`);
+                    $('#cbx_Empresa').html(opts);
+
+                    let id = $('#hdn_Id').val();
+                    if(id > 0) cargarDatos(id);
+                }
+            });
+        });
+
+        function cargarDatos(id) {
+            $.get('/Arrendamiento/Obtener?id=' + id, function(res) {
+                if(res.status) {
+                    let d = res.data;
+                    $('#cbx_Empresa').val(d.empresaId);
+                    $('#txt_Direccion').val(d.direccionLocal);
+                    $('#cbx_Uso').val(d.tipoUso);
+                    $('#txt_FecIni').val(d.fechaInicioContrato ? d.fechaInicioContrato.substring(0,10) : '');
+                    $('#txt_FecFin').val(d.fechaFinContrato ? d.fechaFinContrato.substring(0,10) : '');
+                    $('#txt_Monto').val(d.montoAlquiler);
+                    $('#txt_Dia').val(d.diaPago);
+                    $('#txt_Garantia').val(d.montoGarantia);
+                    $('#cbx_Estado').val(d.estado ? "1" : "0");
+                }
+            });
+        }
+
+        function guardar() {
+            if(!$('#cbx_Empresa').val()){ Swal.fire('Error','Seleccione una empresa','warning'); return; }
+
+            let modelo = {
+                Id: $('#hdn_Id').val(),
+                EmpresaId: $('#cbx_Empresa').val(),
+                DireccionLocal: $('#txt_Direccion').val(),
+                TipoUso: $('#cbx_Uso').val(),
+                FechaInicioContrato: $('#txt_FecIni').val() || null,
+                FechaFinContrato: $('#txt_FecFin').val() || null,
+                MontoAlquiler: $('#txt_Monto').val(),
+                DiaPago: $('#txt_Dia').val(),
+                MontoGarantia: $('#txt_Garantia').val(),
+                Estado: $('#cbx_Estado').val() === "1"
+            };
+
+            $.post('/Arrendamiento/Guardar', { modelo: modelo }, function(res) {
+                if(res.status) {
+                    Swal.fire("Éxito", res.message, "success").then(() => {
+                        if($('#hdn_Id').val() == 0) window.location.href = '/Arrendamiento/Index';
+                        else location.reload();
+                    });
+                } else Swal.fire("Error", res.message, "error");
+            });
+        }
+
+        // --- LÓGICA DE CUOTAS ---
+        function cargarCuotas() {
+            let id = $('#hdn_Id').val();
+            $.get('/Arrendamiento/GetCuotas?id=' + id, function(res) {
+                let html = '';
+                res.data.forEach(c => {
+                    let badge = c.estado == 1
+                        ? '<span class="badge badge-success">PAGADO</span>'
+                        : '<span class="badge badge-danger">PENDIENTE</span>';
+
+                    let btnAccion = c.estado == 0
+                        ? `<button class="btn btn-sm btn-outline-success" onclick="abrirPagar(${c.id})">Pagar</button>`
+                        : (c.rutaEvidencia ? `<a href="${c.rutaEvidencia}" target="_blank" class="btn btn-sm btn-info">Ver Voucher</a>` : '-');
+
+                    let infoPago = c.estado == 1 ? `<small>Fec: ${c.fechaPago}<br>Op: ${c.numeroOperacion}</small>` : '-';
+
+                    html += `<tr>
+                                <td>${c.periodo}</td>
+                                <td>${c.vencimiento}</td>
+                                <td>${parseFloat(c.monto).toFixed(2)}</td>
+                                <td class="text-center">${badge}</td>
+                                <td>${infoPago}</td>
+                                <td class="text-center">${btnAccion}</td>
+                             </tr>`;
+                });
+                $('#tbl_Cuotas tbody').html(html);
+            });
+        }
+
+        function proyectarCuotas() {
+            let id = $('#hdn_Id').val();
+            Swal.fire({
+                title: '¿Proyectar Pagos?',
+                text: "Se generarán cuotas faltantes según la vigencia.",
+                icon: 'question', showCancelButton: true
+            }).then((r) => {
+                if(r.isConfirmed) {
+                    $.post('/Arrendamiento/ProyectarCuotas', { id: id }, function(res) {
+                        if(res.status) { cargarCuotas(); Swal.fire('Listo', res.message, 'success'); }
+                        else Swal.fire('Error', res.message, 'error');
+                    });
+                }
+            });
+        }
+
+        function abrirPagar(idCuota) {
+            $('#hdn_IdCuota').val(idCuota);
+            $('#txt_PagoOperacion').val('');
+            $('#file_Pago').val('');
+            $('#modalPago').modal('show');
+        }
+
+        function confirmarPago() {
+            var formData = new FormData();
+            formData.append('idCuota', $('#hdn_IdCuota').val());
+            formData.append('fechaPago', $('#txt_PagoFecha').val());
+            formData.append('nroOperacion', $('#txt_PagoOperacion').val());
+
+            let file = $('#file_Pago')[0].files[0];
+            if(file) formData.append('archivo', file);
+
+            $.ajax({
+                url: '/Arrendamiento/RegistrarPago',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if(res.status) {
+                        $('#modalPago').modal('hide');
+                        cargarCuotas();
+                        Swal.fire("Pagado", res.message, "success");
+                    } else Swal.fire("Error", res.message, "error");
+                }
+            });
+        }
+    </script>
+}

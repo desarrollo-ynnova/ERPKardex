@@ -40,7 +40,7 @@
 
             <div id="div_ContenedorDocumentos">
                 <div class="card shadow mb-4 border-left-info" id="div_DocRef">
-                    <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia (Guía Remisión)</h5></div>
+                    <div class="card-header bg-info text-white"><h5 class="mb-0">Documento de Referencia (Traslado)</h5></div>
                     <div class="card-body">
                         <div class="row" id="div_ProveedorContainer">
                             <div class="col-md-12 mb-3">
@@ -165,7 +165,7 @@
 
             // CONFIGURACION VISUAL SEGUN TIPO
             if (tipo === "1") { // ENTRADA (Ingreso)
-                $('#div_DocRef').removeClass('d-none'); // Muestra Guia y Proveedor
+                // $('#div_DocRef').removeClass('d-none'); // Muestra Guia y Proveedor
                 $('#div_ProveedorContainer').removeClass('d-none'); // Muestra Proveedor
                 $('.div-fechas-entrada').removeClass('d-none');
                 $('.col-fechas-entrada').removeClass('d-none');
@@ -175,7 +175,7 @@
                 $('#div_InputSalida_CC, #div_InputSalida_Act').addClass('d-none');
 
             } else if (tipo === "0") { // SALIDA
-                $('#div_DocRef').addClass('d-none'); // Salida interna no suele llevar Guia de proveedor
+                // $('#div_DocRef').addClass('d-none'); // Salida interna no suele llevar Guia de proveedor
                 $('.div-fechas-entrada').addClass('d-none');
                 $('.col-fechas-entrada').addClass('d-none'); // Ocultar columna en tabla también
 

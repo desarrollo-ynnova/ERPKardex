@@ -1,0 +1,132 @@
+﻿@{
+    ViewData["Title"] = "Calendario de Pagos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/plugins/fullcalendar/main.css">
+    <style>
+        /* Ajuste para que los eventos se vean más elegantes */
+        .fc-event {
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+        }
+    </style>
+}
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Calendario de Vencimientos</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="/Arrendamiento/Index">Listado</a></li>
+                    <li class="breadcrumb-item active">Arrendamientos</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sticky-top mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Leyenda</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="external-events">
+                                <div class="external-event bg-success">Pagado</div>
+                                <div class="external-event bg-danger">Pendiente / Vencido</div>
+                                <p class="mt-3 text-muted text-sm">
+                                    <i class="fas fa-info-circle"></i> Haz clic en un evento para ver el detalle.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="card card-primary">
+                    <div class="card-body p-0">
+                        <div id="calendar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/es.global.min.js'></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                // Cabecera del calendario
+                headerToolbar: {
+                    left  : 'prev,next today',
+                    center: 'title',
+                    right : 'dayGridMonth,timeGridWeek,listMonth'
+                },
+
+                // --- CONFIGURACIÓN DE IDIOMA ---
+                locale: 'es', // Define el idioma principal
+
+                // Forzamos los textos de los botones por si acaso
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    list: 'Lista'
+                },
+                // -------------------------------
+
+                themeSystem: 'bootstrap',
+
+                events: '/Arrendamiento/GetDataCalendario',
+
+                editable  : false,
+                droppable : false,
+                dayMaxEvents: true, // Muestra enlace "+2 más" si hay muchos eventos
+
+                eventClick: function(info) {
+                    info.jsEvent.preventDefault();
+                    var props = info.event.extendedProps;
+
+                    Swal.fire({
+                        title: info.event.title,
+                        html: `
+                            <div class="text-left">
+                                <p class="text-primary mb-1"><strong>${props.empresa}</strong></p>
+                                <hr class="my-1">
+                                <p class="mb-1"><strong>Vencimiento:</strong> ${info.event.start.toLocaleDateString()}</p>
+                                <p class="mb-1"><strong>Monto:</strong> S/ ${props.monto.toFixed(2)}</p>
+                                <p class="mb-0"><strong>Estado:</strong>
+                                    <span class="badge badge-${props.estado === 'PAGADO' ? 'success' : 'danger'}">
+                                        ${props.estado}
+                                    </span>
+                                </p>
+                            </div>
+                        `,
+                        icon: props.estado === 'PAGADO' ? 'success' : 'warning',
+                        confirmButtonText: 'Cerrar'
+                    });
+                }
+            });
+
+            calendar.render();
+        });
+    </script>
+}
