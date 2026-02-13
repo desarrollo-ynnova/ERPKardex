@@ -277,12 +277,13 @@ namespace ERPKardex.Controllers
                                  select new
                                  {
                                      // CAMBIO: Concatenamos Empresa al Título
-                                     title = e.RazonSocial + " - " + a.DireccionLocal,
+                                     title = e.Nombre + " - " + a.DireccionLocal,
                                      start = c.FechaVencimiento.ToString("yyyy-MM-dd"),
                                      color = c.EstadoPago == 1 ? "#28a745" : "#dc3545",
                                      extendedProps = new
                                      {
-                                         empresa = e.RazonSocial, // Dato extra por si acaso
+                                         empresa = e.Nombre,
+                                         razonSocial = e.RazonSocial, // Dato extra por si acaso
                                          monto = c.MontoCuota,
                                          estado = c.EstadoPago == 1 ? "PAGADO" : "PENDIENTE"
                                      }

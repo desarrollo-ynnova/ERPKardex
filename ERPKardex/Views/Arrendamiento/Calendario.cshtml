@@ -66,8 +66,6 @@
 @section Scripts {
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/es.global.min.js'></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
@@ -109,7 +107,7 @@
                         title: info.event.title,
                         html: `
                             <div class="text-left">
-                                <p class="text-primary mb-1"><strong>${props.empresa}</strong></p>
+                                <p class="text-primary mb-1"><strong>${props.razonSocial}</strong></p>
                                 <hr class="my-1">
                                 <p class="mb-1"><strong>Vencimiento:</strong> ${info.event.start.toLocaleDateString()}</p>
                                 <p class="mb-1"><strong>Monto:</strong> S/ ${props.monto.toFixed(2)}</p>

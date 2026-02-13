@@ -73,6 +73,7 @@
                         </div>
                     </div>
                     <div class="text-right mt-3">
+                        <button id="btn_Cancelar" type="button" class="btn btn-danger">Cancelar</button>
                         <button class="btn btn-success" onclick="guardar()"><i class="fas fa-save"></i> Guardar Cambios</button>
                     </div>
                 </div>
@@ -133,13 +134,17 @@
                     if(id > 0) cargarDatos(id);
                 }
             });
+
+            $('#btn_Cancelar').on('click', function () {
+                window.location.href = '/Arrendamiento/Index';
+            });
         });
 
         function cargarDatos(id) {
             $.get('/Arrendamiento/Obtener?id=' + id, function(res) {
                 if(res.status) {
                     let d = res.data;
-                    $('#cbx_Empresa').val(d.empresaId);
+                    $('#cbx_Empresa').val(d.empresaId).trigger('change');
                     $('#txt_Direccion').val(d.direccionLocal);
                     $('#cbx_Uso').val(d.tipoUso);
                     $('#txt_FecIni').val(d.fechaInicioContrato ? d.fechaInicioContrato.substring(0,10) : '');
