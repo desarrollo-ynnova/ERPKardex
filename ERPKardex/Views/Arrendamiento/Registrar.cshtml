@@ -24,7 +24,7 @@
                     <div class="form-row">
                         <div class="form-group col-md-12">
                             <label class="font-weight-bold text-primary">Empresa Titular del Contrato (*)</label>
-                            <select id="cbx_Empresa" class="form-control">
+                            <select id="cbx_Empresa" class="form-control select2-basic">
                                 <option value="">-- Seleccione Empresa --</option>
                             </select>
                         </div>
@@ -121,6 +121,8 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
+            $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' });
+
             $.get('/Arrendamiento/GetEmpresas', function(res) {
                 if(res.status) {
                     let opts = '<option value="">-- Seleccione --</option>';
