@@ -319,9 +319,9 @@
             let html = '';
             json.data.forEach(a => {
                 if (activosSeleccionados.some(s => s.id === a.id)) return;
-                let desc = `<strong>${a.codigo}</strong> - ${a.tipo || ''} ${a.marca || ''} ${a.modelo || ''}<br><small class="text-muted">S/N: ${a.serie || a.placa || '-'}</small>`;
+                let desc = `<strong>${a.codigo}</strong> - ${a.subtipo || ''} ${a.marca || ''} ${a.modelo || ''}<br><small class="text-muted">S/N: ${a.serie || a.placa || '-'}</small>`;
                 html += `<tr><td>${desc}</td><td class="text-center">
-                    <button class="btn btn-xs btn-success" onclick="seleccionarActivo(${a.id}, '${a.codigo}', '${(a.tipo || '')} ${(a.marca || '')} ${(a.modelo || '')}')"><i class="fas fa-plus"></i></button></td></tr>`;
+                    <button class="btn btn-xs btn-success" onclick="seleccionarActivo(${a.id}, '${a.codigo}', '${(a.subtipo || '')} ${(a.marca || '')} ${(a.modelo || '')}')"><i class="fas fa-plus"></i></button></td></tr>`;
             });
             tbody.innerHTML = html || '<tr><td colspan="2" class="text-center text-muted">Todos seleccionados.</td></tr>';
         }
@@ -412,7 +412,7 @@
             <div class="table-responsive"><table class="table table-sm table-bordered">
                 <thead class="thead-light"><tr><th>Código</th><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Serie/Placa</th><th>Ubicación</th></tr></thead><tbody>`;
             json.detalle.forEach(d => {
-                html += `<tr><td><strong>${d.codigo}</strong></td><td>${d.tipo || d.subtipo || ''}</td><td>${d.marca || ''}</td><td>${d.modelo || ''}</td><td>${d.numeroSerie || d.placa || ''}</td><td>${d.ubicacion || '-'}</td></tr>`;
+                html += `<tr><td><strong>${d.codigo}</strong></td><td>${d.subtipo || ''}</td><td>${d.marca || ''}</td><td>${d.modelo || ''}</td><td>${d.numeroSerie || d.placa || ''}</td><td>${d.ubicacion || '-'}</td></tr>`;
             });
             html += '</tbody></table></div>';
             if (m.observacion) html += `<p class="mt-2"><strong>Observación:</strong> ${m.observacion}</p>`;

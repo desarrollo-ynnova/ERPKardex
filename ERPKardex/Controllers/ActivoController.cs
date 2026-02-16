@@ -214,20 +214,37 @@ namespace ERPKardex.Controllers
                                             d.Observacion
                                         }).ToListAsync();
 
-                var asignacion = await (from dm in _context.DMovimientoActivo
-                                        join m in _context.MovimientoActivo on dm.MovimientoActivoId equals m.Id
-                                        join p in _context.Personal on m.PersonalId equals p.Id
-                                        join e in _context.Empresas on m.EmpresaId equals e.Id
-                                        where dm.ActivoId == id && dm.Estado && m.Estado && m.TipoMovimiento == "ENTREGA"
-                                        orderby m.FechaMovimiento descending
-                                        select new
-                                        {
-                                            PersonalNombre = p.NombresCompletos,
-                                            PersonalDni = p.Dni,
-                                            Empresa = e.Nombre,
-                                            FechaEntrega = m.FechaMovimiento.ToString("dd/MM/yyyy"),
-                                            dm.Ubicacion
-                                        }).FirstOrDefaultAsync();
+                // 1. Buscamos el último movimiento real del activo sin importar si es entrega o devolución
+                var ultimoMovimiento = await (from dm in _context.DMovimientoActivo
+                                              join m in _context.MovimientoActivo on dm.MovimientoActivoId equals m.Id
+                                              join p in _context.Personal on m.PersonalId equals p.Id
+                                              join e in _context.Empresas on m.EmpresaId equals e.Id
+                                              where dm.ActivoId == id && dm.Estado && m.Estado
+                                              orderby m.FechaMovimiento descending
+                                              select new
+                                              {
+                                                  m.TipoMovimiento, // Agregamos este campo para evaluarlo
+                                                  PersonalNombre = p.NombresCompletos,
+                                                  PersonalDni = p.Dni,
+                                                  Empresa = e.Nombre,
+                                                  FechaEntrega = m.FechaMovimiento.ToString("dd/MM/yyyy"),
+                                                  dm.Ubicacion
+                                              }).FirstOrDefaultAsync();
+
+                // 2. Evaluamos: si el último movimiento es nulo o NO es una entrega, la asignación es null
+                object asignacion = null;
+
+                if (ultimoMovimiento != null && ultimoMovimiento.TipoMovimiento == "ENTREGA")
+                {
+                    asignacion = new
+                    {
+                        ultimoMovimiento.PersonalNombre,
+                        ultimoMovimiento.PersonalDni,
+                        ultimoMovimiento.Empresa,
+                        ultimoMovimiento.FechaEntrega,
+                        ultimoMovimiento.Ubicacion
+                    };
+                }
 
                 return Json(new { status = true, activo, especificaciones, documentos, asignacion });
             }
