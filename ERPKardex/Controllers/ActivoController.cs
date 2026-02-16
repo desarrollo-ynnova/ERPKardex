@@ -720,7 +720,8 @@ namespace ERPKardex.Controllers
             {
                 var query = from a in _context.Activo
                             join t in _context.TipoActivo on a.TipoActivoId equals t.Id
-                            where a.EmpresaId == empresaId && a.Estado
+                            //where a.EmpresaId == empresaId 
+                            where a.Estado
                             select new { a, t };
 
                 if (!string.IsNullOrWhiteSpace(tipoCodigo))
@@ -1149,7 +1150,10 @@ namespace ERPKardex.Controllers
                     });
                 }
 
-                var datosEmpresa = new { nombre = "ADMINISTRACIÓN", cargo = "LOGÍSTICA / TI", empresa = mov.EmpresaNombre, dni = "" };
+                var razonSocial = _context.Empresas.Where(e => e.Id == EmpresaUsuarioId).Select(e => e.RazonSocial).FirstOrDefault();
+                var usuario = _context.Usuarios.Where(u => u.Id == UsuarioActualId).FirstOrDefault();
+
+                var datosEmpresa = new { nombre = usuario.Nombre ?? "ADMINISTRACIÓN", cargo = usuario.Cargo ?? "TI", empresa = razonSocial, dni = usuario.Dni ?? "" };
                 var datosPersonal = new { nombre = mov.PersonalNombre, cargo = mov.PersonalCargo, empresa = mov.EmpresaNombre, dni = mov.PersonalDni };
                 bool esEntrega = mov.TipoMovimiento == "ENTREGA";
 
