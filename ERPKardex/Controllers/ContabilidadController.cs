@@ -419,5 +419,50 @@ namespace ERPKardex.Controllers
                 return Json(new { status = false, message = "Error al generar el reporte: " + ex.Message });
             }
         }
+        // 1. PARA EL BOTÓN DEL OJITO (Ver Asiento Guardado)
+        [HttpGet]
+        public async Task<JsonResult> GetAsientoCompleto(int id)
+        {
+            var cabecera = await _context.AsientosContables.FindAsync(id);
+            if (cabecera == null) return Json(new { status = false });
+
+            var detalles = await _context.DetallesAsiento
+                .Include(d => d.AsientoContable) // Si tienes navigation properties
+                .Where(d => d.AsientoContableId == id)
+                .Select(d => new
+                {
+                    cuentaId = d.CuentaContableId,
+                    cuentaNombre = _context.CuentasContables.FirstOrDefault(c => c.Id == d.CuentaContableId).Codigo + " - " + _context.CuentasContables.FirstOrDefault(c => c.Id == d.CuentaContableId).Nombre,
+                    debe = d.DebeSoles,
+                    haber = d.HaberSoles,
+                    glosa = d.GlosaDetalle
+                }).ToListAsync();
+
+            return Json(new { status = true, cabecera = cabecera, detalles = detalles });
+        }
+
+        // 2. PARA LA AUTOMATIZACIÓN (Listar Provisiones Pendientes)
+        [HttpGet]
+        public async Task<JsonResult> GetProvisionesPendientes()
+        {
+            // Traemos facturas que NO tienen un asiento vinculado
+            var contabilizadosIds = await _context.AsientosContables
+                .Where(a => a.TablaReferencia == "documento_pagar" && a.Estado == "REGISTRADO")
+                .Select(a => a.IdReferencia)
+                .ToListAsync();
+
+            var pendientes = await _context.DocumentosPagar
+                .Where(d => d.EmpresaId == EmpresaUsuarioId && !contabilizadosIds.Contains(d.Id))
+                .Select(d => new
+                {
+                    id = d.Id,
+                    proveedor = _context.Proveedores.FirstOrDefault(p => p.Id == d.ProveedorId).RazonSocial,
+                    documento = d.Serie + "-" + d.Numero,
+                    fecha = d.FechaEmision.Value.ToString("dd/MM/yyyy"),
+                    total = d.Total
+                }).ToListAsync();
+
+            return Json(new { status = true, data = pendientes });
+        }
     }
 }

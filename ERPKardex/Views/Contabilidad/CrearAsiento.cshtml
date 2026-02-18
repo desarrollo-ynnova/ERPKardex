@@ -15,7 +15,9 @@
             <div class="card shadow mb-4 border-left-primary">
                 <div class="card-header bg-primary text-white d-flex justify-content-between">
                     <h5 class="m-0 font-weight-bold"><i class="fas fa-book"></i> Registro de Asiento Contable</h5>
-                    <span class="badge badge-light text-dark align-self-center" id="lblEstadoAsiento">Estado: NUEVO</span>
+                    <button class="btn btn-sm btn-warning font-weight-bold shadow-sm" onclick="abrirModalProvisiones()">
+                        <i class="fas fa-magic"></i> Jalar Provisión (Doc. por Pagar)
+                    </button>
                 </div>
 
                 <div class="card-body">
@@ -131,6 +133,43 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalProvisiones" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold">Facturas Pendientes de Contabilizar</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover mb-0 text-center">
+                    <thead class="bg-light">
+                        <tr><th>Acción</th><th>Proveedor</th><th>Documento</th><th>Fecha</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="tbodyProvisiones"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVerAsiento" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-info">
+            <div class="modal-header bg-info text-white py-2">
+                <h6 class="modal-title font-weight-bold" id="lblVerAsientoTitulo">Detalle de Asiento</h6>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-sm table-striped text-center mb-0">
+                    <thead class="bg-light text-dark">
+                        <tr><th>Cuenta</th><th class="text-primary">Debe</th><th class="text-success">Haber</th><th>Glosa</th></tr>
+                    </thead>
+                    <tbody id="tbodyVerAsiento"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -328,7 +367,8 @@
                         CuentaContableId: parseInt(cuentaId),
                         DebeSoles: debe,
                         HaberSoles: haber,
-                        GlosaDetalle: glosaLin
+                        GlosaDetalle: glosaLin,
+                        IdReferencia: $('#hdn_IdReferencia').val()
                     });
                 }
             });
@@ -374,6 +414,100 @@
                 error: function() {
                     $('#efec-cargando').addClass('d-none');
                     toastr.error("Error de conexión al guardar.");
+                }
+            });
+        }
+        // Funciones para el Ojito
+        function verAsiento(id) {
+            $.get('/Contabilidad/GetAsientoCompleto?id=' + id, function(res) {
+                if(res.status) {
+                    $('#lblVerAsientoTitulo').text('Asiento N° ' + res.cabecera.numeroAsiento);
+                    let html = '';
+                    res.detalles.forEach(d => {
+                        html += `<tr>
+                            <td class="text-left"><small>${d.cuentaNombre}</small></td>
+                            <td class="font-weight-bold text-primary">${d.debe.toFixed(2)}</td>
+                            <td class="font-weight-bold text-success">${d.haber.toFixed(2)}</td>
+                            <td><small>${d.glosa || '-'}</small></td>
+                        </tr>`;
+                    });
+                    $('#tbodyVerAsiento').html(html);
+                    $('#modalVerAsiento').modal('show');
+                } else {
+                    toastr.error("No se pudo cargar el asiento.");
+                }
+            });
+        }
+
+        // Funciones para Automatizar (Jalar Provisión)
+        function abrirModalProvisiones() {
+            $('#efec-cargando').removeClass('d-none');
+            $.get('/Contabilidad/GetProvisionesPendientes', function(res) {
+                $('#efec-cargando').addClass('d-none');
+                if(res.status) {
+                    let html = '';
+                    if(res.data.length > 0) {
+                        res.data.forEach(x => {
+                            html += `<tr>
+                                <td><button class="btn btn-sm btn-success" onclick="jalarBorrador(${x.id})"><i class="fas fa-check"></i> Jalar</button></td>
+                                <td class="text-left small">${x.proveedor}</td>
+                                <td class="font-weight-bold">${x.documento}</td>
+                                <td>${x.fecha}</td>
+                                <td class="font-weight-bold text-primary">${x.total.toFixed(2)}</td>
+                            </tr>`;
+                        });
+                    } else {
+                        html = '<tr><td colspan="5" class="text-muted p-4">No hay facturas pendientes.</td></tr>';
+                    }
+                    $('#tbodyProvisiones').html(html);
+                    $('#modalProvisiones').modal('show');
+                }
+            });
+        }
+
+        function jalarBorrador(id) {
+            $('#modalProvisiones').modal('hide');
+            $('#efec-cargando').removeClass('d-none');
+
+            // Usamos el endpoint que armamos antes en el Controller
+            $.get('/Contabilidad/GenerarBorradorDocumentoPagar?documentoPagarId=' + id, function(res) {
+                $('#efec-cargando').addClass('d-none');
+                if(res.status) {
+                    let d = res.data;
+
+                    // Llenamos la cabecera
+                    $('#txt_FechaContable').val(d.fechaContable.split('T')[0]);
+                    $('#txt_Glosa').val(d.glosa);
+                    $('#cbx_Origen').val(d.origenAsientoId).trigger('change');
+
+                    // Ocultamos un campo en el formulario para saber a qué documento hace referencia
+                    if ($('#hdn_IdReferencia').length === 0) {
+                        $('#hdn_EmpresaId').after(`<input type="hidden" id="hdn_IdReferencia" value="${d.idReferencia}">`);
+                        $('#hdn_EmpresaId').after(`<input type="hidden" id="hdn_TablaReferencia" value="documento_pagar">`);
+                    } else {
+                        $('#hdn_IdReferencia').val(d.idReferencia);
+                    }
+
+                    // Limpiamos la tabla y llenamos los detalles precargados
+                    $('#tbl_Body').empty();
+                    CONTADOR_FILAS = 0;
+
+                    d.detalles.forEach(det => {
+                        agregarLinea();
+                        let ultimaFila = CONTADOR_FILAS;
+                        // Si encontraste la cuenta en el backend, se setea, sino queda en blanco para que el contador elija
+                        if(det.cuentaContableId > 0) {
+                            $(`#cuenta_${ultimaFila}`).val(det.cuentaContableId).trigger('change');
+                        }
+                        $(`#tr_linea_${ultimaFila} .input-debe`).val(det.debeSoles.toFixed(2));
+                        $(`#tr_linea_${ultimaFila} .input-haber`).val(det.haberSoles.toFixed(2));
+                        $(`#tr_linea_${ultimaFila} .input-glosa-detalle`).val(det.glosaDetalle);
+                    });
+
+                    calcularCuadre();
+                    toastr.success("Borrador cargado. Complete las cuentas faltantes.");
+                } else {
+                    toastr.error(res.message);
                 }
             });
         }
