@@ -86,6 +86,13 @@ namespace ERPKardex.Data
         public DbSet<Detraccion> Detracciones { get; set; }
         public DbSet<Arrendamiento> Arrendamientos { get; set; }
         public DbSet<CuotaArrendamiento> CuotaArrendamientos { get; set; }
+
+        // TUS NUEVAS TABLAS CONTABLES
+        public DbSet<CuentaContable> CuentasContables { get; set; }
+        public DbSet<PeriodoContable> PeriodosContables { get; set; }
+        public DbSet<OrigenAsiento> OrigenesAsiento { get; set; }
+        public DbSet<AsientoContable> AsientosContables { get; set; }
+        public DbSet<DasientoContable> DetallesAsiento { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

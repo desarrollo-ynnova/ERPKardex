@@ -1,0 +1,381 @@
+﻿@{
+    ViewData["Title"] = "Nuevo Asiento Contable";
+}
+
+<div class="card d-none" id="efec-cargando">
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay dark" style="z-index: 9999; background: rgba(0,0,0,0.5);">
+        <i class="fas fa-3x fa-sync-alt fa-spin text-white"></i>
+    </div>
+</div>
+
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <h5 class="m-0 font-weight-bold"><i class="fas fa-book"></i> Registro de Asiento Contable</h5>
+                    <span class="badge badge-light text-dark align-self-center" id="lblEstadoAsiento">Estado: NUEVO</span>
+                </div>
+
+                <div class="card-body">
+                    <input type="hidden" id="hdn_EmpresaId" value="@ViewBag.EmpresaId" />
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="font-weight-bold text-dark">Periodo Contable (*)</label>
+                            <select id="cbx_Periodo" class="form-control select2-basic">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold text-dark">Origen (*)</label>
+                            <select id="cbx_Origen" class="form-control select2-basic">
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold text-dark">Fecha Contable (*)</label>
+                            <input type="date" id="txt_FechaContable" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold text-dark">Moneda (*)</label>
+                            <select id="cbx_Moneda" class="form-control select2-basic"></select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-12">
+                            <label class="font-weight-bold text-dark">Glosa / Concepto General (*)</label>
+                            <input type="text" id="txt_Glosa" class="form-control" placeholder="Describa el motivo del asiento (Ej: Provisión de planilla, Ajuste de caja...)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-5">
+                <div class="card-header py-2 bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">Detalle del Asiento (Partida Doble)</h6>
+                    <button type="button" class="btn btn-sm btn-warning font-weight-bold" onclick="agregarLinea()">
+                        <i class="fas fa-plus"></i> AGREGAR LÍNEA
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped mb-0 text-center" id="tbl_Detalle">
+                            <thead class="thead-dark small">
+                                <tr>
+                                    <th width="3%">#</th>
+                                    <th width="40%">Cuenta Contable</th>
+                                    <th width="17%" class="bg-primary text-white">DEBE (S/)</th>
+                                    <th width="17%" class="bg-success text-white">HABER (S/)</th>
+                                    <th width="18%">Glosa Específica</th>
+                                    <th width="5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_Body">
+                            </tbody>
+                            <tfoot class="bg-light font-weight-bold">
+                                <tr>
+                                    <td colspan="2" class="text-right h5 mb-0 align-middle">TOTALES:</td>
+                                    <td>
+                                        <input type="text" id="lbl_SumaDebe" class="form-control text-right font-weight-bold text-primary bg-white border-0" readonly value="0.00" style="font-size: 1.1em;">
+                                    </td>
+                                    <td>
+                                        <input type="text" id="lbl_SumaHaber" class="form-control text-right font-weight-bold text-success bg-white border-0" readonly value="0.00" style="font-size: 1.1em;">
+                                    </td>
+                                    <td colspan="2" class="align-middle">
+                                        <span id="lbl_Cuadre" class="badge badge-danger p-2 w-100" style="font-size: 1em;">DESCUADRADO</span>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-5 border-left-info">
+                <div class="card-header py-2 bg-info text-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-history"></i> Últimos Asientos del Periodo Seleccionado</h6>
+                    <button class="btn btn-sm btn-light text-info" onclick="cargarHistorial()" title="Actualizar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover table-striped mb-0 text-center" id="tbl_Historial">
+                            <thead class="bg-light sticky-top">
+                                <tr>
+                                    <th>N° Asiento</th>
+                                    <th>Fecha</th>
+                                    <th>Origen</th>
+                                    <th class="text-left">Glosa</th>
+                                    <th class="text-right">Total Debe</th>
+                                    <th class="text-right">Total Haber</th>
+                                    <th>Estado</th>
+                                    <th>Ver</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbl_BodyHistorial">
+                                <tr><td colspan="8" class="text-muted py-3">Seleccione un Periodo Contable para ver el historial...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fixed-bottom bg-white border-top p-3 text-right shadow" style="opacity: 0.95;">
+                <button type="button" class="btn btn-info mr-2" onclick="location.reload()">Limpiar Formulario</button>
+                <button type="button" class="btn btn-success px-5 font-weight-bold" id="btnGuardar" onclick="confirmarGuardado()" disabled>
+                    <i class="fas fa-save"></i> GUARDAR ASIENTO
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let LISTA_CUENTAS = [];
+        let CONTADOR_FILAS = 0;
+
+        $(document).ready(function() {
+            // Inicializar Select2 como en tu plantilla
+            $('.select2-basic').select2({ theme: 'bootstrap4', width: '100%' });
+
+            cargarCatalogos();
+
+            $('#cbx_Periodo').on('change', function() {
+                cargarHistorial();
+            });
+        });
+
+        // Función que consume el endpoint y dibuja la tabla
+        function cargarHistorial() {
+            let periodoId = $('#cbx_Periodo').val();
+            if(!periodoId) {
+                $('#tbl_BodyHistorial').html('<tr><td colspan="8" class="text-muted py-3">Seleccione un Periodo Contable para ver el historial...</td></tr>');
+                return;
+            }
+            
+            $.get('/Contabilidad/GetAsientosRecientes?periodoId=' + periodoId, function(res) {
+                if(res.status) {
+                    let html = '';
+                    if(res.data.length > 0) {
+                        res.data.forEach(x => {
+                            let badgeClass = x.estado === 'REGISTRADO' ? 'badge-success' : 'badge-danger';
+                            html += `
+                                    <tr>
+                                        <td class="font-weight-bold text-primary">${x.numero}</td>
+                                        <td>${x.fecha}</td>
+                                        <td><span class="badge badge-secondary">${x.origen}</span></td>
+                                        <td class="text-left small">${x.glosa}</td>
+                                        <td class="text-right font-weight-bold">${x.debe.toFixed(2)}</td>
+                                        <td class="text-right font-weight-bold">${x.haber.toFixed(2)}</td>
+                                        <td><span class="badge ${badgeClass}">${x.estado}</span></td>
+                                        <td>
+                                            <button class="btn btn-xs btn-info" onclick="verAsiento(${x.id})" title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="8" class="text-muted py-3">No hay asientos registrados en este periodo.</td></tr>';
+                    }
+                    $('#tbl_BodyHistorial').html(html);
+                }
+            });
+        }
+
+        function cargarCatalogos() {
+            $('#efec-cargando').removeClass('d-none');
+
+            // 1. Cargar Periodos, Orígenes y Monedas
+            $.get('/Contabilidad/GetDatosCabecera', function(res) {
+                res.periodos.forEach(x => $('#cbx_Periodo').append(`<option value="${x.id}">${x.texto}</option>`));
+                res.origenes.forEach(x => $('#cbx_Origen').append(`<option value="${x.id}">${x.texto}</option>`));
+
+                let htmlMonedas = '';
+                res.monedas.forEach(x => htmlMonedas += `<option value="${x.id}">${x.texto}</option>`);
+                $('#cbx_Moneda').html(htmlMonedas);
+            });
+
+            // 2. Cargar Cuentas Contables en memoria
+            $.get('/Contabilidad/GetCuentas', function(res) {
+                LISTA_CUENTAS = res;
+                $('#efec-cargando').addClass('d-none');
+
+                // Agregamos 2 líneas por defecto al abrir la pantalla
+                agregarLinea();
+                agregarLinea();
+            });
+        }
+
+        function agregarLinea() {
+            CONTADOR_FILAS++;
+            let idx = CONTADOR_FILAS;
+
+            let htmlCuentas = '<option value="">-- Buscar Cuenta --</option>';
+            LISTA_CUENTAS.forEach(c => {
+                htmlCuentas += `<option value="${c.id}">${c.codigo} - ${c.nombre}</option>`;
+            });
+
+            let tr = `
+                <tr id="tr_linea_${idx}">
+                    <td class="align-middle font-weight-bold">${idx}</td>
+                    <td class="text-left align-middle">
+                        <select class="form-control select2-cuentas cbx-cuenta" id="cuenta_${idx}">
+                            ${htmlCuentas}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-right input-debe font-weight-bold text-primary" value="0.00" min="0" step="0.01" onchange="calcularCuadre()" onkeyup="calcularCuadre()">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-right input-haber font-weight-bold text-success" value="0.00" min="0" step="0.01" onchange="calcularCuadre()" onkeyup="calcularCuadre()">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm input-glosa-detalle" placeholder="Opcional">
+                    </td>
+                    <td class="align-middle">
+                        <button class="btn btn-xs btn-danger" onclick="eliminarLinea(${idx})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+
+            $('#tbl_Body').append(tr);
+
+            // Inicializamos el select2 dinámico a la fila recién creada
+            $(`#cuenta_${idx}`).select2({ theme: 'bootstrap4', width: '100%' });
+        }
+
+        function eliminarLinea(idx) {
+            $(`#tr_linea_${idx}`).remove();
+            calcularCuadre();
+        }
+
+        function calcularCuadre() {
+            let totalDebe = 0;
+            let totalHaber = 0;
+
+            $(".input-debe").each(function () {
+                totalDebe += parseFloat($(this).val()) || 0;
+            });
+
+            $(".input-haber").each(function () {
+                totalHaber += parseFloat($(this).val()) || 0;
+            });
+
+            $("#lbl_SumaDebe").val(totalDebe.toFixed(2));
+            $("#lbl_SumaHaber").val(totalHaber.toFixed(2));
+
+            let cuadreBtn = $("#btnGuardar");
+            let cuadreLbl = $("#lbl_Cuadre");
+
+            if(totalDebe === totalHaber && totalDebe > 0) {
+                cuadreLbl.removeClass("badge-danger").addClass("badge-success").text("ASIENTO CUADRADO");
+                cuadreBtn.prop("disabled", false);
+            } else {
+                cuadreLbl.removeClass("badge-success").addClass("badge-danger").text("DESCUADRADO");
+                cuadreBtn.prop("disabled", true);
+            }
+        }
+
+        function confirmarGuardado() {
+            // Validaciones básicas Toastr heredadas de tu plantilla
+            if(!$('#cbx_Periodo').val()) return toastr.warning("Seleccione el Periodo Contable");
+            if(!$('#cbx_Origen').val()) return toastr.warning("Seleccione el Origen del Asiento");
+            if(!$('#txt_FechaContable').val()) return toastr.warning("Ingrese la fecha contable");
+            if(!$('#txt_Glosa').val()) return toastr.warning("Ingrese una glosa o concepto general");
+
+            Swal.fire({
+                title: "Confirmar Registro",
+                text: "¿Está seguro de guardar este asiento contable?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#d33",
+                reverseButtons: true,
+                cancelButtonText: "Cancelar",
+                confirmButtonText: "Sí, Guardar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    ejecutarGuardado();
+                }
+            });
+        }
+
+        function ejecutarGuardado() {
+            let detalles = [];
+            let errorCuentas = false;
+
+            $("#tbl_Body tr").each(function () {
+                let cuentaId = $(this).find(".cbx-cuenta").val();
+                let debe = parseFloat($(this).find(".input-debe").val()) || 0;
+                let haber = parseFloat($(this).find(".input-haber").val()) || 0;
+                let glosaLin = $(this).find(".input-glosa-detalle").val();
+
+                if (!cuentaId && (debe > 0 || haber > 0)) {
+                    errorCuentas = true;
+                    return false; // rompe el bucle
+                }
+
+                if (cuentaId && (debe > 0 || haber > 0)) {
+                    detalles.push({
+                        CuentaContableId: parseInt(cuentaId),
+                        DebeSoles: debe,
+                        HaberSoles: haber,
+                        GlosaDetalle: glosaLin
+                    });
+                }
+            });
+
+            if(errorCuentas) return toastr.error("Debe seleccionar una cuenta contable para cada línea con monto.");
+            if(detalles.length < 2) return toastr.warning("Un asiento debe tener al menos dos líneas (Partida Doble).");
+
+            let modelo = {
+                PeriodoId: parseInt($('#cbx_Periodo').val()),
+                OrigenAsientoId: parseInt($('#cbx_Origen').val()),
+                FechaContable: $('#txt_FechaContable').val(),
+                MonedaId: parseInt($('#cbx_Moneda').val()),
+                Glosa: $('#txt_Glosa').val(),
+                Detalles: detalles
+            };
+
+            $('#efec-cargando').removeClass('d-none');
+
+            $.ajax({
+                url: '/Contabilidad/GuardarAsiento',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(modelo),
+                success: function(res) {
+                    $('#efec-cargando').addClass('d-none');
+                    if(res.status) {
+                        Swal.fire("Éxito", res.message + " N° " + res.asiento, "success").then(() => {
+                            // En vez de reload, limpiamos solo el detalle y la glosa
+                            $('#txt_Glosa').val('');
+                            $('#tbl_Body').empty();
+                            CONTADOR_FILAS = 0;
+                            agregarLinea();
+                            agregarLinea();
+                            calcularCuadre();
+
+                            // Y ACTUALIZAMOS EL HISTORIAL MÁGICAMENTE
+                            cargarHistorial();
+                        });
+                    } else {
+                        Swal.fire("Error", res.message, "error");
+                    }
+                },
+                error: function() {
+                    $('#efec-cargando').addClass('d-none');
+                    toastr.error("Error de conexión al guardar.");
+                }
+            });
+        }
+    </script>
+}
